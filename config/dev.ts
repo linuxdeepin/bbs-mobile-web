@@ -1,9 +1,20 @@
 module.exports = {
   env: {
-    NODE_ENV: '"development"'
+    NODE_ENV: '"development"',
+    SERVER: '"https://bbs.deepin.org"',
   },
-  defineConstants: {
-  },
+  defineConstants: {},
   mini: {},
-  h5: {}
-}
+  h5: {
+    devServer: {
+      port: 4200,
+      allowedHosts: "all",
+      proxy: {
+        "/api": {
+          target: "https://bbs-pre.deepin.com",
+          changeOrigin: true,
+        },
+      },
+    },
+  },
+};
