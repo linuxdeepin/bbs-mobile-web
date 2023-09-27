@@ -1,7 +1,7 @@
 module.exports = {
   env: {
     NODE_ENV: '"production"',
-    SERVER: '"https://bbs.deepin.org"',
+    SERVER: '"https://bbs-pre.deepin.org.cn"',
   },
   defineConstants: {},
   mini: {},

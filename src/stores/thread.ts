@@ -1,39 +1,52 @@
 import { defineStore } from "pinia";
-import { http } from "./http";
+import { apiServer, http } from "./http";
+import { ref } from "vue";
 
-export const useThreadStore = defineStore("thread", {
-  state: () => {
-    return {
-      page: 1,
-      loaded: false,
-      item: null as ThreadInfoResponse["data"] | null,
-      posts: [] as Post[],
-      postCount: 0,
-      postLimit: 10,
-    };
-  },
-  getters: {
-    card() {},
-  },
-  actions: {
-    async getThraadInfo(id: number) {
-      const info = await getThraadInfo(id);
-      this.item = info.data.data;
-    },
-    async getThreadPost(id: number, offset = 0) {
-      const threads = await getThreadPost(id, { offset });
-      this.posts = threads.data.data;
-      this.postCount = threads.data.total_count;
-      this.postLimit = threads.data.total_limit;
-    },
-    async load(id: number) {
-      await Promise.all([this.getThraadInfo(id), this.getThreadPost(id)]);
-      this.loaded = true;
-    },
-    pageChange(page: number) {
-      this.getThreadPost(this.item.id, page - 1);
-    },
-  },
+export const useThreadStore = defineStore("thread", () => {
+  const page = ref(1);
+  const loaded = ref(false);
+  const item = ref(null as ThreadInfoResponse["data"] | null);
+  const posts = ref([] as Post[]);
+  const postLoaded = ref(false);
+  const postCount = ref(0);
+  const postLimit = ref(10);
+  const server = ref(apiServer);
+
+  async function thraadInfo(id: number) {
+    const info = await getThraadInfo(id);
+    item.value = info.data.data;
+  }
+  async function threadPost(id: number, offset = 0) {
+    const threads = await getThreadPost(id, { offset });
+    posts.value = threads.data.data;
+    postCount.value = threads.data.total_count;
+    postLimit.value = threads.data.total_limit;
+    postLoaded.value = true;
+  }
+  async function load(id: number) {
+    loaded.value = false;
+    await Promise.all([thraadInfo(id), threadPost(id)]);
+    loaded.value = true;
+  }
+  function pageChange(p: number) {
+    if (item.value) {
+      postLoaded.value = false;
+      threadPost(item.value.id, p - 1);
+      page.value = p;
+    }
+  }
+  return {
+    page,
+    loaded,
+    item,
+    postCount,
+    postLimit,
+    posts,
+    postLoaded,
+    server,
+    load,
+    pageChange,
+  };
 });
 
 async function getThraadInfo(id: number) {

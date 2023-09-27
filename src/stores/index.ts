@@ -1,42 +1,36 @@
 import { defineStore } from "pinia";
-import { http } from "./http";
+import { apiServer, http } from "./http";
+import { ref } from "vue";
 export { useThreadStore } from "./thread";
 
-export const useIndexStore = defineStore("index", {
-  state: () => {
-    return {
-      page: 1,
-      loaded: false,
-      threads: [] as ThreadIndex[],
-      threadCount: 0,
-      carousel: { cards: [] } as CarouselConfig,
-    };
-  },
-  getters: {
-    card() {},
-  },
-  actions: {
-    async getCarouselConfig() {
-      const config = await getRawConfig<CarouselConfig>("carousel");
-      config.cards = config.cards.filter(
-        (item) => item.device === "all" || item.device === "phone"
-      );
-      this.carousel = config;
-    },
-    async getIndexThread(offset = 0) {
-      const threads = await getIndexThread({ offset });
-      this.threads = threads.data.ThreadIndex;
-      this.threadCount = threads.data.total_count;
-    },
-    async load() {
-      await Promise.all([this.getIndexThread(), this.getCarouselConfig()]);
-      this.loaded = true;
-    },
-    async pageChange(page: number) {
-      this.page = page;
-      this.getIndexThread(page - 1);
-    },
-  },
+export const useIndexStore = defineStore("index", () => {
+  const page = ref(1);
+  const loaded = ref(false);
+  const threads = ref([] as ThreadIndex[]);
+  const threadCount = ref(0);
+  const carousel = ref({ cards: [] } as CarouselConfig);
+  const server = ref(apiServer);
+  async function carouselConfig() {
+    const config = await getRawConfig<CarouselConfig>("carousel");
+    config.cards = config.cards.filter(
+      (item) => item.device === "all" || item.device === "phone"
+    );
+    carousel.value = config;
+  }
+  async function indexThread(offset = 0) {
+    const resp = await getIndexThread({ offset });
+    threads.value = resp.data.ThreadIndex;
+    threadCount.value = resp.data.total_count;
+  }
+  // 翻页
+  async function pageChange(page: number) {
+    page = page;
+    indexThread(page - 1);
+  }
+  Promise.all([carouselConfig(), indexThread()]).then(
+    () => (loaded.value = true)
+  );
+  return { page, loaded, threadCount, threads, carousel, server, pageChange };
 });
 
 async function getRawConfig<T>(field: "carousel") {

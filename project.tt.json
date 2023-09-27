@@ -1,6 +1,6 @@
 {
   "miniprogramRoot": "./",
-  "projectname": "myApp",
+  "projectname": "deepin-bbs",
   "description": "bbs",
   "appid": "touristappid",
   "setting": {

@@ -2,7 +2,7 @@ import Components from "unplugin-vue-components/webpack";
 import NutUIResolver from "@nutui/nutui-taro/dist/resolver";
 
 const config = {
-  projectName: "myApp",
+  projectName: "deepin-bbs",
   date: "2023-9-20",
   designWidth(input) {
     if (input?.file?.replace(/\\+/g, "/").indexOf("@nutui") > -1) {

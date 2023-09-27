@@ -1,10 +1,10 @@
 {
     "miniprogramRoot": "dist/",
-    "projectname": "myApp",
+    "projectname": "deepin-bbs",
     "description": "bbs",
     "appid": "wx1978a8893803c59f",
     "setting": {
-        "urlCheck": false,
+        "urlCheck": true,
         "es6": false,
         "enhance": false,
         "postcss": false,
