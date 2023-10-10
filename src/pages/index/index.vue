@@ -1,22 +1,27 @@
 <template>
-  <view>
+  <view class="index-page">
     <view v-if="index.loaded">
       <view class="index">
+        <!-- 轮播图 -->
         <view class="carousel">
           <nut-swiper v-if="index.loaded" :init-page="0" :pagination-visible="true" pagination-color="#426543"
             auto-play="3000">
-            <nut-swiper-item v-for="item  in  index.carousel.cards ">
-              <img :src="index.server + item.img.url" :alt="item.title" />
+            <nut-swiper-item v-for="item in index.carousel.cards" @click="goLike(item.link)">
+              <a :href="item.link" target="_blank">
+                <img :src="index.server + item.img.url" :alt="item.title" />
+              </a>
             </nut-swiper-item>
           </nut-swiper>
         </view>
+        <!-- 帖子列表 -->
         <view class="thread-list">
           <template v-for="item in index.threads">
             <template v-if="item.user.id">
               <nut-cell-group>
-                <nut-cell class="thread" desc-text-align="left" is-link @click="goThread(item.id)">
+                <!-- 帖子标题 -->
+                <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
                   <template #desc>
-                    <span class="module">【软件开发】</span>
+                    <span class="module">【所属版块】</span>
                     <span class="title">
                       {{ item.subject }}
                     </span>
@@ -25,6 +30,7 @@
                     <img v-if="item.top" style="width:20px;height: 20px;" :src="TopIcon" />
                   </template>
                 </nut-cell>
+                <!-- 帖子信息 -->
                 <nut-cell class="info" desc-text-align="left">
                   <template #icon>
                     <nut-avatar size="20" shape="round">
@@ -32,10 +38,17 @@
                     </nut-avatar>
                   </template>
                   <template #desc>
-                    <span class="nickname"> {{ item.user.nickname }}</span>
-                    <span>
-                      发帖时间： {{ item.created_at.slice(0, 16) }}
-                    </span>
+                    <div class="info-desc">
+                      <span class="nickname"> {{ item.user.nickname }}</span>
+                      <span class="stat">
+                        <span>
+                          <Eye size="10"></Eye> {{ item.views_cnt }}
+                        </span>
+                        <span>
+                          <Comment size="10"></Comment> {{ item.posts_cnt }}
+                        </span>
+                      </span>
+                    </div>
                   </template>
                 </nut-cell>
               </nut-cell-group>
@@ -44,73 +57,143 @@
         </view>
 
       </view>
+      <!-- 分页组件 -->
       <view class="pagination">
-        <nut-pagination v-model="index.page" mode="simple" :total-items="index.threadCount" :items-per-page="20"
-          @change="index.pageChange" />
+        <nut-pagination v-model="page" mode="multi" :total-items="index.threadCount" :items-per-page="20"
+          @change="index.pageChange($event)" />
       </view>
     </view>
+    <!-- 骨架图 -->
+    <view v-else>
+      <nut-skeleton width="100vw" height="200px" :title="false" animated row="1">
+      </nut-skeleton>
+      <view class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7]">
+        <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
+        </nut-skeleton>
+      </view>
+    </view>
+    <!-- 底部标签切换 -->
+    <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabs.change">
+      <nut-tabbar-item tab-title="首页" name="index">
+        <template #icon>
+          <Home></Home>
+        </template>
+      </nut-tabbar-item>
+      <nut-tabbar-item tab-title="我的" name="account">
+        <template #icon>
+          <My2></My2>
+        </template>
+      </nut-tabbar-item>
+    </nut-tabbar>
   </view>
 </template>
 
 <script lang="ts" setup>
 
 import Taro from '@tarojs/taro'
-import { watch } from 'vue';
-
+import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
 import TopIcon from '../../assets/top.svg'
-import { useIndexStore } from '../../stores'
+import { useIndexStore, useTabsStore } from '../../stores'
+import { watch, ref } from 'vue';
 
+const tabs = useTabsStore()
 const index = useIndexStore()
-watch(() => index.page, () => {
+
+tabs.active = 'index'
+const instance = Taro.getCurrentInstance();
+
+const page = ref(1)
+if (instance.router) {
+  page.value = Number(instance.router.params["page"] || 1);
+  if (page.value != index.page) {
+    index.pageChange(page.value)
+  }
+}
+
+watch(() => index.threads, () => {
   Taro.pageScrollTo({
     scrollTop: 0,
     duration: 300
   })
 })
+
+// 跳转到帖子详情
 const goThread = (id: number) => {
   Taro.navigateTo({
     url: `/pages/thread/thread?id=${id}`,
   })
 }
+// 跳转到链接
+const goLike = (page: string) => {
+  // 小程序无法跳转到网页
+  if (page.startsWith("https://")) {
+    return
+  }
+  Taro.navigateTo({
+    url: page,
+  })
+}
+
 </script>
 
 <style lang="scss">
-.carousel {
-  img {
-    width: 100%;
-    height: 42vw;
-  }
-}
-
-.thread-list {
-  .thread span {
-    display: inline;
+.index-page {
+  .carousel {
+    img {
+      width: 100%;
+      height: 42vw;
+    }
   }
 
-  .info span {
-    display: inline-block;
+  .thread-list {
+    .thread-title {
+      .h5-span {
+        display: inline;
+      }
+    }
+
+    .nickname {
+      display: inline-block;
+      min-width: 30vw;
+      max-width: 30vw;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+    }
+
+    .info-desc {
+      display: flex;
+      justify-content: space-between;
+
+      .stat {
+        display: inline;
+
+        span {
+          display: inline;
+          margin-left: 1rem;
+        }
+      }
+    }
   }
 
-  .nickname {
-    min-width: 30vw;
-    max-width: 30vw;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    vertical-align: bottom;
+  .pagination {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 4rem;
   }
-}
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  padding-bottom: 10px;
-}
+  .index {
+    font-family: "Avenir", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+  }
 
-.index {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
+  .skeleton-container {
+    margin-top: 1rem;
+    margin-left: 5vw;
+  }
+
 }
 </style>

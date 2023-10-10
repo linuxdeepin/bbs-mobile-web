@@ -17,6 +17,10 @@ module.exports = {
           target: "https://bbs-pre.deepin.org.cn",
           changeOrigin: true,
         },
+        "/assets": {
+          target: "https://bbs-pre.deepin.org.cn",
+          changeOrigin: true,
+        },
       },
     },
   },

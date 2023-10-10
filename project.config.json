@@ -2,7 +2,7 @@
     "miniprogramRoot": "dist/",
     "projectname": "deepin-bbs",
     "description": "bbs",
-    "appid": "wx1978a8893803c59f",
+    "appid": "wxcf1a4dbefee5cb41",
     "setting": {
         "urlCheck": true,
         "es6": false,
@@ -30,7 +30,7 @@
             "disablePlugins": [],
             "outputPath": ""
         },
-        "useIsolateContext": true,
+        "useIsolateContext": false,
         "userConfirmedBundleSwitch": false,
         "packNpmManually": false,
         "packNpmRelationList": [],

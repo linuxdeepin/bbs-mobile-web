@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
-import { apiServer, http } from "./http";
 import { ref } from "vue";
+
+import { apiServer, http } from "./http";
 
 export const useThreadStore = defineStore("thread", () => {
   const page = ref(1);
@@ -16,8 +17,8 @@ export const useThreadStore = defineStore("thread", () => {
     const info = await getThraadInfo(id);
     item.value = info.data.data;
   }
-  async function threadPost(id: number, offset = 0) {
-    const threads = await getThreadPost(id, { offset });
+  async function threadPost(id: number, offset: number, limit = 10) {
+    const threads = await getThreadPost(id, { offset, limit });
     posts.value = threads.data.data;
     postCount.value = threads.data.total_count;
     postLimit.value = threads.data.total_limit;
@@ -25,15 +26,19 @@ export const useThreadStore = defineStore("thread", () => {
   }
   async function load(id: number) {
     loaded.value = false;
-    await Promise.all([thraadInfo(id), threadPost(id)]);
+    page.value = 1;
+    await Promise.all([thraadInfo(id), threadPost(id, 0)]);
     loaded.value = true;
   }
   function pageChange(p: number) {
     if (item.value) {
+      page.value = p;
       postLoaded.value = false;
       threadPost(item.value.id, p - 1);
-      page.value = p;
     }
+  }
+  function createPost(req: CreatePostRequest) {
+    return createThreadPost(req);
   }
   return {
     page,
@@ -46,6 +51,7 @@ export const useThreadStore = defineStore("thread", () => {
     server,
     load,
     pageChange,
+    createPost,
   };
 });
 
@@ -70,6 +76,30 @@ async function getThreadPost(
   return http.get<PostListResponse>("/api/v1/thread/post/list", {
     params,
   });
+}
+
+async function createThreadPost(body: CreatePostRequest) {
+  return http.post<CreatePostResponse>("/api/v1/post", body, {
+    params: { captcha_id: body.captcha_id },
+  });
+}
+
+interface CreatePostRequest {
+  captcha_id: string;
+  validate: string;
+  forum_id: number;
+  thread_id: number;
+  message: string;
+  quote_user_id: number;
+  user_ids?: number[];
+}
+interface CreatePostResponse {
+  code: number;
+  data: {
+    id: number;
+    offset: number;
+  };
+  msg: string;
 }
 
 interface ThreadInfoResponse {

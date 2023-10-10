@@ -1,7 +1,12 @@
 import { defineStore } from "pinia";
-import { apiServer, http } from "./http";
 import { ref } from "vue";
+
+import { apiServer, http } from "./http";
+
+// 共享store
 export { useThreadStore } from "./thread";
+export { useTabsStore } from "./tabs";
+export { useAccountStore } from "./account";
 
 export const useIndexStore = defineStore("index", () => {
   const page = ref(1);
@@ -23,9 +28,9 @@ export const useIndexStore = defineStore("index", () => {
     threadCount.value = resp.data.total_count;
   }
   // 翻页
-  async function pageChange(page: number) {
-    page = page;
-    indexThread(page - 1);
+  async function pageChange(v: number) {
+    page.value = v;
+    indexThread(v - 1);
   }
   Promise.all([carouselConfig(), indexThread()]).then(
     () => (loaded.value = true)

@@ -18,7 +18,10 @@ const config = {
   },
   sourceRoot: "src",
   outputRoot: "dist",
-  plugins: ["@tarojs/plugin-html", "@tarojs/plugin-http"],
+  plugins: [
+    "@tarojs/plugin-html",
+    ["@tarojs/plugin-http", { enableCookie: true }],
+  ],
   defineConstants: {},
   copy: {
     patterns: [],
@@ -33,6 +36,9 @@ const config = {
     data: `@import "@nutui/nutui-taro/dist/styles/variables.scss";`,
   },
   mini: {
+    miniCssExtractPluginOption: {
+      ignoreOrder: true,
+    },
     webpackChain(chain) {
       chain.plugin("unplugin-vue-components").use(
         Components({
