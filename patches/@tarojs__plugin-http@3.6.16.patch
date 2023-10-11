@@ -1,0 +1,13 @@
+diff --git a/dist/runtime.js b/dist/runtime.js
+index 5700d978fa88b3f485443834f2b8f4b952d95070..796c0492044f7c5a1c4fed20691bc95c46faa2e7 100644
+--- a/dist/runtime.js
++++ b/dist/runtime.js
+@@ -609,7 +609,7 @@ _XMLHttpRequest_method = new WeakMap(), _XMLHttpRequest_url = new WeakMap(), _XM
+     __classPrivateFieldGet(this, _XMLHttpRequest_instances, "m", _XMLHttpRequest_callReadyStateChange).call(this, XMLHttpRequest.HEADERS_RECEIVED);
+     if (ENABLE_COOKIE) {
+         // 处理 set-cookie
+-        const setCookieStr = header['Set-Cookie'];
++        const setCookieStr = header['Set-Cookie'] || header['set-cookie'];
+         if (setCookieStr && typeof setCookieStr === 'string') {
+             let start = 0;
+             let startSplit = 0;

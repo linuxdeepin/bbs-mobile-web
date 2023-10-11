@@ -4,7 +4,7 @@
     "description": "bbs",
     "appid": "wxcf1a4dbefee5cb41",
     "setting": {
-        "urlCheck": true,
+        "urlCheck": false,
         "es6": false,
         "enhance": false,
         "postcss": false,

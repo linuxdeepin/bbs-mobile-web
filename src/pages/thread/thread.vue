@@ -81,10 +81,11 @@
                             </nut-cell-group>
                         </view>
                     </nut-col>
-                    <nut-col v-if="thread.postCount > thread.postLimit" span="24">
+                    <nut-col>
                         <div class="pagination">
-                            <nut-pagination v-model="thread.page" :total-items="thread.postCount"
-                                :items-per-page="thread.postLimit" @change="thread.pageChange" />
+                            <nut-pagination v-if="thread.postCount > thread.postLimit" span="24" v-model="thread.page"
+                                :total-items="thread.postCount" :items-per-page="thread.postLimit"
+                                @change="thread.pageChange" />
                         </div>
                     </nut-col>
                 </template>
@@ -104,14 +105,15 @@
             <nut-col span="20" offset="2">
                 <view class="send-post">
                     <nut-form>
-
-                        <ne-captcha id="captcha" :captcha-id="captchaID" width="640rpx"
-                            @verify="handleCaptchaVerify($event)"></ne-captcha>
+                        <!-- 网易易盾验证码，小程序插件引入 -->
+                        <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
+                            @verify="postCaptcha.verify">
+                        </ne-captcha>
                         <nut-form-item>
                             <view class="form-item">
                                 <nut-textarea v-model="msg" placeholder="说点什么吧..."
                                     :autosize="{ maxHeight: 200, minHeight: 40 }" />
-                                <nut-button type="primary" @tap="tryToVerify()">发送</nut-button>
+                                <nut-button type="primary" @tap="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                             </view>
                         </nut-form-item>
                     </nut-form>
@@ -129,13 +131,14 @@
                 </view>
             </view>
         </view>
+        <nut-toast :msg="toast.msg" v-model:visible="toast.visible" :type="toast.type" />
     </view>
 </template>
 <script lang="ts" setup>
 
 import Taro from '@tarojs/taro'
 import { watch, ref } from 'vue';
-import { Comment, Eye, Star } from "@nutui/icons-vue-taro";
+import { Star } from "@nutui/icons-vue-taro";
 
 import TopIcon from '../../assets/top.svg'
 import { useAccountStore, useThreadStore } from '../../stores'
@@ -226,42 +229,40 @@ watch(() => thread.posts, () => {
         }, 500)
     }
 })
+// 提示内容
+const toast = ref({ visible: false, msg: '', type: 'text' as 'text' | 'success' | 'fail' | 'warn' | 'loading' })
 // 回复内容
 const msg = ref("")
-// 网易验证码
-const captchaID = ref("8f1fbf7524c54854b28039db8f97e771")
-// 点击发送回复后进行人机校验
-const tryToVerify = () => {
-    const page = instance.page
-    if (page && page.selectComponent) {
-        const c: any = page.selectComponent('#captcha')
-        // 强制验证
-        c.popup()
-
-        // 无感知验证
-        // c.verify()
-    }
-}
+// 发帖验证码
+const postCaptcha = account.useSmartCaptcha()
 // 人机校验后发布回复
-const handleCaptchaVerify = async (event: { detail: [string, string] }) => {
-    const [err, validate] = event.detail
-    if (err) {
-        return
+const submitPost = async (captchaCode: string) => {
+    if (!account.is_login) {
+        await account.login(true)
     }
     if (!thread.item) {
         return
     }
-    const resp = await thread.createPost({
-        validate,
-        captcha_id: captchaID.value,
-        message: `<div data-weapp_version="v1">${msg.value}</div>`,
-        thread_id: thread.item.id,
-        forum_id: thread.item.forum_id,
-        quote_user_id: thread.item.user_id,
-    })
-    msg.value = ''
-    postID.value = resp.data.data.id
-    thread.pageChange(Math.ceil(thread.postCount / thread.postLimit))
+    try {
+        // 发布评论
+        const resp = await thread.createPost({
+            validate: captchaCode,
+            captcha_id: postCaptcha.captchaID,
+            message: `<div data-weapp_version="v1">${msg.value}</div>`,
+            thread_id: thread.item.id,
+            forum_id: thread.item.forum_id,
+            quote_user_id: thread.item.user_id,
+        })
+        toast.value = { visible: true, type: 'success', msg: "发送成功" }
+        // 清空输入框内容
+        msg.value = ''
+        // 跳转到发布的评论
+        postID.value = resp.data.data.id
+        thread.pageChange(Math.ceil(thread.postCount / thread.postLimit))
+    } catch (err) {
+        console.log("create post", err)
+        toast.value = { visible: true, type: 'fail', msg: "发送失败，请稍后在试" }
+    }
 }
 
 </script>

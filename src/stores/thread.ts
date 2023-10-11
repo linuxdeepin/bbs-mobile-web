@@ -79,9 +79,16 @@ async function getThreadPost(
 }
 
 async function createThreadPost(body: CreatePostRequest) {
-  return http.post<CreatePostResponse>("/api/v1/post", body, {
-    params: { captcha_id: body.captcha_id },
-  });
+  return http
+    .post<CreatePostResponse>("/api/v1/post", body, {
+      params: { captcha_id: body.captcha_id },
+    })
+    .then((resp) => {
+      if (resp.data.code != 0) {
+        throw resp.data.msg;
+      }
+      return resp;
+    });
 }
 
 interface CreatePostRequest {

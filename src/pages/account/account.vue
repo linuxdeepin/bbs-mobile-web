@@ -1,56 +1,64 @@
 <template>
     <view class="account-page">
-        <view class="info">
-            <nut-row>
-                <nut-col span="4" offset="1">
-                    <nut-avatar size="large" shape="round">
-                        <img :src="account.user_info.avatar" />
-                    </nut-avatar>
-                </nut-col>
-                <nut-col span="18">
-                    <view class="info-desc">
-                        <span class="nickname"> {{ account.user_info.nickname }} </span>
-                        <span class="desc">
-                            {{ account.user_info.desc }}
-                        </span>
-                    </view>
-                </nut-col>
-            </nut-row>
-        </view>
+        <view v-if="account.loaded">
+            <view class="info">
+                <nut-row>
+                    <nut-col span="4" offset="1">
+                        <nut-avatar size="large" shape="round">
+                            <img :src="account.user_info.avatar" />
+                        </nut-avatar>
+                    </nut-col>
+                    <nut-col span="18">
+                        <view class="info-desc">
+                            <span class="nickname"> {{ account.user_info.nickname }} </span>
+                            <span class="desc">
+                                {{ account.user_info.desc }}
+                            </span>
+                        </view>
+                    </nut-col>
+                </nut-row>
+            </view>
 
-        <view class="dataset">
-            <view class="item" span="6" offset="3">
-                <span class="number">{{ account.user_info.threads_cnt }}</span>
-                <span>帖子</span>
+            <view class="dataset">
+                <view class="item" span="6" offset="3">
+                    <span class="number">{{ account.user_info.threads_cnt }}</span>
+                    <span>帖子</span>
+                </view>
+                <view class="item" span="6">
+                    <span class="number">{{ account.user_info.posts_cnt }}</span>
+                    <span>回复</span>
+                </view>
+                <view class="item" span="6">
+                    <span class="number">{{ account.user_info.favourite_cnt }}</span>
+                    <span>收藏</span>
+                </view>
             </view>
-            <view class="item" span="6">
-                <span class="number">{{ account.user_info.posts_cnt }}</span>
-                <span>回复</span>
+            <view>
+                <nut-cell title="我的帖子" desc="暂不可用" is-link></nut-cell>
+                <nut-cell title="我的回复" desc="暂不可用" is-link></nut-cell>
+                <nut-cell title="我的收藏" desc="暂不可用" is-link></nut-cell>
+                <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell>
             </view>
-            <view class="item" span="6">
-                <span class="number">{{ account.user_info.favourite_cnt }}</span>
-                <span>收藏</span>
-            </view>
+            <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
+                <nut-tabbar-item tab-title="首页" name="index">
+                    <template #icon>
+                        <Home></Home>
+                    </template>
+                </nut-tabbar-item>
+                <nut-tabbar-item tab-title="我的" name="account">
+                    <template #icon>
+                        <My2></My2>
+                    </template>
+                </nut-tabbar-item>
+            </nut-tabbar>
         </view>
-        <view>
+        <view v-else>
+            <nut-skeleton width="60vw" height="20px" title avatar row="3">
+            </nut-skeleton>
 
-            <nut-cell title="我的帖子" desc="暂不可用" is-link></nut-cell>
-            <nut-cell title="我的回复" desc="暂不可用" is-link></nut-cell>
-            <nut-cell title="我的收藏" desc="暂不可用" is-link></nut-cell>
-            <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell>
+            <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
+            </nut-skeleton>
         </view>
-        <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabs.change">
-            <nut-tabbar-item tab-title="首页" name="index">
-                <template #icon>
-                    <Home></Home>
-                </template>
-            </nut-tabbar-item>
-            <nut-tabbar-item tab-title="我的" name="account">
-                <template #icon>
-                    <My2></My2>
-                </template>
-            </nut-tabbar-item>
-        </nut-tabbar>
     </view>
 </template>
 <script lang="ts" setup>
@@ -61,7 +69,12 @@ import { Home, My2 } from "@nutui/icons-vue-taro";
 const tabs = useTabsStore()
 const account = useAccountStore()
 
-tabs.active = 'account'
+account.refreshInfo().catch(() => {
+    account.login(false)
+})
+
+const { tabActive, tabChange } = tabs.usePageTabs('account')
+
 </script>
 
 <style lang="scss">
@@ -113,6 +126,10 @@ tabs.active = 'account'
                 font-size: large;
             }
         }
+    }
+
+    .menu-skeleton {
+        margin-top: 10vh;
     }
 }
 </style>

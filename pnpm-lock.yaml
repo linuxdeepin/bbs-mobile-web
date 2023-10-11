@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@tarojs/plugin-http@3.6.16':
+    hash: xwzlfwgd4mf27uu5yulsz6tsa4
+    path: patches/@tarojs__plugin-http@3.6.16.patch
+
 dependencies:
   '@babel/runtime':
     specifier: ^7.7.7
@@ -28,7 +33,7 @@ dependencies:
     version: 3.6.16(postcss@8.4.30)(vue@3.3.4)
   '@tarojs/plugin-http':
     specifier: ^3.6.16
-    version: 3.6.16(postcss@8.4.30)(vue@3.3.4)
+    version: 3.6.16(patch_hash=xwzlfwgd4mf27uu5yulsz6tsa4)(postcss@8.4.30)(vue@3.3.4)
   '@tarojs/plugin-platform-alipay':
     specifier: 3.6.16
     version: 3.6.16(postcss@8.4.30)(vue@3.3.4)
@@ -3360,7 +3365,7 @@ packages:
       - vue
     dev: false
 
-  /@tarojs/plugin-http@3.6.16(postcss@8.4.30)(vue@3.3.4):
+  /@tarojs/plugin-http@3.6.16(patch_hash=xwzlfwgd4mf27uu5yulsz6tsa4)(postcss@8.4.30)(vue@3.3.4):
     resolution: {integrity: sha512-8XHGGfbxjFinwOTnRZa/NFs31oO/Lr+p4chg2LBKmc3LlfYmxgBa6FCWgnnV7T51amYo8KBdTTY/tJ81cb8S3w==}
     dependencies:
       '@tarojs/runtime': 3.6.16
@@ -3374,6 +3379,7 @@ packages:
       - supports-color
       - vue
     dev: false
+    patched: true
 
   /@tarojs/plugin-platform-alipay@3.6.16(postcss@8.4.30)(vue@3.3.4):
     resolution: {integrity: sha512-PXHsk4oJoTObmZpZfTzh6m+3w3x7nIWE7xbkA0WBIClRkcL6vguOQCSzG+XX8Kxou3YctXGkAmdeT4T7Oc37/Q==}

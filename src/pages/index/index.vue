@@ -73,7 +73,7 @@
       </view>
     </view>
     <!-- 底部标签切换 -->
-    <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabs.change">
+    <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
       <nut-tabbar-item tab-title="首页" name="index">
         <template #icon>
           <Home></Home>
@@ -99,7 +99,7 @@ import { watch, ref } from 'vue';
 const tabs = useTabsStore()
 const index = useIndexStore()
 
-tabs.active = 'index'
+const { tabActive, tabChange } = tabs.usePageTabs('index')
 const instance = Taro.getCurrentInstance();
 
 const page = ref(1)

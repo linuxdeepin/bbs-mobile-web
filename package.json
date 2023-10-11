@@ -81,5 +81,10 @@
     "unplugin-vue-components": "^0.23.0",
     "vue-loader": "^17.0.0",
     "webpack": "^5.78.0"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@tarojs/plugin-http@3.6.16": "patches/@tarojs__plugin-http@3.6.16.patch"
+    }
   }
 }
