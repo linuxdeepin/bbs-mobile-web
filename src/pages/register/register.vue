@@ -4,7 +4,7 @@
         </nut-skeleton>
         <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
         </nut-skeleton>
-        <nut-toast :msg="toast.msg" v-model:visible="toast.visible" :type="toast.type" />
+        <nut-toast :msg="toast.msg" v-model:visible="toast.visible" :type="toast.type" :duration="2000" />
         <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '30%' }" v-model:visible="show">
             <view class="register">
                 <nut-checkbox v-model="agreeList[0]" label="agree-1">我已阅读并同意《深度帐号使用协议》</nut-checkbox>
@@ -26,7 +26,6 @@
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
 import { useAccountStore, } from '../../stores'
-
 const account = useAccountStore()
 
 // 注册验证码
@@ -46,7 +45,9 @@ const getPhoneNumber = async (captchaCode: string, event: { detail: { code: stri
     }
 }
 
-const toast = ref({ visible: true, type: 'warn', msg: "请先注册账号" })
+const toast = ref({ visible: false, type: 'warn', msg: "请先注册账号" })
+// 需要加载后再显示消息，否则消息不会自动隐藏
+Taro.nextTick(() => toast.value.visible = true)
 
 </script>
 

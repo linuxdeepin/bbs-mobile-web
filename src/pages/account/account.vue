@@ -1,9 +1,9 @@
 <template>
     <view class="account-page">
         <view v-if="account.loaded">
-            <view class="info">
+            <view class="info" v-if="account.is_login">
                 <nut-row>
-                    <nut-col span="4" offset="1">
+                    <nut-col span="5" offset="1">
                         <nut-avatar size="large" shape="round">
                             <img :src="account.user_info.avatar" />
                         </nut-avatar>
@@ -18,7 +18,9 @@
                     </nut-col>
                 </nut-row>
             </view>
-
+            <view class="login" v-else>
+                <nut-button type="primary" @tap="login()">登陆</nut-button>
+            </view>
             <view class="dataset">
                 <view class="item" span="6" offset="3">
                     <span class="number">{{ account.user_info.threads_cnt }}</span>
@@ -69,12 +71,10 @@ import { Home, My2 } from "@nutui/icons-vue-taro";
 const tabs = useTabsStore()
 const account = useAccountStore()
 
-account.refreshInfo().catch(() => {
-    account.login(false)
-})
-
 const { tabActive, tabChange } = tabs.usePageTabs('account')
-
+const login = () => {
+    account.login()
+}
 </script>
 
 <style lang="scss">
@@ -86,6 +86,12 @@ const { tabActive, tabChange } = tabs.usePageTabs('account')
     .info {
         margin-top: 1rem;
         margin-bottom: 3rem;
+    }
+
+    .login {
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+        text-align: center;
     }
 
     .info-desc {

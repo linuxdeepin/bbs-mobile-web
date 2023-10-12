@@ -7,7 +7,7 @@
                     <nut-cell-group>
                         <nut-cell class="thread" desc-text-align="left">
                             <template #desc>
-                                <span class="module">【软件开发】</span>
+                                <span class="module">【{{ thread.item.type.name }}】</span>
                                 <span class="title">
                                     {{ thread.item.subject }}
                                 </span>
@@ -30,7 +30,7 @@
                                 <div class="info-desc">
                                     <span class="nickname"> {{ thread.item.post.user.nickname }}</span>
                                     <span class="stat">
-                                        发帖时间： {{ thread.item.created_at.slice(0, 16) }}
+                                        发帖时间： {{ timeFormat(thread.item.created_at) }}
                                     </span>
                                 </div>
                             </template>
@@ -66,7 +66,7 @@
                                         <view class="info-desc">
                                             <span class="nickname"> {{ post.user.nickname }}</span>
                                             <span>
-                                                回复时间： {{ post.created_at.slice(0, 16) }}
+                                                回复时间： {{ timeFormat(post.created_at) }}
                                             </span>
                                         </view>
                                     </template>
@@ -238,7 +238,7 @@ const postCaptcha = account.useSmartCaptcha()
 // 人机校验后发布回复
 const submitPost = async (captchaCode: string) => {
     if (!account.is_login) {
-        await account.login(true)
+        await account.login()
     }
     if (!thread.item) {
         return
@@ -263,6 +263,10 @@ const submitPost = async (captchaCode: string) => {
         console.log("create post", err)
         toast.value = { visible: true, type: 'fail', msg: "发送失败，请稍后在试" }
     }
+}
+
+const timeFormat = (timeStr: string) => {
+    return new Date(timeStr).toLocaleString()
 }
 
 </script>

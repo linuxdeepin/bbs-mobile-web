@@ -21,7 +21,7 @@
                 <!-- 帖子标题 -->
                 <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
                   <template #desc>
-                    <span class="module">【所属版块】</span>
+                    <span class="module">【{{ item.type.name }}】</span>
                     <span class="title">
                       {{ item.subject }}
                     </span>

@@ -92,7 +92,15 @@ export const useAccountStore = defineStore("account", () => {
   };
 
   // 使用微信账号登陆
-  const login = async (toRegister = true) => {
+  const login = async () => {
+    if (process.env.TARO_ENV === "h5") {
+      const returnURL = encodeURIComponent(location.href);
+      const redirectURL = encodeURIComponent(
+        location.origin + "/api/v1/login/callback"
+      );
+      location.href = `/api/v1/login?return_url=${returnURL}&redirect_url=${redirectURL}`;
+      throw "go to login";
+    }
     try {
       const loginCode = await getLoginCode();
       await weappLogin(loginCode);
@@ -104,11 +112,9 @@ export const useAccountStore = defineStore("account", () => {
       if (err?.response.status === 403) {
         console.log("go to register");
         show_register.value = true;
-        if (toRegister) {
-          Taro.navigateTo({
-            url: "/pages/register/register",
-          });
-        }
+        Taro.navigateTo({
+          url: "/pages/register/register",
+        });
         throw "go to register";
       }
     }
@@ -125,7 +131,9 @@ export const useAccountStore = defineStore("account", () => {
     login();
   };
 
-  refreshInfo();
+  refreshInfo().finally(() => {
+    loaded.value = true;
+  });
 
   return {
     loaded,
