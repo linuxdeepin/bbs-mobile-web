@@ -7,6 +7,7 @@ import { apiServer, http } from "./http";
 export { useThreadStore } from "./thread";
 export { useTabsStore } from "./tabs";
 export { useAccountStore } from "./account";
+export { useAgreementStore } from "./agreement";
 
 export const useIndexStore = defineStore("index", () => {
   const page = ref(1);

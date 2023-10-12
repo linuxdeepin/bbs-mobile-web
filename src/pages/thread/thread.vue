@@ -15,9 +15,9 @@
                             <template #icon>
                                 <img v-if="thread.item.top" style="width:20px;height: 20px;" :src="TopIcon" />
                             </template>
-                            <template #link>
+                            <!-- <template #link>
                                 <Star></Star>
-                            </template>
+                            </template> -->
                         </nut-cell>
                         <nut-cell class="info" desc-text-align="left">
                             <template #icon>

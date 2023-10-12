@@ -36,10 +36,13 @@
                 </view>
             </view>
             <view>
-                <nut-cell title="我的帖子" desc="暂不可用" is-link></nut-cell>
-                <nut-cell title="我的回复" desc="暂不可用" is-link></nut-cell>
-                <nut-cell title="我的收藏" desc="暂不可用" is-link></nut-cell>
-                <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell>
+                <template v-if="account.is_login">
+                    <nut-cell title="退出登陆" v-if="account.is_login" is-link @click="account.logout()"></nut-cell>
+                    <!-- <nut-cell title="我的帖子" desc="暂不可用" is-link></nut-cell> -->
+                    <!-- <nut-cell title="我的回复" desc="暂不可用" is-link></nut-cell> -->
+                    <!-- <nut-cell title="我的收藏" desc="暂不可用" is-link></nut-cell> -->
+                    <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
+                </template>
             </view>
             <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
                 <nut-tabbar-item tab-title="首页" name="index">
@@ -125,7 +128,6 @@ const login = () => {
             height: 4rem;
             font-size: small;
             color: gray;
-            box-shadow: 0 2px 8px #0000000d;
 
             .number {
                 color: black;

@@ -119,7 +119,10 @@ export const useAccountStore = defineStore("account", () => {
       }
     }
   };
-
+  const logout = async () => {
+    await weappLogout();
+    is_login.value = false;
+  };
   // 使用微信账号和手机号注册，为保证接口安全，这里传递的参数都是微信的code，后台用code从微信服务器查询实际信息
   const register = async (
     captchaID: string,
@@ -142,6 +145,7 @@ export const useAccountStore = defineStore("account", () => {
     user_info,
     refreshInfo,
     login,
+    logout,
     register,
     useSmartCaptcha,
     useForceCaptcha,
@@ -155,6 +159,10 @@ async function getAccountInfo() {
     }
     return resp.data;
   });
+}
+
+async function weappLogout() {
+  return http.post("/api/v1/login/logout");
 }
 
 // 小程序登陆接口

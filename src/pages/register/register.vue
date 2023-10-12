@@ -5,10 +5,13 @@
         <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
         </nut-skeleton>
         <nut-toast :msg="toast.msg" v-model:visible="toast.visible" :type="toast.type" :duration="2000" />
-        <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '30%' }" v-model:visible="show">
+        <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '30%' }"
+            v-model:visible="showRegister">
             <view class="register">
-                <nut-checkbox v-model="agreeList[0]" label="agree-1">我已阅读并同意《深度帐号使用协议》</nut-checkbox>
-                <nut-checkbox v-model="agreeList[1]" label="agree-2">我已阅读并同意《隐私政策》</nut-checkbox>
+                <nut-checkbox v-for="(item, index) in agreement.registerAgreementList" v-model="agreeList[index]">
+                    我已阅读并同意
+                    <span class="link" @tap="showAgree(item.id)">{{ item.name }}</span>
+                </nut-checkbox>
 
                 <!-- 网易易盾验证码，小程序插件引入 -->
                 <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
@@ -19,21 +22,28 @@
                 </button>
             </view>
         </nut-popup>
+        <nut-popup :style="{ height: '80vh', width: '90vw', padding: '10px' }" v-model:visible="showAgreement">
+            <rich-text :nodes="agreementContent"></rich-text>
+        </nut-popup>
     </view>
 </template>
 <script lang="ts" setup>
 
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
-import { useAccountStore, } from '../../stores'
+import { useAccountStore, useAgreementStore } from '../../stores'
+
 const account = useAccountStore()
+const agreement = useAgreementStore()
 
 // 注册验证码
 const captcha = account.useForceCaptcha()
 
-const show = ref(true)
+const showRegister = ref(true)
+const showAgreement = ref(false)
+const agreementContent = ref("")
 // 需要同意的隐私协议
-const agreeList = ref([false, false])
+const agreeList = ref(Array(agreement.registerAgreementList.length).fill(false))
 // 是否同意所有协议
 const agreeAll = computed(() => agreeList.value.filter(v => v).length === agreeList.value.length)
 
@@ -48,6 +58,13 @@ const getPhoneNumber = async (captchaCode: string, event: { detail: { code: stri
 const toast = ref({ visible: false, type: 'warn', msg: "请先注册账号" })
 // 需要加载后再显示消息，否则消息不会自动隐藏
 Taro.nextTick(() => toast.value.visible = true)
+
+const showAgree = (id: string) => {
+    agreement.getAgreement(id, 'cn').then((resp) => {
+        showAgreement.value = true
+        agreementContent.value = resp.data.data.content
+    })
+}
 
 </script>
 
@@ -75,6 +92,11 @@ Taro.nextTick(() => toast.value.visible = true)
 
         button[disabled] {
             color: grey;
+        }
+
+        .link {
+            display: inline;
+            color: #1890ff;
         }
     }
 }
