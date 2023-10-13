@@ -19,7 +19,7 @@
                 </nut-row>
             </view>
             <view class="login" v-else>
-                <nut-button type="primary" @tap="login()">登陆</nut-button>
+                <nut-button type="primary" @click="login()">登陆</nut-button>
             </view>
             <view class="dataset">
                 <view class="item" span="6" offset="3">
@@ -64,19 +64,27 @@
             <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
             </nut-skeleton>
         </view>
+        <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+            :duration="prompt.toast.duration" />
     </view>
 </template>
 <script lang="ts" setup>
 
-import { useTabsStore, useAccountStore, } from '../../stores'
+import { useTabsStore, useAccountStore, usePromptStore, } from '../../stores'
 import { Home, My2 } from "@nutui/icons-vue-taro";
 
 const tabs = useTabsStore()
 const account = useAccountStore()
+const prompt = usePromptStore()
 
 const { tabActive, tabChange } = tabs.usePageTabs('account')
 const login = () => {
-    account.login()
+    prompt.showToast('loading', "登陆中", 0)
+    account.login().then(() => {
+        prompt.hideToast()
+    }).catch(() => {
+        prompt.showToast('fail', "登陆失败", 2000)
+    })
 }
 </script>
 

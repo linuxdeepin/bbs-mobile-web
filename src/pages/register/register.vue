@@ -4,7 +4,8 @@
         </nut-skeleton>
         <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
         </nut-skeleton>
-        <nut-toast :msg="toast.msg" v-model:visible="toast.visible" :type="toast.type" :duration="2000" />
+        <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+            :duration="prompt.toast.duration" />
         <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '30%' }"
             v-model:visible="showRegister">
             <view class="register">
@@ -31,10 +32,11 @@
 
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
-import { useAccountStore, useAgreementStore } from '../../stores'
+import { useAccountStore, useAgreementStore, usePromptStore } from '../../stores'
 
 const account = useAccountStore()
 const agreement = useAgreementStore()
+const prompt = usePromptStore()
 
 // 注册验证码
 const captcha = account.useForceCaptcha()
@@ -55,9 +57,8 @@ const getPhoneNumber = async (captchaCode: string, event: { detail: { code: stri
     }
 }
 
-const toast = ref({ visible: false, type: 'warn', msg: "请先注册账号" })
 // 需要加载后再显示消息，否则消息不会自动隐藏
-Taro.nextTick(() => toast.value.visible = true)
+Taro.nextTick(() => prompt.showToast('text', "请先注册账号", 2000))
 
 const showAgree = (id: string) => {
     agreement.getAgreement(id, 'cn').then((resp) => {

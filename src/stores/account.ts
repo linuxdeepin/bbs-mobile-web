@@ -3,23 +3,29 @@ import { ref } from "vue";
 
 import { http } from "./http";
 import Taro from "@tarojs/taro";
+const initNECaptcha = import("./captcha.js");
+
+const EmptyUserInfo = {
+  nickname: "",
+  avatar: "",
+  username: "",
+  desc: "",
+  threads_cnt: 0,
+  posts_cnt: 0,
+  favourite_cnt: 0,
+};
 
 export const useAccountStore = defineStore("account", () => {
   const show_register = ref(false);
   const is_login = ref(false);
   const loaded = ref(false);
-  const user_info = ref({
-    nickname: "",
-    avatar: "",
-    username: "",
-    desc: "",
-    threads_cnt: 0,
-    posts_cnt: 0,
-    favourite_cnt: 0,
-  });
+  const user_info = ref({ ...EmptyUserInfo });
+  const isH5 = process.env.TARO_ENV === "h5";
+
   const useCaptcha = (captcha_id: string, type: "popup" | "verify") => {
     // 验证码组件的元素ID
     const elementID = "captcha_" + new Date().getTime();
+    // 在小程序里获取网易验证码插件的元素
     const getElement = () => {
       const instance = Taro.getCurrentInstance();
       const page = instance.page;
@@ -29,10 +35,21 @@ export const useAccountStore = defineStore("account", () => {
       }
       throw "not found captcha element";
     };
+
     // 在网易易盾生成的验证ID
     const captchaID = captcha_id;
     let callback = (_captchaCode: string) => {};
-    const tryVerify = async (callbackFunc: typeof callback) => {
+    // 验证成功后的回调函数
+    const verify = (event: { detail: [string, string] }) => {
+      const [err, validate] = event.detail;
+      if (err) {
+        return;
+      }
+      getElement().reset();
+      callback(validate);
+    };
+    // 小程序中通过元素触发验证
+    let tryVerify = async (callbackFunc: typeof callback) => {
       callback = callbackFunc;
       const c = getElement();
       if (type === "popup") {
@@ -43,14 +60,35 @@ export const useAccountStore = defineStore("account", () => {
         c.verify();
       }
     };
-    const verify = (event: { detail: [string, string] }) => {
-      const [err, validate] = event.detail;
-      if (err) {
-        return;
-      }
-      getElement().reset();
-      callback(validate);
-    };
+    // html5中通过函数触发验证
+    if (isH5) {
+      tryVerify = async (callbackFunc: typeof callback) => {
+        const init = await initNECaptcha;
+        init.default(
+          {
+            element: document.body,
+            captchaId: captchaID,
+            width: "320px",
+            mode: type === "popup" ? "popup" : "bind",
+            onVerify: (_err: string, data: { validate: string }) => {
+              if (data) {
+                callbackFunc(data.validate);
+              }
+            },
+          },
+          function onload(instance) {
+            if (type === "popup") {
+              instance.popup();
+            } else {
+              instance.verify();
+            }
+          },
+          function onerror(err) {
+            console.warn(err);
+          }
+        );
+      };
+    }
     return { elementID, captchaID, verify, tryVerify };
   };
   // 智能验证，通过机器学习分析用户的环境和操作，可能会自动通过验证
@@ -93,7 +131,7 @@ export const useAccountStore = defineStore("account", () => {
 
   // 使用微信账号登陆
   const login = async () => {
-    if (process.env.TARO_ENV === "h5") {
+    if (isH5) {
       const returnURL = encodeURIComponent(location.href);
       const redirectURL = encodeURIComponent(
         location.origin + "/api/v1/login/callback"
@@ -120,8 +158,14 @@ export const useAccountStore = defineStore("account", () => {
     }
   };
   const logout = async () => {
-    await weappLogout();
+    const resp = await bbsLogout();
+    if (isH5) {
+      const url = new URL(resp.data.url);
+      url.searchParams.set("callback", location.href);
+      location.href = url.toString();
+    }
     is_login.value = false;
+    user_info.value = { ...EmptyUserInfo };
   };
   // 使用微信账号和手机号注册，为保证接口安全，这里传递的参数都是微信的code，后台用code从微信服务器查询实际信息
   const register = async (
@@ -161,8 +205,8 @@ async function getAccountInfo() {
   });
 }
 
-async function weappLogout() {
-  return http.post("/api/v1/login/logout");
+async function bbsLogout() {
+  return http.post<{ url: string }>("/api/v1/login/logout");
 }
 
 // 小程序登陆接口

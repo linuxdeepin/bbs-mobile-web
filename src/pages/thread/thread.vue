@@ -112,8 +112,8 @@
                         <nut-form-item>
                             <view class="form-item">
                                 <nut-textarea v-model="msg" placeholder="说点什么吧..."
-                                    :autosize="{ maxHeight: 200, minHeight: 40 }" />
-                                <nut-button type="primary" @tap="postCaptcha.tryVerify(submitPost)">发送</nut-button>
+                                    :autosize="{ maxHeight: 200, minHeight: 40 }" @focus="checkLogin()" />
+                                <nut-button type="primary" @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                             </view>
                         </nut-form-item>
                     </nut-form>
@@ -131,17 +131,18 @@
                 </view>
             </view>
         </view>
-        <nut-toast :msg="toast.msg" v-model:visible="toast.visible" :type="toast.type" />
+        <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+            :duration="prompt.toast.duration" />
+        <nut-dialog content="请先登陆账号" v-model:visible="showLoginDialog" @ok="account.login()" />
     </view>
 </template>
 <script lang="ts" setup>
 
 import Taro from '@tarojs/taro'
 import { watch, ref } from 'vue';
-import { Star } from "@nutui/icons-vue-taro";
 
 import TopIcon from '../../assets/top.svg'
-import { useAccountStore, useThreadStore } from '../../stores'
+import { useAccountStore, useThreadStore, usePromptStore } from '../../stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 
@@ -154,6 +155,7 @@ if (process.env.TARO_ENV === 'h5') {
 }
 const thread = useThreadStore()
 const account = useAccountStore()
+const prompt = usePromptStore()
 
 const imageUrls = [] as string[]
 
@@ -229,8 +231,6 @@ watch(() => thread.posts, () => {
         }, 500)
     }
 })
-// 提示内容
-const toast = ref({ visible: false, msg: '', type: 'text' as 'text' | 'success' | 'fail' | 'warn' | 'loading' })
 // 回复内容
 const msg = ref("")
 // 发帖验证码
@@ -253,7 +253,7 @@ const submitPost = async (captchaCode: string) => {
             forum_id: thread.item.forum_id,
             quote_user_id: thread.item.user_id,
         })
-        toast.value = { visible: true, type: 'success', msg: "发送成功" }
+        prompt.showToast('success', "发送成功")
         // 清空输入框内容
         msg.value = ''
         // 跳转到发布的评论
@@ -261,12 +261,19 @@ const submitPost = async (captchaCode: string) => {
         thread.pageChange(Math.ceil(thread.postCount / thread.postLimit))
     } catch (err) {
         console.log("create post", err)
-        toast.value = { visible: true, type: 'fail', msg: "发送失败，请稍后在试" }
+        prompt.showToast('fail', "发送失败，请稍后在试")
     }
 }
-
+// 时间格式化
 const timeFormat = (timeStr: string) => {
     return new Date(timeStr).toLocaleString()
+}
+
+const showLoginDialog = ref(false)
+const checkLogin = () => {
+    if (!account.is_login) {
+        showLoginDialog.value = true
+    }
 }
 
 </script>

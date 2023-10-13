@@ -8,6 +8,7 @@ export { useThreadStore } from "./thread";
 export { useTabsStore } from "./tabs";
 export { useAccountStore } from "./account";
 export { useAgreementStore } from "./agreement";
+export { usePromptStore } from "./prompt";
 
 export const useIndexStore = defineStore("index", () => {
   const page = ref(1);
