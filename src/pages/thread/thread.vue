@@ -113,7 +113,8 @@
                             <view class="form-item">
                                 <nut-textarea v-model="msg" placeholder="说点什么吧..."
                                     :autosize="{ maxHeight: 200, minHeight: 40 }" @focus="checkLogin()" />
-                                <nut-button type="primary" @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
+                                <nut-button type="primary" :disabled="msg.length == 0"
+                                    @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                             </view>
                         </nut-form-item>
                     </nut-form>
@@ -133,7 +134,7 @@
         </view>
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
-        <nut-dialog content="请先登陆账号" v-model:visible="showLoginDialog" @ok="account.login()" />
+        <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
     </view>
 </template>
 <script lang="ts" setup>
@@ -266,7 +267,7 @@ const submitPost = async (captchaCode: string) => {
 }
 // 时间格式化
 const timeFormat = (timeStr: string) => {
-    return new Date(timeStr).toLocaleString()
+    return new Date(timeStr).toLocaleString("zh-CN", { hour12: false })
 }
 
 const showLoginDialog = ref(false)

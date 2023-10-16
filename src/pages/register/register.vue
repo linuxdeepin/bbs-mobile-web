@@ -52,8 +52,18 @@ const agreeAll = computed(() => agreeList.value.filter(v => v).length === agreeL
 // 获取手机号后注册账户
 const getPhoneNumber = async (captchaCode: string, event: { detail: { code: string } }) => {
     if (event.detail.code) {
-        await account.register(captcha.captchaID, captchaCode, event.detail.code)
-        Taro.navigateBack()
+        try {
+            prompt.showToast('loading', "注册中", 0)
+            await account.register(captcha.captchaID, captchaCode, event.detail.code)
+            Taro.navigateBack()
+        } catch (err) {
+            // 如果返回http code是403，提示手机号已存在
+            if (err?.response.status === 403) {
+                prompt.showToast('fail', "手机号已存在，请使用密码登陆", 2000)
+                return
+            }
+            prompt.showToast('fail', "注册失败，请稍后再试", 2000)
+        }
     }
 }
 

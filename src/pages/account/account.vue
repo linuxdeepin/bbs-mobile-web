@@ -19,7 +19,7 @@
                 </nut-row>
             </view>
             <view class="login" v-else>
-                <nut-button type="primary" @click="login()">登陆</nut-button>
+                <nut-button type="primary" @click="loginAction.show = true">登录</nut-button>
             </view>
             <view class="dataset">
                 <view class="item" span="6" offset="3">
@@ -37,11 +37,14 @@
             </view>
             <view>
                 <template v-if="account.is_login">
-                    <nut-cell title="退出登陆" v-if="account.is_login" is-link @click="account.logout()"></nut-cell>
+                    <nut-cell title="退出登录" is-link @click="account.logout()"></nut-cell>
                     <!-- <nut-cell title="我的帖子" desc="暂不可用" is-link></nut-cell> -->
                     <!-- <nut-cell title="我的回复" desc="暂不可用" is-link></nut-cell> -->
                     <!-- <nut-cell title="我的收藏" desc="暂不可用" is-link></nut-cell> -->
                     <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
+                </template>
+                <template v-else>
+                    <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell>
                 </template>
             </view>
             <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
@@ -64,28 +67,91 @@
             <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
             </nut-skeleton>
         </view>
+        <!-- 提示信息 -->
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
+        <!-- 登陆方式选择 -->
+        <nut-action-sheet v-model:visible="loginAction.show" :menu-items="(loginAction.items as any)"
+            @choose="$event.callback()" />
+        <!-- 密码登陆 -->
+        <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '200px' }"
+            v-model:visible="loginByPassword.show">
+            <view class="login-by-password">
+                <nut-input v-model="loginByPassword.username" placeholder="请输入手机号或用户名" />
+                <nut-input v-model="loginByPassword.password" placeholder="请输入密码" type="password" />
+                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
+                </ne-captcha>
+                <view>
+                    <nut-button type="primary"
+                        @click="captcha.tryVerify((code) => loginByPassword.login(code))">登陆</nut-button>
+                    <nut-button type="default" @click="loginByPassword.show = false">取消</nut-button>
+                </view>
+            </view>
+        </nut-popup>
     </view>
 </template>
 <script lang="ts" setup>
 
+import { ref } from 'vue';
 import { useTabsStore, useAccountStore, usePromptStore, } from '../../stores'
 import { Home, My2 } from "@nutui/icons-vue-taro";
 
 const tabs = useTabsStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
+const captcha = account.useForceCaptcha()
 
 const { tabActive, tabChange } = tabs.usePageTabs('account')
-const login = () => {
-    prompt.showToast('loading', "登陆中", 0)
-    account.login().then(() => {
-        prompt.hideToast()
-    }).catch(() => {
-        prompt.showToast('fail', "登陆失败", 2000)
-    })
-}
+
+const loginByPassword = ref({
+    show: false,
+    username: '',
+    password: '',
+    login: (captchaCode: string) => {
+        const value = loginByPassword.value
+        prompt.showToast('loading', "登录中", 0)
+        account.loginByPassword(captcha.captchaID, captchaCode, value.username, value.password).then(() => {
+            prompt.hideToast()
+            value.show = false
+        }).catch(() => {
+            prompt.showToast('fail', "登录失败，请检查用户名和密码", 2000)
+        })
+    }
+})
+
+const loginAction = ref({
+    show: false,
+    items: [{
+        name: '微信快速登录',
+        subname: '登陆已绑定微信的深度账号',
+        color: "#1890ff",
+        callback: () => {
+            prompt.showToast('loading', "登录中", 0)
+            account.login().then(() => {
+                prompt.hideToast()
+            }).catch(() => {
+                prompt.showToast('fail', "登录失败，请稍后再试", 2000)
+            })
+        }
+    },
+    {
+        name: '使用密码登陆',
+        subname: '登陆未绑定微信的深度账号',
+        callback: () => {
+            loginByPassword.value.username = ''
+            loginByPassword.value.password = ''
+            loginByPassword.value.show = true
+            console.log("login by password")
+        }
+    },
+    {
+        name: '取消',
+        callback: () => {
+            loginAction.value.show = false
+        }
+    }]
+})
+
 </script>
 
 <style lang="scss">
@@ -146,6 +212,18 @@ const login = () => {
 
     .menu-skeleton {
         margin-top: 10vh;
+    }
+
+    .login-by-password {
+        width: 80vw;
+        margin: 20px auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        button {
+            margin-right: 10px;
+        }
     }
 }
 </style>

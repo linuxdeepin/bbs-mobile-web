@@ -16,7 +16,6 @@ const EmptyUserInfo = {
 };
 
 export const useAccountStore = defineStore("account", () => {
-  const show_register = ref(false);
   const is_login = ref(false);
   const loaded = ref(false);
   const user_info = ref({ ...EmptyUserInfo });
@@ -97,7 +96,7 @@ export const useAccountStore = defineStore("account", () => {
     return useCaptcha("f2c00d8c7cb64136a231e7f95f9c5e1a", "verify");
   };
   // 强制验证，相对于智能验证会自动通过，强制验证一定会弹出人机验证对话框
-  // 用于操作不频繁但安全要求较高的场景，比如登陆和注册
+  // 用于操作不频繁但安全要求较高的场景，比如登录和注册
   const useForceCaptcha = () => {
     return useCaptcha("8f1fbf7524c54854b28039db8f97e771", "popup");
   };
@@ -118,7 +117,7 @@ export const useAccountStore = defineStore("account", () => {
       return info;
     });
   };
-  // 获取微信登陆的code
+  // 获取微信登录的code
   const getLoginCode = () => {
     return new Promise<string>((resolve) => {
       Taro.login({
@@ -128,8 +127,17 @@ export const useAccountStore = defineStore("account", () => {
       });
     });
   };
-
-  // 使用微信账号登陆
+  const gotoLogin = () => {
+    Taro.navigateTo({
+      url: "/pages/account/account",
+    });
+  };
+  const gotoRegister = () => {
+    Taro.navigateTo({
+      url: "/pages/register/register",
+    });
+  };
+  // 使用微信账号登录
   const login = async () => {
     if (isH5) {
       const returnURL = encodeURIComponent(location.href);
@@ -142,20 +150,32 @@ export const useAccountStore = defineStore("account", () => {
     try {
       const loginCode = await getLoginCode();
       await weappLogin(loginCode);
-      refreshInfo();
-      show_register.value = false;
+      await refreshInfo();
     } catch (err) {
       console.log("weapp login", { err });
-      // 如果登陆失败，并且账户未注册过deepinid，跳转到账户注册页面
+      // 如果登录失败，并且账户未注册过deepinid，跳转到账户注册页面
       if (err?.response.status === 403) {
         console.log("go to register");
-        show_register.value = true;
-        Taro.navigateTo({
-          url: "/pages/register/register",
-        });
+        gotoRegister();
         throw "go to register";
       }
     }
+  };
+  const loginByPassword = async (
+    captchaID: string,
+    captchaCode: string,
+    username: string,
+    password: string
+  ) => {
+    const loginCode = await getLoginCode();
+    await weappLoginPassword(
+      captchaID,
+      captchaCode,
+      loginCode,
+      username,
+      password
+    );
+    await refreshInfo();
   };
   const logout = async () => {
     const resp = await bbsLogout();
@@ -175,7 +195,7 @@ export const useAccountStore = defineStore("account", () => {
   ) => {
     const loginCode = await getLoginCode();
     await weappRegister(captchaID, captchaCode, loginCode, phoneCode);
-    login();
+    await login();
   };
 
   refreshInfo().finally(() => {
@@ -184,13 +204,15 @@ export const useAccountStore = defineStore("account", () => {
 
   return {
     loaded,
-    show_register,
     is_login,
     user_info,
     refreshInfo,
     login,
+    loginByPassword,
     logout,
     register,
+    gotoLogin,
+    gotoRegister,
     useSmartCaptcha,
     useForceCaptcha,
   };
@@ -209,9 +231,26 @@ async function bbsLogout() {
   return http.post<{ url: string }>("/api/v1/login/logout");
 }
 
-// 小程序登陆接口
+// 小程序登录接口
 async function weappLogin(code: string) {
   return http.post("/api/v2/public/weixin/weapp/login", { code });
+}
+
+// 小程序登录接口
+async function weappLoginPassword(
+  captcha_id: string,
+  captcha_code: string,
+  login_code: string,
+  username: string,
+  password: string
+) {
+  const url = "/api/v2/public/weixin/weapp/login/password";
+  const body = { login_code, username, password };
+  const headers = {
+    "x-captcha-id": captcha_id,
+    "x-captcha-code": captcha_code,
+  };
+  return http.post(url, body, { headers });
 }
 
 // 小程序注册接口
