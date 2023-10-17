@@ -1,76 +1,71 @@
 <template>
   <view class="index-page">
-    <view v-if="index.loaded">
-      <view class="index">
-        <!-- 轮播图 -->
-        <view class="carousel">
-          <nut-swiper v-if="index.loaded" :init-page="0" :pagination-visible="true" pagination-color="#426543"
-            auto-play="3000">
-            <nut-swiper-item v-for="item in index.carousel.cards" @click="goLike(item.link)">
-              <a :href="item.link" target="_blank">
-                <img :src="index.server + item.img.url" :alt="item.title" />
-              </a>
-            </nut-swiper-item>
-          </nut-swiper>
-        </view>
-        <!-- 帖子列表 -->
-        <view class="thread-list">
-          <template v-for="item in index.threads">
-            <template v-if="item.user.id">
-              <nut-cell-group>
-                <!-- 帖子标题 -->
-                <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
-                  <template #desc>
-                    <span class="module">【{{ item.type.name }}】</span>
-                    <span class="title">
-                      {{ item.subject }}
-                    </span>
-                  </template>
-                  <template #icon>
-                    <img v-if="item.top" style="width:20px;height: 20px;" :src="TopIcon" />
-                  </template>
-                </nut-cell>
-                <!-- 帖子信息 -->
-                <nut-cell class="info" desc-text-align="left">
-                  <template #icon>
-                    <nut-avatar size="20" shape="round">
-                      <img :src="item.user.avatar" />
-                    </nut-avatar>
-                  </template>
-                  <template #desc>
-                    <div class="info-desc">
-                      <span class="nickname"> {{ item.user.nickname }}</span>
-                      <span class="stat">
-                        <span>
-                          <Eye size="10"></Eye> {{ item.views_cnt }}
-                        </span>
-                        <span>
-                          <Comment size="10"></Comment> {{ item.posts_cnt }}
-                        </span>
-                      </span>
-                    </div>
-                  </template>
-                </nut-cell>
-              </nut-cell-group>
-            </template>
-          </template>
-        </view>
-
-      </view>
-      <!-- 分页组件 -->
-      <view class="pagination">
-        <nut-pagination v-model="page" mode="multi" :total-items="index.threadCount" :items-per-page="20"
-          @change="index.pageChange($event)" />
-      </view>
+    <!-- 轮播图 -->
+    <view class="carousel" v-if="index.loaded">
+      <nut-swiper :init-page="0" :pagination-visible="true" pagination-color="#426543" auto-play="3000">
+        <nut-swiper-item v-for="item in index.carousel.cards" @click="goLike(item.link)">
+          <a :href="item.link" target="_blank">
+            <img :src="index.server + item.img.url" :alt="item.title" />
+          </a>
+        </nut-swiper-item>
+      </nut-swiper>
     </view>
-    <!-- 骨架图 -->
+    <!-- 轮播图的骨架图 -->
+    <nut-skeleton v-else width="100vw" height="200px" :title="false" animated row="1">
+    </nut-skeleton>
+    <!-- 帖子列表 -->
+    <view class="thread-list" v-if="index.loaded && index.threadLoaded">
+      <template v-for="item in index.threads">
+        <template v-if="item.user.id">
+          <nut-cell-group>
+            <!-- 帖子标题 -->
+            <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
+              <template #desc>
+                <span class="module">【{{ item.type.name }}】</span>
+                <span class="title">
+                  {{ item.subject }}
+                </span>
+              </template>
+              <template #icon>
+                <img v-if="item.top" style="width:20px;height: 20px;" :src="TopIcon" />
+              </template>
+            </nut-cell>
+            <!-- 帖子信息 -->
+            <nut-cell class="info" desc-text-align="left">
+              <template #icon>
+                <nut-avatar size="20" shape="round">
+                  <img :src="item.user.avatar" />
+                </nut-avatar>
+              </template>
+              <template #desc>
+                <div class="info-desc">
+                  <span class="nickname"> {{ item.user.nickname }}</span>
+                  <span class="stat">
+                    <span>
+                      <Eye size="10"></Eye> {{ item.views_cnt }}
+                    </span>
+                    <span>
+                      <Comment size="10"></Comment> {{ item.posts_cnt }}
+                    </span>
+                  </span>
+                </div>
+              </template>
+            </nut-cell>
+          </nut-cell-group>
+        </template>
+      </template>
+    </view>
+    <!-- 帖子列表的骨架图 -->
     <view v-else>
-      <nut-skeleton width="100vw" height="200px" :title="false" animated row="1">
-      </nut-skeleton>
       <view class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7]">
         <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
         </nut-skeleton>
       </view>
+    </view>
+    <!-- 分页组件 -->
+    <view class="pagination">
+      <nut-pagination v-model="page" mode="multi" :total-items="index.threadCount" :items-per-page="20"
+        @change="index.pageChange($event)" />
     </view>
     <!-- 底部标签切换 -->
     <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
@@ -181,13 +176,6 @@ const goLike = (page: string) => {
     display: flex;
     justify-content: center;
     padding-bottom: 4rem;
-  }
-
-  .index {
-    font-family: "Avenir", Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-align: center;
   }
 
   .skeleton-container {

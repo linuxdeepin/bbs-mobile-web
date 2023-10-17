@@ -13,6 +13,7 @@ export { usePromptStore } from "./prompt";
 export const useIndexStore = defineStore("index", () => {
   const page = ref(1);
   const loaded = ref(false);
+  const threadLoaded = ref(false);
   const threads = ref([] as ThreadIndex[]);
   const threadCount = ref(0);
   const carousel = ref({ cards: [] } as CarouselConfig);
@@ -25,9 +26,11 @@ export const useIndexStore = defineStore("index", () => {
     carousel.value = config;
   }
   async function indexThread(offset = 0) {
+    threadLoaded.value = false;
     const resp = await getIndexThread({ offset });
     threads.value = resp.data.ThreadIndex;
     threadCount.value = resp.data.total_count;
+    threadLoaded.value = true;
   }
   // 翻页
   async function pageChange(v: number) {
@@ -37,7 +40,16 @@ export const useIndexStore = defineStore("index", () => {
   Promise.all([carouselConfig(), indexThread()]).then(
     () => (loaded.value = true)
   );
-  return { page, loaded, threadCount, threads, carousel, server, pageChange };
+  return {
+    page,
+    loaded,
+    threadLoaded,
+    threadCount,
+    threads,
+    carousel,
+    server,
+    pageChange,
+  };
 });
 
 async function getRawConfig<T>(field: "carousel") {

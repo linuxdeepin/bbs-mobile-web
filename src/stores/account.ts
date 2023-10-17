@@ -42,6 +42,7 @@ export const useAccountStore = defineStore("account", () => {
     const verify = (event: { detail: [string, string] }) => {
       const [err, validate] = event.detail;
       if (err) {
+        console.error("captcha validate error", err);
         return;
       }
       getElement().reset();
@@ -49,6 +50,7 @@ export const useAccountStore = defineStore("account", () => {
     };
     // 小程序中通过元素触发验证
     let tryVerify = async (callbackFunc: typeof callback) => {
+      console.error("captcha try verify");
       callback = callbackFunc;
       const c = getElement();
       if (type === "popup") {

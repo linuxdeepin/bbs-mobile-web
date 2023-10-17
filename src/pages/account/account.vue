@@ -70,10 +70,10 @@
         <!-- 提示信息 -->
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
-        <!-- 登陆方式选择 -->
+        <!-- 登录方式选择 -->
         <nut-action-sheet v-model:visible="loginAction.show" :menu-items="(loginAction.items as any)"
             @choose="$event.callback()" />
-        <!-- 密码登陆 -->
+        <!-- 密码登录 -->
         <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '200px' }"
             v-model:visible="loginByPassword.show">
             <view class="login-by-password">
@@ -83,7 +83,7 @@
                 </ne-captcha>
                 <view>
                     <nut-button type="primary"
-                        @click="captcha.tryVerify((code) => loginByPassword.login(code))">登陆</nut-button>
+                        @click="captcha.tryVerify((code) => loginByPassword.login(code))">登录</nut-button>
                     <nut-button type="default" @click="loginByPassword.show = false">取消</nut-button>
                 </view>
             </view>
@@ -123,7 +123,7 @@ const loginAction = ref({
     show: false,
     items: [{
         name: '微信快速登录',
-        subname: '登陆已绑定微信的深度账号',
+        subname: '登录已绑定微信的深度账号',
         color: "#1890ff",
         callback: () => {
             prompt.showToast('loading', "登录中", 0)
@@ -135,8 +135,8 @@ const loginAction = ref({
         }
     },
     {
-        name: '使用密码登陆',
-        subname: '登陆未绑定微信的深度账号',
+        name: '使用密码登录',
+        subname: '登录未绑定微信的深度账号',
         callback: () => {
             loginByPassword.value.username = ''
             loginByPassword.value.password = ''
