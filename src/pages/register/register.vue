@@ -56,10 +56,11 @@ const getPhoneNumber = async (captchaCode: string, event: { detail: { code: stri
             prompt.showToast('loading', "注册中", 0)
             await account.register(captcha.captchaID, captchaCode, event.detail.code)
             Taro.navigateBack()
+            prompt.hideToast()
         } catch (err) {
             // 如果返回http code是403，提示手机号已存在
             if (err?.response.status === 403) {
-                prompt.showToast('fail', "手机号已存在，请使用密码登录", 2000)
+                prompt.showToast('fail', "手机号已存在，请进行登录或选择其它手机号注册", 3000)
                 return
             }
             prompt.showToast('fail', "注册失败，请稍后再试", 2000)

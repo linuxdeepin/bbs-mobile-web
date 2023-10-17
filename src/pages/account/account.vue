@@ -44,7 +44,7 @@
                     <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
                 </template>
                 <template v-else>
-                    <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell>
+                    <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
                 </template>
             </view>
             <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
@@ -74,14 +74,17 @@
         <nut-action-sheet v-model:visible="loginAction.show" :menu-items="(loginAction.items as any)"
             @choose="$event.callback()" />
         <!-- 密码登录 -->
-        <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '200px' }"
+        <nut-popup position="bottom" :close-on-click-overlay="true" :style="{ height: '200px' }"
             v-model:visible="loginByPassword.show">
             <view class="login-by-password">
                 <nut-input v-model="loginByPassword.username" placeholder="请输入手机号或用户名" />
                 <nut-input v-model="loginByPassword.password" placeholder="请输入密码" type="password" />
                 <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
                 </ne-captcha>
-                <view>
+                <view class="reset-password">
+                    <span @click="resetPassword()">忘记密码</span>
+                </view>
+                <view class="btn-group">
                     <nut-button type="primary"
                         @click="captcha.tryVerify((code) => loginByPassword.login(code))">登录</nut-button>
                     <nut-button type="default" @click="loginByPassword.show = false">取消</nut-button>
@@ -93,6 +96,7 @@
 <script lang="ts" setup>
 
 import { ref } from 'vue';
+import Taro from '@tarojs/taro'
 import { useTabsStore, useAccountStore, usePromptStore, } from '../../stores'
 import { Home, My2 } from "@nutui/icons-vue-taro";
 
@@ -123,7 +127,6 @@ const loginAction = ref({
     show: false,
     items: [{
         name: '微信快速登录',
-        subname: '登录已绑定微信的深度账号',
         color: "#1890ff",
         callback: () => {
             prompt.showToast('loading', "登录中", 0)
@@ -151,6 +154,17 @@ const loginAction = ref({
         }
     }]
 })
+
+const resetPassword = () => {
+    console.log("reset password")
+    Taro.setClipboardData({
+        data: "https://account.deepin.org/edit-password", success: () => {
+            setTimeout(() => {
+                prompt.showToast("text", "请打开浏览器粘贴链接来找回密码", 5000)
+            }, 1500)
+        }
+    },)
+}
 
 </script>
 
@@ -219,10 +233,22 @@ const loginAction = ref({
         margin: 20px auto;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 15px;
 
-        button {
-            margin-right: 10px;
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+
+            button {
+                margin-right: 10px;
+                width: 40%;
+            }
+        }
+
+        .reset-password {
+            font-size: 25rpx;
+            text-align: right;
+            color: #1890ff;
         }
     }
 }
