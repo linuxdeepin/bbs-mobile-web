@@ -112,7 +112,8 @@
                         <nut-form-item>
                             <view class="form-item">
                                 <nut-textarea v-model="msg" placeholder="说点什么吧..."
-                                    :autosize="{ maxHeight: 200, minHeight: 40 }" @focus="checkLogin()" />
+                                    :autosize="{ maxHeight: 200, minHeight: 40 }" :disabled="!account.is_login"
+                                    @click="checkLogin()" />
                                 <nut-button type="primary" :disabled="msg.length == 0"
                                     @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                             </view>
@@ -146,6 +147,7 @@ import TopIcon from '../../assets/top.svg'
 import { useAccountStore, useThreadStore, usePromptStore } from '../../stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
+import dayjs from 'dayjs'
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -267,7 +269,7 @@ const submitPost = async (captchaCode: string) => {
 }
 // 时间格式化
 const timeFormat = (timeStr: string) => {
-    return new Date(timeStr).toLocaleString("zh-CN", { hour12: false })
+    return dayjs(timeStr).format("YYYY-MM-DD HH:mm")
 }
 
 const showLoginDialog = ref(false)
