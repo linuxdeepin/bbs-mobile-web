@@ -21,7 +21,7 @@ export const useIndexStore = defineStore("index", () => {
   async function carouselConfig() {
     const config = await getRawConfig<CarouselConfig>("carousel");
     config.cards = config.cards.filter(
-      (item) => item.device === "all" || item.device === "phone"
+      (item) => item.device === "all" || item.device === "weapp"
     );
     carousel.value = config;
   }
@@ -90,7 +90,7 @@ interface Card {
   link: string;
   title: string;
   language: string;
-  device: "phone" | "pc" | "all";
+  device: "phone" | "pc" | "weapp" | "all";
   img: {
     url: string;
   };

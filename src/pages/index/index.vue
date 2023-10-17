@@ -19,7 +19,7 @@
         <template v-if="item.user.id">
           <nut-cell-group>
             <!-- 帖子标题 -->
-            <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
+            <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item)">
               <template #desc>
                 <span class="module">【{{ item.type.name }}】</span>
                 <span class="title">
@@ -113,9 +113,11 @@ watch(() => index.threads, () => {
 })
 
 // 跳转到帖子详情
-const goThread = (id: number) => {
+const goThread = (item: typeof index.threads[0]) => {
+  // 预览数量增加
+  item.views_cnt++
   Taro.navigateTo({
-    url: `/pages/thread/thread?id=${id}`,
+    url: `/pages/thread/thread?id=${item.id}`,
   })
 }
 // 跳转到链接
