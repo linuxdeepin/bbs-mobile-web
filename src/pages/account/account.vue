@@ -107,6 +107,10 @@ const captcha = account.useForceCaptcha()
 
 const { tabActive, tabChange } = tabs.usePageTabs('account')
 
+if (account.is_login) {
+    account.refreshInfo()
+}
+
 const loginByPassword = ref({
     show: false,
     username: '',
@@ -126,7 +130,8 @@ const loginByPassword = ref({
 const loginAction = ref({
     show: false,
     items: [{
-        name: '微信快速登录',
+        name: '使用微信登录',
+        subname: "使用微信免密登录账号",
         color: "#1890ff",
         callback: () => {
             prompt.showToast('loading', "登录中", 0)
@@ -139,7 +144,7 @@ const loginAction = ref({
     },
     {
         name: '使用密码登录',
-        subname: '登录未绑定微信的深度账号',
+        subname: '使用密码登录深度账号',
         callback: () => {
             loginByPassword.value.username = ''
             loginByPassword.value.password = ''
