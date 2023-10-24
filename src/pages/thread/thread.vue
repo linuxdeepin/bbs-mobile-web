@@ -73,6 +73,13 @@
                                 </nut-cell>
                                 <nut-cell class="content" desc-text-align="left">
                                     <template #desc>
+                                        <view class="son-post" v-if="post.son_post?.id">
+                                            <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
+
+                                            <view class="post-message html-message taro_html vditor-reset"
+                                                v-html="post.son_post.message">
+                                            </view>
+                                        </view>
                                         <view class="post-message html-message taro_html vditor-reset"
                                             v-html="post.message">
                                         </view>
@@ -327,6 +334,13 @@ const checkLogin = () => {
         margin-top: 20px;
         margin-left: 5vw;
         margin-bottom: 50px;
+    }
+
+    // 回贴引用
+    .son-post {
+        border-radius: var(--nut-cell-border-radius, 12rpx);
+        background-color: #eee;
+        padding: 12rpx;
     }
 
     .send-post {
