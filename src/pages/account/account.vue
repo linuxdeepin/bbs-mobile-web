@@ -104,6 +104,7 @@ const tabs = useTabsStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
 const captcha = account.useForceCaptcha()
+const instance = Taro.getCurrentInstance()
 
 const { tabActive, tabChange } = tabs.usePageTabs('account')
 
@@ -127,6 +128,12 @@ const loginByPassword = ref({
     }
 })
 
+if (instance.router) {
+    if (instance.router.params["select"] === "password") {
+        loginByPassword.value.show = true
+    }
+}
+
 const loginAction = ref({
     show: false,
     items: [{
@@ -137,7 +144,19 @@ const loginAction = ref({
             prompt.showToast('loading', "登录中", 0)
             account.login().then(() => {
                 prompt.hideToast()
-            }).catch(() => {
+            }).catch((err) => {
+
+                console.log("weapp login", { err });
+                // 如果登录失败，并且账户未注册过deepinid，跳转到账户注册页面
+                if (err?.response.status === 403) {
+                    console.log("go to register");
+                    prompt.showToast('loading', "微信号未绑定深度账号，正跳转到注册页面", 3000)
+                    setTimeout(() => {
+                        prompt.hideToast()
+                        account.gotoRegister();
+                    }, 3000)
+                    return
+                }
                 prompt.showToast('fail', "登录失败，请稍后再试", 2000)
             })
         }

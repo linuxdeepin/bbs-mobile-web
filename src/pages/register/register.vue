@@ -17,9 +17,12 @@
                 <!-- 网易易盾验证码，小程序插件引入 -->
                 <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
                 </ne-captcha>
+                <nut-button type="primary" v-if="phoneExists" @click="account.gotoPasswordLogin()">
+                    使用账号密码登陆
+                </nut-button>
                 <button open-type="getPhoneNumber" :disabled="!agreeAll"
                     @getphonenumber="captcha.tryVerify(code => getPhoneNumber(code, $event))">
-                    通过手机号注册
+                    {{ phoneExists ? '其他手机号注册' : '通过手机号注册' }}
                 </button>
             </view>
         </nut-popup>
@@ -49,6 +52,8 @@ const agreeList = ref(Array(agreement.registerAgreementList.length).fill(false))
 // 是否同意所有协议
 const agreeAll = computed(() => agreeList.value.filter(v => v).length === agreeList.value.length)
 
+const phoneExists = ref(false)
+
 // 获取手机号后注册账户
 const getPhoneNumber = async (captchaCode: string, event: { detail: { code: string } }) => {
     if (event.detail.code) {
@@ -60,7 +65,8 @@ const getPhoneNumber = async (captchaCode: string, event: { detail: { code: stri
         } catch (err) {
             // 如果返回http code是403，提示手机号已存在
             if (err?.response.status === 403) {
-                prompt.showToast('fail', "手机号已存在，请进行登录或选择其它手机号注册", 3000)
+                phoneExists.value = true
+                prompt.showToast('fail', "手机号已注册，请使用密码登录或选择其他手机号注册", 5000)
                 return
             }
             prompt.showToast('fail', "注册失败，请稍后再试", 2000)
@@ -69,7 +75,7 @@ const getPhoneNumber = async (captchaCode: string, event: { detail: { code: stri
 }
 
 // 需要加载后再显示消息，否则消息不会自动隐藏
-Taro.nextTick(() => prompt.showToast('text', "请先注册账号", 2000))
+Taro.nextTick(() => prompt.showToast('text', "如果您已注册过深度账号，请使用电脑打开深度账户中心绑定微信", 5000))
 
 const showAgree = (id: string) => {
     agreement.getAgreement(id, 'cn').then((resp) => {

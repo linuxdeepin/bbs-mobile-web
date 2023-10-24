@@ -134,6 +134,11 @@ export const useAccountStore = defineStore("account", () => {
       url: "/pages/account/account",
     });
   };
+  const gotoPasswordLogin = () => {
+    Taro.navigateTo({
+      url: "/pages/account/account?select=password",
+    });
+  };
   const gotoRegister = () => {
     Taro.navigateTo({
       url: "/pages/register/register",
@@ -149,19 +154,9 @@ export const useAccountStore = defineStore("account", () => {
       location.href = `/api/v1/login?return_url=${returnURL}&redirect_url=${redirectURL}`;
       throw "go to login";
     }
-    try {
-      const loginCode = await getLoginCode();
-      await weappLogin(loginCode);
-      await refreshInfo();
-    } catch (err) {
-      console.log("weapp login", { err });
-      // 如果登录失败，并且账户未注册过deepinid，跳转到账户注册页面
-      if (err?.response.status === 403) {
-        console.log("go to register");
-        gotoRegister();
-        throw "go to register";
-      }
-    }
+    const loginCode = await getLoginCode();
+    await weappLogin(loginCode);
+    await refreshInfo();
   };
   const loginByPassword = async (
     captchaID: string,
@@ -214,6 +209,7 @@ export const useAccountStore = defineStore("account", () => {
     logout,
     register,
     gotoLogin,
+    gotoPasswordLogin,
     gotoRegister,
     useSmartCaptcha,
     useForceCaptcha,

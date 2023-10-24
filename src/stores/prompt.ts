@@ -9,13 +9,15 @@ export const usePromptStore = defineStore("prompt", () => {
     type: "text" as "text" | "success" | "fail" | "warn" | "loading",
   };
   const toast = ref(EmptyToast);
+  let interval: ReturnType<typeof setTimeout>;
   const showToast = (
     type: typeof toast.value.type,
     msg: string,
     duration = 2000
   ) => {
+    clearInterval(interval);
     if (duration > 0) {
-      setTimeout(() => (toast.value.visible = false), duration);
+      interval = setTimeout(() => (toast.value.visible = false), duration);
     }
     toast.value = { visible: true, type, msg, duration };
   };
