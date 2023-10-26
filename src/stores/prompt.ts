@@ -24,5 +24,21 @@ export const usePromptStore = defineStore("prompt", () => {
   const hideToast = () => {
     toast.value = EmptyToast;
   };
-  return { toast, showToast, hideToast };
+
+  const dialog = () => {
+    const title = ref("");
+    const content = ref("");
+    const visible = ref(false);
+    const show = (titleVal: string, contentVal: string) => {
+      title.value = titleVal;
+      content.value = contentVal;
+      visible.value = true;
+    };
+    const hide = () => {
+      visible.value = false;
+    };
+    return { show, hide, title, content, visible };
+  };
+
+  return { toast, dialog, showToast, hideToast };
 });

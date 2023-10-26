@@ -44,7 +44,7 @@
                     <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
                 </template>
                 <template v-else>
-                    <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
+                    <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell>
                 </template>
             </view>
             <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
@@ -77,7 +77,8 @@
         <nut-popup position="bottom" :close-on-click-overlay="true" :style="{ height: '200px' }"
             v-model:visible="loginByPassword.show">
             <view class="login-by-password">
-                <nut-input v-model="loginByPassword.username" placeholder="请输入手机号或用户名" />
+                <nut-input v-model="loginByPassword.username" :readonly="loginByPassword.usernameReadonly"
+                    placeholder="请输入手机号或用户名" />
                 <nut-input v-model="loginByPassword.password" placeholder="请输入密码" type="password" />
                 <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
                 </ne-captcha>
@@ -91,6 +92,9 @@
                 </view>
             </view>
         </nut-popup>
+
+        <nut-dialog no-cancel-btn :title="bindDialog.title" :content="bindDialog.content"
+            v-model:visible="bindDialog.visible" />
     </view>
 </template>
 <script lang="ts" setup>
@@ -112,24 +116,41 @@ if (account.is_login) {
     account.refreshInfo()
 }
 
+const bindDialog = ref({ visible: false, title: '', content: '' })
+
 const loginByPassword = ref({
     show: false,
     username: '',
     password: '',
-    login: (captchaCode: string) => {
-        const value = loginByPassword.value
-        prompt.showToast('loading', "登录中", 0)
-        account.loginByPassword(captcha.captchaID, captchaCode, value.username, value.password).then(() => {
+    usernameReadonly: false,
+    login: async (captchaCode: string) => {
+        try {
+            const value = loginByPassword.value
+            prompt.showToast('loading', "登录中", 0)
+            const resp = await account.loginByPassword(captcha.captchaID, captchaCode, value.username, value.password)
             prompt.hideToast()
             value.show = false
-        }).catch(() => {
+            switch (resp.code) {
+                case 1000:
+                    prompt.showToast("success", "已绑定微信，下次可使用快速登陆", 4000)
+                    break
+                case 1002: // 账号已绑定其他微信号
+                    bindDialog.value = { visible: true, title: '无法绑定微信号', content: '此账号已绑定其他微信号，如需绑定当前微信号，请在电脑端登录论坛打开账号中心进行解绑操作。' }
+                    break
+                case 1003: // 微信号已被其他账号绑定
+                    bindDialog.value = { visible: true, title: '无法绑定微信号', content: '此微信号已绑定其他账号，可以使用微信号直接登录，如需解绑请在电脑端登录论坛打开账号中心进行解绑操作。' }
+                    break
+            }
+        } catch (err) {
             prompt.showToast('fail', "登录失败，请检查用户名和密码", 2000)
-        })
+        }
     }
 })
 
 if (instance.router) {
-    if (instance.router.params["select"] === "password") {
+    if (instance.router.params["username"]) {
+        loginByPassword.value.usernameReadonly = true
+        loginByPassword.value.username = instance.router.params["username"]
         loginByPassword.value.show = true
     }
 }
@@ -150,7 +171,7 @@ const loginAction = ref({
                 // 如果登录失败，并且账户未注册过deepinid，跳转到账户注册页面
                 if (err?.response.status === 403) {
                     console.log("go to register");
-                    prompt.showToast('loading', "微信号未绑定深度账号，正跳转到注册页面", 3000)
+                    prompt.showToast('loading', "微信未绑定深度账号，正前往注册页面", 3000)
                     setTimeout(() => {
                         prompt.hideToast()
                         account.gotoRegister();
@@ -174,6 +195,7 @@ const loginAction = ref({
     {
         name: '取消',
         callback: () => {
+            loginByPassword.value.usernameReadonly = false
             loginAction.value.show = false
         }
     }]

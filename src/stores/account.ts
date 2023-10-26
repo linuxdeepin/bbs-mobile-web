@@ -134,9 +134,9 @@ export const useAccountStore = defineStore("account", () => {
       url: "/pages/account/account",
     });
   };
-  const gotoPasswordLogin = () => {
+  const gotoPasswordLogin = (username: string) => {
     Taro.navigateTo({
-      url: "/pages/account/account?select=password",
+      url: "/pages/account/account?username=" + username,
     });
   };
   const gotoRegister = () => {
@@ -165,7 +165,7 @@ export const useAccountStore = defineStore("account", () => {
     password: string
   ) => {
     const loginCode = await getLoginCode();
-    await weappLoginPassword(
+    const resp = await weappLoginPassword(
       captchaID,
       captchaCode,
       loginCode,
@@ -173,6 +173,7 @@ export const useAccountStore = defineStore("account", () => {
       password
     );
     await refreshInfo();
+    return resp.data;
   };
   const logout = async () => {
     const resp = await bbsLogout();
@@ -188,11 +189,20 @@ export const useAccountStore = defineStore("account", () => {
   const register = async (
     captchaID: string,
     captchaCode: string,
+    phone: string,
     phoneCode: string
   ) => {
     const loginCode = await getLoginCode();
-    await weappRegister(captchaID, captchaCode, loginCode, phoneCode);
+    await weappRegister(captchaID, captchaCode, loginCode, phone, phoneCode);
     await login();
+  };
+  const registerCode = async (
+    captchaID: string,
+    captchaCode: string,
+    phone: string
+  ) => {
+    const loginCode = await getLoginCode();
+    await weappRegisterCode(captchaID, captchaCode, phone, loginCode);
   };
 
   refreshInfo().finally(() => {
@@ -208,6 +218,7 @@ export const useAccountStore = defineStore("account", () => {
     loginByPassword,
     logout,
     register,
+    registerCode,
     gotoLogin,
     gotoPasswordLogin,
     gotoRegister,
@@ -248,7 +259,7 @@ async function weappLoginPassword(
     "x-captcha-id": captcha_id,
     "x-captcha-code": captcha_code,
   };
-  return http.post(url, body, { headers });
+  return http.post<{ code: number; msg: string }>(url, body, { headers });
 }
 
 // 小程序注册接口
@@ -256,10 +267,27 @@ async function weappRegister(
   captcha_id: string,
   captcha_code: string,
   login_code: string,
+  phone: string,
   phone_code: string
 ) {
   const url = "/api/v2/public/weixin/weapp/register?captcha_id=" + captcha_id;
-  const body = { login_code, phone_code };
+  const body = { login_code, phone, phone_code };
+  const headers = {
+    "x-captcha-id": captcha_id,
+    "x-captcha-code": captcha_code,
+  };
+  return http.post(url, body, { headers });
+}
+// 小程序注册验证码
+async function weappRegisterCode(
+  captcha_id: string,
+  captcha_code: string,
+  phone: string,
+  login_code: string
+) {
+  const url =
+    "/api/v2/public/weixin/weapp/register/code?captcha_id=" + captcha_id;
+  const body = { login_code, phone };
   const headers = {
     "x-captcha-id": captcha_id,
     "x-captcha-code": captcha_code,
