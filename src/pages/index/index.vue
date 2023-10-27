@@ -85,7 +85,7 @@
 
 <script lang="ts" setup>
 
-import Taro from '@tarojs/taro'
+import Taro, { useShareTimeline } from '@tarojs/taro'
 import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
 import TopIcon from '../../assets/top.svg'
 import { useIndexStore, useTabsStore } from '../../stores'
@@ -130,7 +130,12 @@ const goLike = (page: string) => {
     url: page,
   })
 }
-
+useShareTimeline(() => {
+  return {
+    title: "论坛首页-深度科技",
+    imageUrl: index.weixinShare?.default_img
+  }
+})
 </script>
 
 <style lang="scss">

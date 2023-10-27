@@ -11,13 +11,19 @@ export { useAgreementStore } from "./agreement";
 export { usePromptStore } from "./prompt";
 
 export const useIndexStore = defineStore("index", () => {
+  const server = ref(apiServer);
   const page = ref(1);
   const loaded = ref(false);
   const threadLoaded = ref(false);
   const threads = ref([] as ThreadIndex[]);
   const threadCount = ref(0);
   const carousel = ref({ cards: [] } as CarouselConfig);
-  const server = ref(apiServer);
+  const weixinShare = ref(null as WeixinShareConfig | null);
+  async function weixinShareConfig() {
+    getRawConfig<WeixinShareConfig>("weixin_share").then(
+      (v) => (weixinShare.value = v)
+    );
+  }
   async function carouselConfig() {
     const config = await getRawConfig<CarouselConfig>("carousel");
     config.cards = config.cards.filter(
@@ -37,9 +43,10 @@ export const useIndexStore = defineStore("index", () => {
     page.value = v;
     indexThread(v - 1);
   }
-  Promise.all([carouselConfig(), indexThread()]).then(
+  Promise.all([carouselConfig(), indexThread(), weixinShareConfig()]).then(
     () => (loaded.value = true)
   );
+
   return {
     page,
     loaded,
@@ -48,11 +55,12 @@ export const useIndexStore = defineStore("index", () => {
     threads,
     carousel,
     server,
+    weixinShare,
     pageChange,
   };
 });
 
-async function getRawConfig<T>(field: "carousel") {
+async function getRawConfig<T>(field: "carousel" | "weixin_share") {
   return http
     .get<RawConfig>("/api/v2/public/config/" + field)
     .then((resp) => JSON.parse(resp.data.value) as T);
@@ -94,6 +102,14 @@ interface Card {
   img: {
     url: string;
   };
+}
+
+interface WeixinShareConfig {
+  debug: boolean;
+  title_max_length: number;
+  title_suffix: string;
+  daemon: string;
+  default_img: string;
 }
 
 interface ThreadIndexResponse {

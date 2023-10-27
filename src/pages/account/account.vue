@@ -147,14 +147,6 @@ const loginByPassword = ref({
     }
 })
 
-if (instance.router) {
-    if (instance.router.params["username"]) {
-        loginByPassword.value.usernameReadonly = true
-        loginByPassword.value.username = instance.router.params["username"]
-        loginByPassword.value.show = true
-    }
-}
-
 const loginAction = ref({
     show: false,
     items: [{
@@ -210,6 +202,17 @@ const resetPassword = () => {
             }, 1500)
         }
     },)
+}
+
+
+if (instance.router) {
+    if (instance.router.params["username"]) {
+        loginByPassword.value.usernameReadonly = true
+        loginByPassword.value.username = instance.router.params["username"]
+        loginByPassword.value.show = true
+    } else if (instance.router.params["show-action"]) {
+        loginAction.value.show = true
+    }
 }
 
 </script>

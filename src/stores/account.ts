@@ -131,7 +131,7 @@ export const useAccountStore = defineStore("account", () => {
   };
   const gotoLogin = () => {
     Taro.navigateTo({
-      url: "/pages/account/account",
+      url: "/pages/account/account?show-action=true",
     });
   };
   const gotoPasswordLogin = (username: string) => {

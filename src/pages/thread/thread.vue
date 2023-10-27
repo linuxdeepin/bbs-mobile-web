@@ -147,11 +147,11 @@
 </template>
 <script lang="ts" setup>
 
-import Taro from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { watch, ref } from 'vue';
 
 import TopIcon from '../../assets/top.svg'
-import { useAccountStore, useThreadStore, usePromptStore } from '../../stores'
+import { useAccountStore, useThreadStore, usePromptStore, useIndexStore } from '../../stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'
@@ -166,6 +166,7 @@ if (process.env.TARO_ENV === 'h5') {
 const thread = useThreadStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
+const index = useIndexStore()
 
 const imageUrls = [] as string[]
 
@@ -204,7 +205,6 @@ option.html.transformElement = (el: TaroElement) => {
     }
     return el
 }
-
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
 const postID = ref(0)
@@ -217,6 +217,40 @@ if (instance.router) {
         scrollTop: 0,
     })
 }
+
+function genTitle(title: string) {
+    if (!index.weixinShare) {
+        return title
+    }
+    const maxlen = index.weixinShare.title_max_length
+    const suffix = index.weixinShare.title_suffix
+    // 需要完整显示后缀，对标题做截断
+    if (title.length + suffix.length - maxlen > 3) {
+        title = title.slice(0, maxlen - suffix.length - 3) + "..." + suffix;
+    } else {
+        title = title.slice(0, maxlen - suffix.length) + suffix;
+    }
+    return title
+}
+// 设置分享标题
+useShareTimeline(() => {
+    if (!thread.item || !index.weixinShare) {
+        return {}
+    }
+    return {
+        title: genTitle(thread.item.subject),
+        imageUrl: index.weixinShare.default_img
+    }
+})
+useShareAppMessage(() => {
+    if (!thread.item || !index.weixinShare) {
+        return {}
+    }
+    return {
+        title: genTitle(thread.item.subject),
+    }
+})
+
 
 // 翻页后移动到回复分割线
 watch(() => thread.page, () => {
@@ -285,7 +319,6 @@ const checkLogin = () => {
         showLoginDialog.value = true
     }
 }
-
 </script>
 <style lang="scss">
 .thread-page {
