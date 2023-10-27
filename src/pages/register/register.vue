@@ -26,7 +26,8 @@
                 <!-- 网易易盾验证码，小程序插件引入 -->
                 <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
                 </ne-captcha>
-                <nut-button type="primary" @click="captcha.tryVerify(register)" :disabled="btnDisable">
+                <nut-button :type="btnDisable ? 'default' : 'primary'" @click="captcha.tryVerify(register)"
+                    :disabled="btnDisable">
                     注册
                 </nut-button>
             </view>
@@ -63,7 +64,7 @@ const codeSent = ref(false)
 
 // 注册按钮是否禁用
 const btnDisable = computed(() => {
-    if (!phoneValid) {
+    if (!phoneValid.value) {
         return true
     }
     if (phoneCode.value.length === 0) {
@@ -101,8 +102,8 @@ const register = async (captchaCode: string) => {
     try {
         prompt.showToast('loading', "注册中", 0)
         await account.register(captcha.captchaID, captchaCode, phone.value, phoneCode.value)
-        prompt.hideToast()
-        Taro.navigateBack()
+        prompt.showToast("success", "已绑定微信，下次可使用微信登陆", 3000)
+        setTimeout(() => Taro.navigateBack(), 3000)
     } catch (err) {
         // 如果返回http code是403，提示手机号已存在
         if (err?.response.status === 403) {

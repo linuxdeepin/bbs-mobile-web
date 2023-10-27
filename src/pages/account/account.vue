@@ -44,7 +44,7 @@
                     <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
                 </template>
                 <template v-else>
-                    <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell>
+                    <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
                 </template>
             </view>
             <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
@@ -132,7 +132,7 @@ const loginByPassword = ref({
             value.show = false
             switch (resp.code) {
                 case 1000:
-                    prompt.showToast("success", "已绑定微信，下次可使用快速登陆", 4000)
+                    prompt.showToast("success", "已绑定微信，下次可使用微信登陆", 4000)
                     break
                 case 1002: // 账号已绑定其他微信号
                     bindDialog.value = { visible: true, title: '无法绑定微信号', content: '此账号已绑定其他微信号，如需绑定当前微信号，请在电脑端登录论坛打开账号中心进行解绑操作。' }
