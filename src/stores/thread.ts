@@ -14,10 +14,13 @@ export const useThreadStore = defineStore("thread", () => {
   const server = ref(apiServer);
 
   async function thraadInfo(id: number) {
+    loaded.value = false;
     const info = await getThraadInfo(id);
     item.value = info.data.data;
+    loaded.value = true;
   }
   async function threadPost(id: number, offset: number, limit: number) {
+    postLoaded.value = false;
     const threads = await getThreadPost(id, { offset, limit });
     posts.value = threads.data.data;
     postCount.value = threads.data.total_count;
@@ -25,10 +28,9 @@ export const useThreadStore = defineStore("thread", () => {
     postLoaded.value = true;
   }
   async function load(id: number) {
-    loaded.value = false;
     page.value = 1;
-    await Promise.all([thraadInfo(id), threadPost(id, 0, postLimit.value)]);
-    loaded.value = true;
+    await thraadInfo(id);
+    threadPost(id, 0, postLimit.value);
   }
   function pageChange(p: number) {
     if (item.value) {

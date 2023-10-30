@@ -40,7 +40,8 @@
             </nut-col>
             <!-- 主题 -->
             <nut-col span="22" offset="1">
-                <view class="thread-message html-message taro_html vditor-reset" v-html="thread.item.post.message"></view>
+                <view class="thread-message html-message taro_html vditor-reset" @click="htmlClick($event)"
+                    v-html="thread.item.post.message"></view>
             </nut-col>
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
@@ -77,11 +78,11 @@
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
 
                                             <view class="post-message html-message taro_html vditor-reset"
-                                                v-html="post.son_post.message">
+                                                @click="htmlClick($event)" v-html="post.son_post.message">
                                             </view>
                                         </view>
                                         <view class="post-message html-message taro_html vditor-reset"
-                                            v-html="post.message">
+                                            @click="htmlClick($event)" v-html="post.message">
                                         </view>
                                     </template>
                                 </nut-cell>
@@ -147,7 +148,7 @@
 </template>
 <script lang="ts" setup>
 
-import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { watch, ref } from 'vue';
 
 import TopIcon from '../../assets/top.svg'
@@ -155,6 +156,7 @@ import { useAccountStore, useThreadStore, usePromptStore, useIndexStore } from '
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'
+import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -173,8 +175,19 @@ const imageUrls = [] as string[]
 const option = (Taro as any).options
 
 // 处理html渲染，仅在小程序中生效
-option.html.transformElement = (el: TaroElement) => {
+option.html.transformElement = (el: TaroElement, h5el: Element) => {
+    el.setAttribute('data-tag', h5el.tagName)
     switch (el.nodeName) {
+        case "text":
+            if (h5el.tagName === "a") {
+                // attributes 格式有些奇怪，像这样["href=\"https://xxxx"\"]，所以要进行预处理 
+                h5el.attributes.forEach(attr => {
+                    const arr = attr.split("=")
+                    const key = arr[0]
+                    const value = arr.slice(1).join("=").slice(1, -1)
+                    el.setAttribute('data-' + key, value)
+                })
+            }
         case "image":
             // 图片高度自动缩放
             el.setAttribute('mode', 'widthFix')
@@ -208,16 +221,41 @@ option.html.transformElement = (el: TaroElement) => {
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
 const postID = ref(0)
-// 初始化加载
-if (instance.router) {
-    threadID.value = Number(instance.router.params['id'] || 0)
-    postID.value = Number(instance.router.params['post_id'] || 0)
-    thread.load(threadID.value)
-    Taro.pageScrollTo({
-        scrollTop: 0,
-    })
-}
 
+// 当页面显示时执行初始化，包括返回上一个页面时
+useDidShow(() => {
+    // 初始化加载
+    if (instance.router) {
+        threadID.value = Number(instance.router.params['id'] || 0)
+        postID.value = Number(instance.router.params['post_id'] || 0)
+        thread.load(threadID.value)
+        Taro.pageScrollTo({
+            scrollTop: 0,
+        })
+    }
+
+})
+
+function htmlClick(event: MouseEvent) {
+    const target = event.target as HTMLElement
+    const dataset = target.dataset
+    console.log("html click", { event, dataset })
+    // 是html超链接被点击
+    if (dataset["tag"] === "a") {
+        const href = target.dataset["href"] || ''
+        // 如果是点击的帖子链接，在小程序跳转，否则就复制链接
+        if (href.includes("deepin.org")) {
+            const result = href.match(/\/post\/(\d+)$/)
+            if (result?.length == 2) {
+                Taro.navigateTo({
+                    url: `/pages/thread/thread?id=${result[1]}`,
+                })
+                return
+            }
+        }
+        Taro.setClipboardData({ data: href })
+    }
+}
 function genTitle(title: string) {
     if (!index.weixinShare) {
         return title
@@ -257,8 +295,7 @@ watch(() => thread.page, () => {
     Taro.nextTick(() => {
         Taro.pageScrollTo({
             selector: ".post-divider",
-            duration: 300,
-            offsetTop: -20
+            offsetTop: -100
         })
     })
 })
@@ -350,6 +387,10 @@ const checkLogin = () => {
         img,
         .h5-img {
             max-width: 100%;
+        }
+
+        .h5-a {
+            color: #1890ff;
         }
     }
 
