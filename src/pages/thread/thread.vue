@@ -53,7 +53,7 @@
             <!-- 回帖列表 -->
             <template v-if="thread.postLoaded">
                 <template v-if="thread.postCount > 0">
-                    <nut-col v-for="post in thread.posts" span="22" offset="1">
+                    <nut-col v-for="(post, index) in thread.posts" span="22" offset="1">
                         <view :class="'.post-id-' + post.id"></view>
                         <view>
                             <nut-cell-group class="post-main">
@@ -64,11 +64,14 @@
                                         </nut-avatar>
                                     </template>
                                     <template #desc>
-                                        <view class="info-desc">
-                                            <span class="nickname"> {{ post.user.nickname }}</span>
-                                            <span>
-                                                回复时间： {{ timeFormat(post.created_at) }}
-                                            </span>
+                                        <view class="post-desc">
+                                            <view class="info-desc">
+                                                <span class="nickname"> {{ post.user.nickname }}</span>
+                                                <span>
+                                                    {{ (thread.page - 1) * thread.postLimit + index + 1 }}楼
+                                                    回复时间： {{ timeFormat(post.created_at) }}
+                                                </span>
+                                            </view>
                                         </view>
                                     </template>
                                 </nut-cell>
@@ -228,6 +231,13 @@ useDidShow(() => {
     if (instance.router) {
         threadID.value = Number(instance.router.params['id'] || 0)
         postID.value = Number(instance.router.params['post_id'] || 0)
+        if (thread.item) {
+            // 如果是从其他帖子页面返回到当前页面，需要重新加载数据
+            // 如果是从小程序的右上角菜单返回，则不重新加载数据（比如分享）
+            if (thread.item.id === threadID.value) {
+                return
+            }
+        }
         thread.load(threadID.value)
         Taro.pageScrollTo({
             scrollTop: 0,
@@ -359,6 +369,13 @@ const checkLogin = () => {
 </script>
 <style lang="scss">
 .thread-page {
+    .post-desc {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+    }
+
     .info-desc {
         display: flex;
         flex-direction: column;
@@ -367,8 +384,8 @@ const checkLogin = () => {
     }
 
     .nickname {
-        min-width: 70vw;
-        max-width: 70vw;
+        min-width: 40vw;
+        max-width: 60vw;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
