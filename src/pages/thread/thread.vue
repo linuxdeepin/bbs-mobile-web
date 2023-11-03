@@ -123,10 +123,11 @@
                         <nut-form-item>
                             <view class="form-item">
                                 <nut-textarea v-model="msg" placeholder="说点什么吧..."
-                                    :autosize="{ maxHeight: 200, minHeight: 40 }" :disabled="!account.is_login"
-                                    @click="checkLogin()" />
+                                    :autosize="{ maxHeight: 200, minHeight: 40 }" :disabled="!account.is_login" />
                                 <nut-button type="primary" :disabled="msg.length == 0"
                                     @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
+                                <!-- 未登陆时，点击回复提示前往登陆 -->
+                                <view class="click-mask" v-if="!account.is_login" @click="showLoginDialog = true"></view>
                             </view>
                         </nut-form-item>
                     </nut-form>
@@ -361,11 +362,7 @@ const timeFormat = (timeStr: string) => {
 }
 
 const showLoginDialog = ref(false)
-const checkLogin = () => {
-    if (!account.is_login) {
-        showLoginDialog.value = true
-    }
-}
+
 </script>
 <style lang="scss">
 .thread-page {
@@ -442,6 +439,13 @@ const checkLogin = () => {
 
         .form-item {
             display: flex;
+        }
+
+        .click-mask {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0
         }
     }
 

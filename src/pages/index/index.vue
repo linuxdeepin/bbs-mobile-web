@@ -4,9 +4,7 @@
     <view class="carousel" v-if="index.loaded">
       <nut-swiper :init-page="0" :pagination-visible="true" pagination-color="#426543" auto-play="3000">
         <nut-swiper-item v-for="item in index.carousel.cards" @click="goLike(item.link)">
-          <a :href="item.link" target="_blank">
-            <img :src="index.server + item.img.url" :alt="item.title" />
-          </a>
+          <img :src="index.server + item.img.url" :alt="item.title" />
         </nut-swiper-item>
       </nut-swiper>
     </view>

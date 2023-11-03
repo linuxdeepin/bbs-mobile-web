@@ -1,7 +1,9 @@
+const SERVER = "https://bbs.deepin.org.cn";
+
 module.exports = {
   env: {
     NODE_ENV: '"development"',
-    SERVER: '"https://bbs-pre.deepin.org.cn"',
+    SERVER: JSON.stringify(SERVER),
   },
   defineConstants: {},
   mini: {},
@@ -14,11 +16,11 @@ module.exports = {
       allowedHosts: "all",
       proxy: {
         "/api": {
-          target: "https://bbs-pre.deepin.org.cn",
+          target: SERVER,
           changeOrigin: true,
         },
         "/assets": {
-          target: "https://bbs-pre.deepin.org.cn",
+          target: SERVER,
           changeOrigin: true,
         },
       },

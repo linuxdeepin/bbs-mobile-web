@@ -19,7 +19,7 @@
                 </nut-row>
             </view>
             <view class="login" v-else>
-                <nut-button type="primary" @click="loginAction.show = true">登录</nut-button>
+                <nut-button type="primary" @click="clickLoginBtn()">登录</nut-button>
             </view>
             <view class="dataset">
                 <view class="item" span="6" offset="3">
@@ -109,6 +109,7 @@ const account = useAccountStore()
 const prompt = usePromptStore()
 const captcha = account.useForceCaptcha()
 const instance = Taro.getCurrentInstance()
+const isH5 = process.env.TARO_ENV === "h5";
 
 useDidShow(() => {
     tabs.change({ name: 'account' })
@@ -195,6 +196,14 @@ const loginAction = ref({
     }]
 })
 
+const clickLoginBtn = () => {
+    if (isH5) {
+        account.login()
+        return
+    }
+    loginAction.value.show = true
+}
+
 const resetPassword = () => {
     console.log("reset password")
     Taro.setClipboardData({
@@ -207,7 +216,7 @@ const resetPassword = () => {
 }
 
 
-if (instance.router) {
+if (instance.router && !isH5) {
     if (instance.router.params["username"]) {
         loginByPassword.value.usernameReadonly = true
         loginByPassword.value.username = instance.router.params["username"]
