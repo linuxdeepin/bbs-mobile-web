@@ -64,11 +64,11 @@
     </view>
     <!-- 分页组件 -->
     <view class="pagination">
-      <nut-pagination v-model="page" mode="multi" :total-items="index.threadCount" :items-per-page="20"
-        @change="index.pageChange($event)" />
+      <nut-pagination v-model="index.page" mode="multi" :total-items="index.threadCount"
+        :items-per-page="index.threadLimit" @change="index.pageChange($event)" />
     </view>
     <!-- 底部标签切换 -->
-    <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
+    <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabChange">
       <nut-tabbar-item tab-title="首页" name="index">
         <template #icon>
           <Home></Home>
@@ -85,23 +85,26 @@
 
 <script lang="ts" setup>
 
-import Taro, { useShareTimeline } from '@tarojs/taro'
-import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
 import TopIcon from '../../assets/top.svg'
+
+import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
+import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
 import { useIndexStore, useTabsStore } from '../../stores'
-import { watch, ref } from 'vue';
+import { watch } from 'vue';
 
 const tabs = useTabsStore()
 const index = useIndexStore()
 
-const { tabActive, tabChange } = tabs.usePageTabs('index')
-const instance = Taro.getCurrentInstance();
+useDidShow(() => {
+  tabs.change({ name: 'index' })
+})
 
-const page = ref(1)
-if (instance.router) {
-  page.value = Number(instance.router.params["page"] || 1);
-  if (page.value != index.page) {
-    index.pageChange(page.value)
+// 如果点击了首页导航，跳转返回到第一页
+const tabChange = (item: Parameters<typeof tabs.change>[0]) => {
+  if (item.name === 'index') {
+    index.pageChange(1)
+  } else {
+    tabs.change(item)
   }
 }
 

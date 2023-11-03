@@ -17,6 +17,7 @@ export const useIndexStore = defineStore("index", () => {
   const threadLoaded = ref(false);
   const threads = ref([] as ThreadIndex[]);
   const threadCount = ref(0);
+  const threadLimit = ref(20);
   const carousel = ref({ cards: [] } as CarouselConfig);
   const weixinShare = ref(null as WeixinShareConfig | null);
   async function weixinShareConfig() {
@@ -33,7 +34,7 @@ export const useIndexStore = defineStore("index", () => {
   }
   async function indexThread(offset = 0) {
     threadLoaded.value = false;
-    const resp = await getIndexThread({ offset });
+    const resp = await getIndexThread({ offset, limit: threadLimit.value });
     threads.value = resp.data.ThreadIndex;
     threadCount.value = resp.data.total_count;
     threadLoaded.value = true;
@@ -52,6 +53,7 @@ export const useIndexStore = defineStore("index", () => {
     loaded,
     threadLoaded,
     threadCount,
+    threadLimit,
     threads,
     carousel,
     server,

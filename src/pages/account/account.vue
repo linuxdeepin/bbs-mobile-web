@@ -47,7 +47,7 @@
                     <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
                 </template>
             </view>
-            <nut-tabbar v-model="tabActive" bottom @tab-switch="tabChange">
+            <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabs.change">
                 <nut-tabbar-item tab-title="首页" name="index">
                     <template #icon>
                         <Home></Home>
@@ -100,7 +100,7 @@
 <script lang="ts" setup>
 
 import { ref } from 'vue';
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { useTabsStore, useAccountStore, usePromptStore, } from '../../stores'
 import { Home, My2 } from "@nutui/icons-vue-taro";
 
@@ -110,7 +110,9 @@ const prompt = usePromptStore()
 const captcha = account.useForceCaptcha()
 const instance = Taro.getCurrentInstance()
 
-const { tabActive, tabChange } = tabs.usePageTabs('account')
+useDidShow(() => {
+    tabs.change({ name: 'account' })
+})
 
 if (account.is_login) {
     account.refreshInfo()
