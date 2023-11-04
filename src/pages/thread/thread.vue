@@ -406,6 +406,10 @@ const showLoginDialog = ref(false)
         .h5-a {
             color: #1890ff;
         }
+
+        .h5-code {
+            white-space: pre-wrap;
+        }
     }
 
     .content>view {
