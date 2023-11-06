@@ -1,5 +1,5 @@
 {
-    "miniprogramRoot": "dist/",
+    "miniprogramRoot": "dist/weapp/",
     "projectname": "deepin-bbs",
     "description": "bbs",
     "appid": "wxcf1a4dbefee5cb41",
