@@ -155,8 +155,8 @@
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { watch, ref } from 'vue';
 
-import TopIcon from '../../assets/top.svg'
-import { useAccountStore, useThreadStore, usePromptStore, useIndexStore } from '../../stores'
+import TopIcon from '@/assets/top.svg'
+import { useAccountStore, useThreadStore, usePromptStore, useIndexStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'

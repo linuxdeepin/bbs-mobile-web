@@ -101,7 +101,7 @@
 
 import { ref } from 'vue';
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useTabsStore, useAccountStore, usePromptStore, } from '../../stores'
+import { useTabsStore, useAccountStore, usePromptStore, } from '@/stores'
 import { Home, My2 } from "@nutui/icons-vue-taro";
 
 const tabs = useTabsStore()
