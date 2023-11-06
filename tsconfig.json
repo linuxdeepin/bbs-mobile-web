@@ -14,6 +14,11 @@
     "strictNullChecks": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "paths": {
+      "@/assets/*": ["./src/assets/*"],
+      "@/stores": ["./src/stores"],
+      "@/stores/*": ["./src/stores/*"],
+    },
     "rootDir": ".",
     "jsx": "preserve",
     "allowJs": true,

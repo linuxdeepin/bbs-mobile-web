@@ -83,11 +83,11 @@
 
 <script lang="ts" setup>
 
-import TopIcon from '../../assets/top.svg'
+import TopIcon from '@/assets/top.svg'
 
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
 import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
-import { useIndexStore, useTabsStore } from '../../stores'
+import { useIndexStore, useTabsStore } from '@/stores'
 import { watch } from 'vue';
 
 const tabs = useTabsStore()

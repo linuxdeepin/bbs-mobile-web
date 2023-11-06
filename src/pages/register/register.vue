@@ -41,7 +41,7 @@
 
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
-import { useAccountStore, useAgreementStore, usePromptStore } from '../../stores'
+import { useAccountStore, useAgreementStore, usePromptStore } from '@/stores'
 
 const account = useAccountStore()
 const agreement = useAgreementStore()
