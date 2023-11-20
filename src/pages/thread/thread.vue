@@ -453,5 +453,8 @@ const showLoginDialog = ref(false)
         }
     }
 
+    .nut-empty {
+        padding-bottom: 200rpx;
+    }
 }
 </style>
