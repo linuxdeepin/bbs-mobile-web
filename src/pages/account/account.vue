@@ -22,15 +22,15 @@
                 <nut-button type="primary" @click="clickLoginBtn()">登录</nut-button>
             </view>
             <view class="dataset">
-                <view class="item" span="6" offset="3">
+                <view class="item" span="6" offset="3" @click="datasetClick()">
                     <span class="number">{{ account.user_info.threads_cnt }}</span>
                     <span>帖子</span>
                 </view>
-                <view class="item" span="6">
+                <view class="item" span="6" @click="datasetClick()">
                     <span class="number">{{ account.user_info.posts_cnt }}</span>
                     <span>回复</span>
                 </view>
-                <view class="item" span="6">
+                <view class="item" span="6" @click="datasetClick()">
                     <span class="number">{{ account.user_info.favourite_cnt }}</span>
                     <span>收藏</span>
                 </view>
@@ -102,7 +102,7 @@
 import { ref } from 'vue';
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useTabsStore, useAccountStore, usePromptStore, } from '@/stores'
-import { Home, My2 } from "@nutui/icons-vue-taro";
+import { Home, My2, Search2 } from "@nutui/icons-vue-taro";
 
 const tabs = useTabsStore()
 const account = useAccountStore()
@@ -224,6 +224,10 @@ if (instance.router && !isH5) {
     } else if (instance.router.params["show-action"]) {
         loginAction.value.show = true
     }
+}
+
+const datasetClick = () => {
+    prompt.showToast("text", "暂不支持", 3000)
 }
 
 </script>
