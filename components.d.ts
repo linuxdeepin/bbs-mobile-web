@@ -23,11 +23,13 @@ declare module '@vue/runtime-core' {
     NutPagination: typeof import('@nutui/nutui-taro')['Pagination']
     NutPopup: typeof import('@nutui/nutui-taro')['Popup']
     NutRow: typeof import('@nutui/nutui-taro')['Row']
+    NutSearchbar: typeof import('@nutui/nutui-taro')['Searchbar']
     NutSkeleton: typeof import('@nutui/nutui-taro')['Skeleton']
     NutSwiper: typeof import('@nutui/nutui-taro')['Swiper']
     NutSwiperItem: typeof import('@nutui/nutui-taro')['SwiperItem']
     NutTabbar: typeof import('@nutui/nutui-taro')['Tabbar']
     NutTabbarItem: typeof import('@nutui/nutui-taro')['TabbarItem']
+    NutTag: typeof import('@nutui/nutui-taro')['Tag']
     NutTextarea: typeof import('@nutui/nutui-taro')['Textarea']
     NutToast: typeof import('@nutui/nutui-taro')['Toast']
   }

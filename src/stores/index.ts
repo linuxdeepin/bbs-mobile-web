@@ -5,6 +5,7 @@ import { apiServer, http } from "./http";
 
 // 共享store
 export { useThreadStore } from "./thread";
+export { useSearchStore } from "./search";
 export { useTabsStore } from "./tabs";
 export { useAccountStore } from "./account";
 export { useAgreementStore } from "./agreement";
