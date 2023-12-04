@@ -18,7 +18,7 @@
       "@/assets/*": ["./src/assets/*"],
       "@/stores": ["./src/stores"],
       "@/stores/*": ["./src/stores/*"],
-      "@/share/*": ["./src/share/*"]
+      "@/widgets/*": ["./src/widgets/*"]
     },
     "rootDir": ".",
     "jsx": "preserve",

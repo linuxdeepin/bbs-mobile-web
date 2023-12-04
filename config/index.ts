@@ -1,6 +1,6 @@
 import Components from "unplugin-vue-components/webpack";
 import NutUIResolver from "@nutui/nutui-taro/dist/resolver";
-import path from 'path';
+import path from "path";
 
 const config = {
   projectName: "deepin-bbs",
@@ -99,8 +99,9 @@ const config = {
   },
   // 配置目录别名
   alias: {
-    '@/assets': path.resolve(__dirname, '..', 'src/assets'),
-    '@/stores': path.resolve(__dirname, '..', 'src/stores'),
+    "@/assets": path.resolve(__dirname, "..", "src/assets"),
+    "@/stores": path.resolve(__dirname, "..", "src/stores"),
+    "@/widgets": path.resolve(__dirname, "..", "src/widgets"),
   },
 };
 

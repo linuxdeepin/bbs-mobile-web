@@ -1,5 +1,5 @@
 <template>
-  <NavComponent></NavComponent>
+  <NavComponent show-search></NavComponent>
   <view class="index-page">
     <!-- 轮播图 -->
     <view class="carousel" v-if="index.loaded">
@@ -87,10 +87,10 @@
 import TopIcon from '@/assets/top.svg'
 
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
-import { Home, My2, Comment, Eye, Search2 } from "@nutui/icons-vue-taro";
+import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
 import { useIndexStore, useTabsStore } from '@/stores'
 import { watch } from 'vue';
-import NavComponent from "./navigation.vue";
+import NavComponent from "@/widgets/navigation.vue";
 
 const tabs = useTabsStore()
 const index = useIndexStore()
