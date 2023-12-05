@@ -113,26 +113,7 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <nut-col span="20" offset="2">
-                <view class="send-post">
-                    <nut-form>
-                        <!-- 网易易盾验证码，小程序插件引入 -->
-                        <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
-                            @verify="postCaptcha.verify">
-                        </ne-captcha>
-                        <nut-form-item>
-                            <view class="form-item">
-                                <nut-textarea v-model="msg" placeholder="说点什么吧..."
-                                    :autosize="{ maxHeight: 200, minHeight: 40 }" :disabled="!account.is_login" />
-                                <nut-button type="primary" :disabled="msg.length == 0"
-                                    @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
-                                <!-- 未登陆时，点击回复提示前往登陆 -->
-                                <view class="click-mask" v-if="!account.is_login" @click="showLoginDialog = true"></view>
-                            </view>
-                        </nut-form-item>
-                    </nut-form>
-                </view>
-            </nut-col>
+            <SendPost></SendPost>
         </nut-row>
         <view v-else>
             <view class="skeleton-container">
@@ -145,22 +126,19 @@
                 </view>
             </view>
         </view>
-        <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
-            :duration="prompt.toast.duration" />
-        <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
     </view>
 </template>
 <script lang="ts" setup>
 
-import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { watch, ref } from 'vue';
-
+import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
-import { useAccountStore, useThreadStore, usePromptStore, useIndexStore } from '@/stores'
+import { useThreadStore, useIndexStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
+import SendPost from './send-post.vue'
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -170,8 +148,6 @@ if (process.env.TARO_ENV === 'h5') {
     require('@tarojs/taro/html.css')
 }
 const thread = useThreadStore()
-const account = useAccountStore()
-const prompt = usePromptStore()
 const index = useIndexStore()
 
 const imageUrls = [] as string[]
@@ -224,14 +200,12 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
 }
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
-const postID = ref(0)
 
 // 当页面显示时执行初始化，包括返回上一个页面时
 useDidShow(() => {
     // 初始化加载
     if (instance.router) {
         threadID.value = Number(instance.router.params['id'] || 0)
-        postID.value = Number(instance.router.params['post_id'] || 0)
         if (thread.item) {
             // 如果是从其他帖子页面返回到当前页面，需要重新加载数据
             // 如果是从小程序的右上角菜单返回，则不重新加载数据（比如分享）
@@ -247,6 +221,7 @@ useDidShow(() => {
 
 })
 
+// 渲染内容点击，在小程序中处理超链接
 function htmlClick(event: MouseEvent) {
     const target = event.target as HTMLElement
     const dataset = target.dataset
@@ -267,7 +242,8 @@ function htmlClick(event: MouseEvent) {
         Taro.setClipboardData({ data: href })
     }
 }
-function genTitle(title: string) {
+// 生成分享标题
+function genShareTitle(title: string) {
     if (!index.weixinShare) {
         return title
     }
@@ -287,7 +263,7 @@ useShareTimeline(() => {
         return {}
     }
     return {
-        title: genTitle(thread.item.subject),
+        title: genShareTitle(thread.item.subject),
         imageUrl: index.weixinShare.default_img
     }
 })
@@ -296,7 +272,7 @@ useShareAppMessage(() => {
         return {}
     }
     return {
-        title: genTitle(thread.item.subject),
+        title: genShareTitle(thread.item.subject),
     }
 })
 
@@ -310,60 +286,13 @@ watch(() => thread.page, () => {
         })
     })
 })
-// 跳转到指定的回复
-watch(() => thread.posts, () => {
-    if (postID.value > 0) {
-        setTimeout(() => {
-            Taro.pageScrollTo({
-                selector: ".post-id-" + postID.value,
-                duration: 300,
-                offsetTop: 0
-            })
-            postID.value = 0
-        }, 500)
-    }
-})
-// 回复内容
-const msg = ref("")
-// 发帖验证码
-const postCaptcha = account.useSmartCaptcha()
-// 人机校验后发布回复
-const submitPost = async (captchaCode: string) => {
-    if (!account.is_login) {
-        await account.login()
-    }
-    if (!thread.item) {
-        return
-    }
-    try {
-        // 发布评论
-        const resp = await thread.createPost({
-            validate: captchaCode,
-            captcha_id: postCaptcha.captchaID,
-            message: `<div data-weapp_version="v1">${msg.value}</div>`,
-            thread_id: thread.item.id,
-            forum_id: thread.item.forum_id,
-            quote_user_id: thread.item.user_id,
-        })
-        prompt.showToast('success', "发送成功")
-        // 清空输入框内容
-        msg.value = ''
-        // 跳转到发布的评论
-        postID.value = resp.data.data.id
-        thread.pageChange(Math.ceil(thread.postCount / thread.postLimit))
-    } catch (err) {
-        console.log("create post", err)
-        prompt.showToast('fail', "发送失败，请稍后在试")
-    }
-}
+
 // 时间格式化
 const timeFormat = (timeStr: string) => {
     return dayjs(timeStr).format("YYYY-MM-DD HH:mm")
 }
-
-const showLoginDialog = ref(false)
-
 </script>
+
 <style lang="scss">
 .thread-page {
     .post-desc {
@@ -410,6 +339,15 @@ const showLoginDialog = ref(false)
         .h5-code {
             white-space: pre-wrap;
         }
+
+        // 等待补丁合并 https://github.com/NervJS/taro/pull/14927
+        .h5-h1 {
+            line-height: 2em;
+        }
+
+        .h5-h2 {
+            line-height: 1.5em;
+        }
     }
 
     .content>view {
@@ -435,24 +373,7 @@ const showLoginDialog = ref(false)
         padding: 12rpx;
     }
 
-    .send-post {
-        position: fixed;
-        bottom: 0;
-        width: 90vw;
-        left: 5vw;
-
-        .form-item {
-            display: flex;
-        }
-
-        .click-mask {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0
-        }
-    }
-
+    // 添加边距，避免空回复列表被回帖输入框遮挡
     .nut-empty {
         padding-bottom: 200rpx;
     }
