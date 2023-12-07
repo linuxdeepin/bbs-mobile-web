@@ -25,11 +25,11 @@
                 </template>
             </view>
             <!-- 搜索结果 -->
-            <view class="result-list" v-else-if="searchStore.loaded">
-                <template v-for="item in searchStore.data">
+            <view class="result-list" v-else-if="!loading">
+                <template v-for="item in searchResult.data">
                     <nut-cell-group>
                         <!-- 帖子标题 -->
-                        <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item)">
+                        <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
                             <template #desc>
                                 <span class="title">
                                     <view v-html="item.subject"></view>
@@ -47,9 +47,9 @@
                     </nut-cell-group>
                 </template>
                 <!-- 分页 -->
-                <view class="pagination" v-if="keyword.length && searchStore.count">
-                    <nut-pagination v-model="page" mode="multi" :total-items="searchStore.count" :items-per-page="pageLimit"
-                        @change="pageChange()" />
+                <view class="pagination" v-if="keyword.length && searchResult.data.length">
+                    <nut-pagination v-model="page" mode="multi" :total-items="searchResult.total"
+                        :items-per-page="pageLimit" />
                 </view>
                 <!-- 搜索结果空白 -->
                 <view v-else>
@@ -66,40 +66,52 @@
 </template>
 
 <script lang="ts" setup>
+import { SearchThread } from '@/api'
 import Taro from '@tarojs/taro'
 import { Search2 } from "@nutui/icons-vue-taro";
 import { useSearchStore } from '@/stores'
 import { ref } from 'vue';
+import { computedAsync } from '@vueuse/core';
 
 let searchStore = useSearchStore()
-
-searchStore.init()
 
 // 显示搜索历史
 const showHistory = ref(true)
 // 搜索关键字
 const keyword = ref("")
+// 提交关键字后再进行搜索
+const keywordSubmit = ref("")
 // 当前页
 const page = ref(1)
 // 页大小
 const pageLimit = ref(10)
 
+const loading = ref(false)
+
+const searchResult = computedAsync(() => {
+    if (keywordSubmit.value === '') {
+        return { data: [], total: 0 }
+    }
+    return SearchThread(keywordSubmit.value, page.value, pageLimit.value).then(resp => {
+        return {
+            data: resp.data,
+            total: Number(resp.headers["x-total-count"] || 0)
+        }
+    })
+}, undefined, { evaluating: loading })
+
 // 新的关键字搜索
 const searchSubmit = () => {
     page.value = 1
     showHistory.value = false
+    keywordSubmit.value = keyword.value
     searchStore.addHistory(keyword.value)
-    searchStore.getPageData(keyword.value, (page.value - 1) * pageLimit.value, pageLimit.value)
-}
-// 搜索结果翻页
-const pageChange = () => {
-    searchStore.getPageData(keyword.value, (page.value - 1) * pageLimit.value, pageLimit.value)
 }
 
 // 跳转到帖子详情
-const goThread = (item: typeof searchStore.data[0]) => {
+const goThread = (id: number) => {
     Taro.navigateTo({
-        url: `/pages/thread/thread?id=${item.id}`,
+        url: `/pages/thread/thread?id=${id}`,
     })
 }
 

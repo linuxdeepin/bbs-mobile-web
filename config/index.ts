@@ -99,6 +99,7 @@ const config = {
   },
   // 配置目录别名
   alias: {
+    "@/api": path.resolve(__dirname, "..", "src/api"),
     "@/assets": path.resolve(__dirname, "..", "src/assets"),
     "@/stores": path.resolve(__dirname, "..", "src/stores"),
     "@/widgets": path.resolve(__dirname, "..", "src/widgets"),

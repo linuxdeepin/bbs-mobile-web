@@ -2,10 +2,10 @@
   <NavComponent show-search></NavComponent>
   <view class="index-page">
     <!-- 轮播图 -->
-    <view class="carousel" v-if="index.loaded">
+    <view class="carousel" v-if="!config.carouselState.isLoading">
       <nut-swiper :init-page="0" :pagination-visible="true" pagination-color="#426543" auto-play="3000">
-        <nut-swiper-item v-for="item in index.carousel.cards" @click="goLike(item.link)">
-          <img :src="index.server + item.img.url" :alt="item.title" />
+        <nut-swiper-item v-for="item in config.carouselState.state?.cards" @click="goLike(item.link)">
+          <img :src="apiServer + item.img.url" :alt="item.title" />
         </nut-swiper-item>
       </nut-swiper>
     </view>
@@ -13,8 +13,8 @@
     <nut-skeleton v-else width="100vw" height="200px" :title="false" animated row="1">
     </nut-skeleton>
     <!-- 帖子列表 -->
-    <view class="thread-list" v-if="index.loaded && index.threadLoaded">
-      <template v-for="item in index.threads">
+    <view class="thread-list" v-if="!isLoading">
+      <template v-for="item in threadIndexResponse.ThreadIndex">
         <template v-if="item.user.id">
           <nut-cell-group>
             <!-- 帖子标题 -->
@@ -53,6 +53,11 @@
           </nut-cell-group>
         </template>
       </template>
+
+      <view class="pagination" v-if="threadIndexResponse">
+        <nut-pagination v-model="pagination.page" mode="multi" :total-items="threadIndexResponse.total_count"
+          :items-per-page="pagination.limit" />
+      </view>
     </view>
     <!-- 帖子列表的骨架图 -->
     <view v-else>
@@ -62,10 +67,6 @@
       </view>
     </view>
     <!-- 分页组件 -->
-    <view class="pagination">
-      <nut-pagination v-model="index.page" mode="multi" :total-items="index.threadCount"
-        :items-per-page="index.threadLimit" @change="index.pageChange($event)" />
-    </view>
     <!-- 底部标签切换 -->
     <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabChange">
       <nut-tabbar-item tab-title="首页" name="index">
@@ -86,37 +87,45 @@
 
 import TopIcon from '@/assets/top.svg'
 
+import { computedAsync } from "@vueuse/core";
+import { apiServer, IndexThread } from '@/api'
+
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
 import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
-import { useIndexStore, useTabsStore } from '@/stores'
-import { watch } from 'vue';
+import { useConfigStore, useTabsStore } from '@/stores'
+import { watch, ref } from 'vue';
 import NavComponent from "@/widgets/navigation.vue";
 
 const tabs = useTabsStore()
-const index = useIndexStore()
-
+const config = useConfigStore()
+// 恢复tab
 useDidShow(() => {
   tabs.change({ name: 'index' })
 })
-
-// 如果点击了首页导航，跳转返回到第一页
-const tabChange = (item: Parameters<typeof tabs.change>[0]) => {
-  if (item.name === 'index') {
-    index.pageChange(1)
-  } else {
-    tabs.change(item)
-  }
-}
-
-watch(() => index.threads, () => {
+// 加载帖子数据
+const isLoading = ref(true)
+const pagination = ref({ page: 1, limit: 20 })
+const threadIndexResponse = computedAsync(async () => {
+  const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
+  return resp.data || [];
+}, undefined, { evaluating: isLoading })
+// 翻页后跳转到顶部
+watch(isLoading, () => {
   Taro.pageScrollTo({
     scrollTop: 0,
     duration: 300
   })
 })
-
+// 如果点击了首页导航，跳转返回到第一页
+const tabChange = (item: Parameters<typeof tabs.change>[0]) => {
+  if (item.name === 'index') {
+    pagination.value.page = 1
+  } else {
+    tabs.change(item)
+  }
+}
 // 跳转到帖子详情
-const goThread = (item: typeof index.threads[0]) => {
+const goThread = (item: typeof threadIndexResponse.value.ThreadIndex[0]) => {
   // 预览数量增加
   item.views_cnt++
   Taro.navigateTo({
@@ -133,10 +142,11 @@ const goLike = (page: string) => {
     url: page,
   })
 }
+// 设置分享内容
 useShareTimeline(() => {
   return {
     title: "论坛首页-深度科技",
-    imageUrl: index.weixinShare?.default_img
+    imageUrl: config.weixinShare.state?.default_img
   }
 })
 </script>

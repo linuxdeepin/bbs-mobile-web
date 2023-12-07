@@ -28,7 +28,7 @@
                         <view class="image-list">
                             <view class="image-item" v-for="( emoji, name ) of  customEmoji "
                                 @click="msgImg = { alt: name, img: emoji }; postCaptcha.tryVerify(submitPost)">
-                                <img :alt="name" :src="thread.server + '/' + emoji">
+                                <img :alt="name" :src="apiServer + '/' + emoji">
                             </view>
                             <view class="image-item" v-for=" _  of  Array(10).fill(0) "></view>
                         </view>
@@ -61,13 +61,20 @@ import { ref, computed } from 'vue';
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
 
-import { useAccountStore, usePromptStore, useThreadStore } from '@/stores';
+import { useAccountStore, usePromptStore } from '@/stores';
 import unicodeEmoji from './unicodeEmoji.json'
 import customEmoji from './customEmoji.json'
+import { apiServer, CreateThreadPost } from '@/api';
 
 const prompt = usePromptStore()
-const thread = useThreadStore()
 const account = useAccountStore()
+
+const emit = defineEmits<{
+    send: []
+}>()
+const props = defineProps<{
+    info: { id: number, forum_id: number, user_id: number }
+}>()
 
 // 回复内容
 const msg = ref("")
@@ -92,9 +99,7 @@ const postCaptcha = account.useSmartCaptcha()
 // 人机校验后发布回复
 const submitPost = async (captchaCode: string) => {
     if (!account.is_login) {
-        await account.login()
-    }
-    if (!thread.item) {
+        account.gotoLogin()
         return
     }
     try {
@@ -105,26 +110,20 @@ const submitPost = async (captchaCode: string) => {
                 <img class="emoji" title="${msgImg.value.alt}" src="${msgImg.value.img}" alt="${msgImg.value.alt}">
             </div>`
         }
-        await thread.createPost({
+        await CreateThreadPost({
             message,
             validate: captchaCode,
             captcha_id: postCaptcha.captchaID,
-            thread_id: thread.item.id,
-            forum_id: thread.item.forum_id,
-            quote_user_id: thread.item.user_id,
+            thread_id: props.info.id,
+            forum_id: props.info.forum_id,
+            quote_user_id: props.info.user_id,
         })
         prompt.showToast('success', "发送成功")
         // 清空输入框内容
         msg.value = ''
         msgImg.value = { alt: '', img: '' }
         showEmojiList.value = false
-        // 跳转到最新的评论页
-        let last = Math.ceil(thread.postCount / thread.postLimit)
-        // 如果正好换页，跳转到新页
-        if (thread.postCount % thread.postLimit === 0) {
-            last++
-        }
-        thread.pageChange(last)
+        emit('send')
     } catch (err) {
         console.log("create post", err)
         prompt.showToast('fail', "发送失败，请稍后在试")
