@@ -1,19 +1,19 @@
 <template>
     <view class="thread-page">
-        <nut-row v-if="thread.loaded && thread.item">
+        <nut-row v-if="!infoLoading">
             <!-- 标题 -->
             <nut-col span="22" offset="1">
                 <view>
                     <nut-cell-group>
                         <nut-cell class="thread" desc-text-align="left">
                             <template #desc>
-                                <span class="module">【{{ thread.item.type.name }}】</span>
+                                <span class="module">【{{ threadInfo.type.name }}】</span>
                                 <span class="title">
-                                    {{ thread.item.subject }}
+                                    {{ threadInfo.subject }}
                                 </span>
                             </template>
                             <template #icon>
-                                <img v-if="thread.item.top" style="width:20px;height: 20px;" :src="TopIcon" />
+                                <img v-if="threadInfo.top" style="width:20px;height: 20px;" :src="TopIcon" />
                             </template>
                             <!-- <template #link>
                                 <Star></Star>
@@ -22,15 +22,15 @@
                         <nut-cell class="info" desc-text-align="left">
                             <template #icon>
                                 <nut-avatar size="large" shape="round">
-                                    <img :src="thread.item.post.user.avatar" />
+                                    <img :src="threadInfo.post.user.avatar" />
                                 </nut-avatar>
                             </template>
 
                             <template #desc>
                                 <div class="info-desc">
-                                    <span class="nickname"> {{ thread.item.post.user.nickname }}</span>
+                                    <span class="nickname"> {{ threadInfo.post.user.nickname }}</span>
                                     <span class="stat">
-                                        发帖时间： {{ timeFormat(thread.item.created_at) }}
+                                        发帖时间： {{ timeFormat(threadInfo.created_at) }}
                                     </span>
                                 </div>
                             </template>
@@ -41,7 +41,7 @@
             <!-- 主题 -->
             <nut-col span="22" offset="1">
                 <view class="thread-message html-message taro_html vditor-reset" @click="htmlClick($event)"
-                    v-html="thread.item.post.message"></view>
+                    v-html="threadInfo.post.message"></view>
             </nut-col>
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
@@ -51,9 +51,9 @@
             </nut-col>
 
             <!-- 回帖列表 -->
-            <template v-if="thread.postLoaded">
-                <template v-if="thread.postCount > 0">
-                    <nut-col v-for="(post, index) in thread.posts" span="22" offset="1">
+            <template v-if="!postLoading">
+                <template v-if="threadPosts.total_count > 0">
+                    <nut-col v-for="(post, index) in threadPosts.data" span="22" offset="1">
                         <view :class="'.post-id-' + post.id"></view>
                         <view>
                             <nut-cell-group class="post-main">
@@ -68,7 +68,7 @@
                                             <view class="info-desc">
                                                 <span class="nickname"> {{ post.user.nickname }}</span>
                                                 <span>
-                                                    {{ (thread.page - 1) * thread.postLimit + index + 1 }}楼
+                                                    {{ (pagination.page - 1) * pagination.limit + index + 1 }}楼
                                                     回复时间： {{ timeFormat(post.created_at) }}
                                                 </span>
                                             </view>
@@ -94,9 +94,9 @@
                     </nut-col>
                     <nut-col>
                         <div class="pagination">
-                            <nut-pagination v-if="thread.postCount > thread.postLimit" span="24" v-model="thread.page"
-                                :total-items="thread.postCount" :items-per-page="thread.postLimit"
-                                @change="thread.pageChange" />
+                            <nut-pagination v-if="threadPosts.total_count > pagination.limit" span="24"
+                                v-model="pagination.page" :total-items="threadPosts.total_count"
+                                :items-per-page="pagination.limit" />
                         </div>
                     </nut-col>
                 </template>
@@ -113,7 +113,7 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <SendPost></SendPost>
+            <SendPost :info="threadInfo" @send="sendPost"></SendPost>
         </nut-row>
         <view v-else>
             <view class="skeleton-container">
@@ -131,14 +131,16 @@
 <script lang="ts" setup>
 
 import { watch, ref } from 'vue';
-import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
-import { useThreadStore, useIndexStore } from '@/stores'
+import { useConfigStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
+import { apiServer, ThraadInfo, ThreadPostList } from '@/api';
+import { computedAsync } from "@vueuse/core";
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -147,8 +149,7 @@ if (process.env.TARO_ENV === 'h5') {
     // 加载html5样式
     require('@tarojs/taro/html.css')
 }
-const thread = useThreadStore()
-const index = useIndexStore()
+const config = useConfigStore()
 
 const imageUrls = [] as string[]
 
@@ -178,7 +179,7 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
             }
             // 表情图片拼接服务器地址
             if (src.startsWith("assets")) {
-                el.setAttribute('src', thread.server + "/" + src)
+                el.setAttribute('src', apiServer + "/" + src)
                 break
             }
             // 小程序图片不会自动显示宽度，在图片加载后设置图片显示真实宽度，超出屏幕的图片有样式中的 max-width 限制
@@ -198,27 +199,48 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
     }
     return el
 }
+
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
+if (instance.router) {
+    threadID.value = Number(instance.router.params['id'] || 0)
+}
 
-// 当页面显示时执行初始化，包括返回上一个页面时
-useDidShow(() => {
-    // 初始化加载
-    if (instance.router) {
-        threadID.value = Number(instance.router.params['id'] || 0)
-        if (thread.item) {
-            // 如果是从其他帖子页面返回到当前页面，需要重新加载数据
-            // 如果是从小程序的右上角菜单返回，则不重新加载数据（比如分享）
-            if (thread.item.id === threadID.value) {
-                return
-            }
-        }
-        thread.load(threadID.value)
-        Taro.pageScrollTo({
-            scrollTop: 0,
-        })
+// 获取帖子数据
+const infoLoading = ref(true)
+const threadInfo = computedAsync(() => {
+    return ThraadInfo(threadID.value).then(resp => resp.data.data)
+}, undefined, { evaluating: infoLoading })
+
+// 获取回复数据
+const postLoading = ref(true)
+const pagination = ref({ page: 1, limit: 10 })
+const threadPosts = computedAsync(() => {
+    return ThreadPostList(threadID.value, {
+        page: pagination.value.page,
+        pageSize: pagination.value.limit,
+    }).then(resp => resp.data)
+}, undefined, { evaluating: postLoading })
+
+// 翻页后滚动到回复分割线，如果是发帖后自动翻页则滚动到底部
+const sendPostScroll = ref(false)
+watch(threadPosts, (_, old) => {
+    // 初始化时不滚动
+    if (old == undefined) {
+        return
     }
-
+    Taro.nextTick(() => {
+        if (sendPostScroll.value) {
+            // TODO(wurongjie) scrollTop 应该获取网页高度
+            Taro.pageScrollTo({ scrollTop: 10000 })
+            sendPostScroll.value = false
+            return
+        }
+        Taro.pageScrollTo({
+            selector: ".post-divider",
+            offsetTop: -100
+        })
+    })
 })
 
 // 渲染内容点击，在小程序中处理超链接
@@ -244,11 +266,11 @@ function htmlClick(event: MouseEvent) {
 }
 // 生成分享标题
 function genShareTitle(title: string) {
-    if (!index.weixinShare) {
+    if (!config.weixinShare.state) {
         return title
     }
-    const maxlen = index.weixinShare.title_max_length
-    const suffix = index.weixinShare.title_suffix
+    const maxlen = config.weixinShare.state.title_max_length
+    const suffix = config.weixinShare.state.title_suffix
     // 需要完整显示后缀，对标题做截断
     if (title.length + suffix.length - maxlen > 3) {
         title = title.slice(0, maxlen - suffix.length - 3) + "..." + suffix;
@@ -257,39 +279,40 @@ function genShareTitle(title: string) {
     }
     return title
 }
+
 // 设置分享标题
 useShareTimeline(() => {
-    if (!thread.item || !index.weixinShare) {
+    if (!threadInfo || !config.weixinShare.state) {
         return {}
     }
     return {
-        title: genShareTitle(thread.item.subject),
-        imageUrl: index.weixinShare.default_img
+        title: genShareTitle(threadInfo.value.subject),
+        imageUrl: config.weixinShare.state.default_img
     }
 })
 useShareAppMessage(() => {
-    if (!thread.item || !index.weixinShare) {
+    if (!threadInfo || !config.weixinShare.state) {
         return {}
     }
     return {
-        title: genShareTitle(thread.item.subject),
+        title: genShareTitle(threadInfo.value.subject),
     }
-})
-
-
-// 翻页后移动到回复分割线
-watch(() => thread.page, () => {
-    Taro.nextTick(() => {
-        Taro.pageScrollTo({
-            selector: ".post-divider",
-            offsetTop: -100
-        })
-    })
 })
 
 // 时间格式化
 const timeFormat = (timeStr: string) => {
     return dayjs(timeStr).format("YYYY-MM-DD HH:mm")
+}
+
+// 在发帖后翻到最后一页
+const sendPost = () => {
+    let last = Math.ceil(threadPosts.value.total_count / pagination.value.limit)
+    // 如果正好换页，跳转到新页
+    if (threadPosts.value.total_count % pagination.value.limit === 0) {
+        last++
+    }
+    sendPostScroll.value = true
+    pagination.value.page = last
 }
 </script>
 

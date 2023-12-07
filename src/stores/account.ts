@@ -1,9 +1,16 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import { http } from "./http";
 import Taro from "@tarojs/taro";
-const initNECaptcha = import("./captcha.js");
+import {
+  GetAccountInfo,
+  LoginByCode,
+  LoginByPassword,
+  Register,
+  RegisterCode,
+  bbsLogout,
+} from "@/api";
+const initNECaptcha = import("../assets/captcha");
 
 const EmptyUserInfo = {
   nickname: "",
@@ -104,7 +111,7 @@ export const useAccountStore = defineStore("account", () => {
   };
   // 刷新用户信息
   const refreshInfo = async () => {
-    return getAccountInfo().then((info) => {
+    return GetAccountInfo().then((info) => {
       loaded.value = true;
       is_login.value = true;
       user_info.value = {
@@ -155,7 +162,7 @@ export const useAccountStore = defineStore("account", () => {
       throw "go to login";
     }
     const loginCode = await getLoginCode();
-    await weappLogin(loginCode);
+    await LoginByCode(loginCode);
     await refreshInfo();
   };
   const loginByPassword = async (
@@ -165,7 +172,7 @@ export const useAccountStore = defineStore("account", () => {
     password: string
   ) => {
     const loginCode = await getLoginCode();
-    const resp = await weappLoginPassword(
+    const resp = await LoginByPassword(
       captchaID,
       captchaCode,
       loginCode,
@@ -193,7 +200,7 @@ export const useAccountStore = defineStore("account", () => {
     phoneCode: string
   ) => {
     const loginCode = await getLoginCode();
-    await weappRegister(captchaID, captchaCode, loginCode, phone, phoneCode);
+    await Register(captchaID, captchaCode, loginCode, phone, phoneCode);
     await login();
   };
   const registerCode = async (
@@ -202,7 +209,7 @@ export const useAccountStore = defineStore("account", () => {
     phone: string
   ) => {
     const loginCode = await getLoginCode();
-    await weappRegisterCode(captchaID, captchaCode, phone, loginCode);
+    await RegisterCode(captchaID, captchaCode, phone, loginCode);
   };
 
   refreshInfo().finally(() => {
@@ -226,116 +233,3 @@ export const useAccountStore = defineStore("account", () => {
     useForceCaptcha,
   };
 });
-
-async function getAccountInfo() {
-  return http.get<AccountInfo>("/api/v1/login/is_login").then((resp) => {
-    if (!resp.data) {
-      throw "no login";
-    }
-    return resp.data;
-  });
-}
-
-async function bbsLogout() {
-  return http.post<{ url: string }>("/api/v1/login/logout");
-}
-
-// 小程序登录接口
-async function weappLogin(code: string) {
-  return http.post("/api/v2/public/weixin/weapp/login", { code });
-}
-
-// 小程序登录接口
-async function weappLoginPassword(
-  captcha_id: string,
-  captcha_code: string,
-  login_code: string,
-  username: string,
-  password: string
-) {
-  const url = "/api/v2/public/weixin/weapp/login/password";
-  const body = { login_code, username, password };
-  const headers = {
-    "x-captcha-id": captcha_id,
-    "x-captcha-code": captcha_code,
-  };
-  return http.post<{ code: number; msg: string }>(url, body, { headers });
-}
-
-// 小程序注册接口
-async function weappRegister(
-  captcha_id: string,
-  captcha_code: string,
-  login_code: string,
-  phone: string,
-  phone_code: string
-) {
-  const url = "/api/v2/public/weixin/weapp/register?captcha_id=" + captcha_id;
-  const body = { login_code, phone, phone_code };
-  const headers = {
-    "x-captcha-id": captcha_id,
-    "x-captcha-code": captcha_code,
-  };
-  return http.post(url, body, { headers });
-}
-// 小程序注册验证码
-async function weappRegisterCode(
-  captcha_id: string,
-  captcha_code: string,
-  phone: string,
-  login_code: string
-) {
-  const url =
-    "/api/v2/public/weixin/weapp/register/code?captcha_id=" + captcha_id;
-  const body = { login_code, phone };
-  const headers = {
-    "x-captcha-id": captcha_id,
-    "x-captcha-code": captcha_code,
-  };
-  return http.post(url, body, { headers });
-}
-
-interface AccountInfo {
-  id: number;
-  account_id: number;
-  group_id: number;
-  group_name: string;
-  email: string;
-  email_checked: number;
-  username: string;
-  realname: string;
-  nickname: string;
-  mobile: string;
-  qq: string;
-  threads_cnt: number;
-  posts_cnt: number;
-  msg_cnt: number;
-  credits_num: number;
-  create_ip: string;
-  created_at: string;
-  updated_at: string;
-  login_ip: string;
-  login_date: string;
-  logins_cnt: number;
-  avatar: string;
-  digests_num: number;
-  state: number;
-  like_cnt: number;
-  favourite_cnt: number;
-  allow_speak: boolean;
-  desc: string;
-  level: number;
-  levels: Levels;
-}
-
-interface Levels {
-  id: number;
-  admin: string;
-  color_id: number;
-  level_icon: string;
-  level_name: string;
-  min: number;
-  max: number;
-  created_at: string;
-  updated_at: string;
-}

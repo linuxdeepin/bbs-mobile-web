@@ -18,7 +18,7 @@
                 </nut-input>
                 <nut-input v-model="phoneCode" placeholder="手机验证码" />
 
-                <nut-checkbox v-for="(item, index) in agreement.registerAgreementList" v-model="agreeList[index]">
+                <nut-checkbox v-for="(item, index) in registerAgreementList" v-model="agreeList[index]">
                     我已阅读并同意
                     <span class="link" @tap="showAgree(item.id)">{{ item.name }}</span>
                 </nut-checkbox>
@@ -41,10 +41,10 @@
 
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
-import { useAccountStore, useAgreementStore, usePromptStore } from '@/stores'
+import { useAccountStore, usePromptStore } from '@/stores'
+import { GetAgreement } from '@/api';
 
 const account = useAccountStore()
-const agreement = useAgreementStore()
 const prompt = usePromptStore()
 
 // 注册验证码
@@ -54,7 +54,11 @@ const showRegister = ref(true)
 const showAgreement = ref(false)
 const agreementContent = ref("")
 // 需要同意的隐私协议
-const agreeList = ref(Array(agreement.registerAgreementList.length).fill(false))
+const registerAgreementList = ref([
+    { id: "6d61900fd8e94259ac533d26695d363d", name: "深度隐私政策" },
+    { id: "f3a185cb59d546309362ac39e795ffbf", name: "深度帐号使用协议" },
+]);
+const agreeList = ref(Array(registerAgreementList.value.length).fill(false))
 
 const phoneValid = computed(() => {
     return phone.value.match(/^1[3-9]\d{9}$/)
@@ -121,7 +125,7 @@ const register = async (captchaCode: string) => {
 }
 
 const showAgree = (id: string) => {
-    agreement.getAgreement(id, 'cn').then((resp) => {
+    GetAgreement(id, 'cn').then((resp) => {
         showAgreement.value = true
         agreementContent.value = resp.data.data.content
     })

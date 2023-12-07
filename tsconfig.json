@@ -15,6 +15,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
+      "@/api": ["./src/api"],
       "@/assets/*": ["./src/assets/*"],
       "@/stores": ["./src/stores"],
       "@/stores/*": ["./src/stores/*"],
