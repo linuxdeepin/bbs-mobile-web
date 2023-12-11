@@ -8,17 +8,18 @@
                 </ne-captcha>
                 <nut-form-item>
                     <view class="form-item">
-                        <view class="msg-input">
-                            <nut-textarea v-model="msg" :style="{ height: inputHeight + 'rem' }" placeholder="说点什么吧..."
-                                :disabled="!account.is_login" />
+                        <view class="msg-input" :style="{ height: inputHeight + 0.5 + 'rem' }">
+                            <textarea :value="msg" :style="{ marginTop: '0.5rem', height: inputHeight + 'rem' }"
+                                placeholder="说点什么吧..." maxlength="1000" :show-confirm-bar="false" :hold-keyboard="true"
+                                :disabled="!account.is_login" @linechange="lineChange"
+                                @input="msg = ($event as any).detail.value" @blur="showEmojiList = false" />
                         </view>
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                             @click="showEmojiList = !showEmojiList" />
                         <nut-button class="send-btn" type="primary" size="normal" :disabled="msg.length == 0"
                             @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                         <!-- 未登陆时，点击回复提示前往登陆 -->
-                        <view class="click-mask" v-if="!account.is_login"
-                            @click="showLoginDialog = true; console.log('click')"></view>
+                        <view class="click-mask" v-if="!account.is_login" @click="showLoginDialog = true"></view>
                     </view>
                 </nut-form-item>
             </nut-form>
@@ -26,8 +27,7 @@
                 <nut-tabs v-model="tabEmojiValue" swipeable type="smile">
                     <nut-tab-pane title="小浣熊" pane-key="0">
                         <view class="image-list">
-                            <view class="image-item" v-for="( emoji, name ) of  customEmoji "
-                                @click="msgImg = { alt: name, img: emoji }; postCaptcha.tryVerify(submitPost)">
+                            <view class="image-item" v-for="( emoji, name ) of  customEmoji" @click="clickImage(name)">
                                 <img :alt="name" :src="apiServer + '/' + emoji">
                             </view>
                             <view class="image-item" v-for=" _  of  Array(10).fill(0) "></view>
@@ -78,11 +78,23 @@ const props = defineProps<{
 
 // 回复内容
 const msg = ref("")
+const lineCount = ref(1)
+const lineChange = (event: { detail: { lineCount: number, lineHeight: number } }) => {
+    console.log(event.detail)
+    lineCount.value = event.detail.lineCount
+}
 const inputHeight = computed(() => {
-    const lineNumber = msg.value.split("\n").length
-    // 初始化1.5rem高度
-    if (lineNumber === 1) {
+    const lineNumber = lineCount.value
+    if (lineNumber <= 1) {
         return 1.5
+    }
+    if (lineNumber > 10) {
+        return 12
+    }
+    return lineNumber * 1.2
+    // 初始化1.5rem高度
+    if (lineNumber <= 1) {
+        return 1
     }
     // 限制input最大高度，和下面的1.2保持一直
     if (lineNumber > 10) {
@@ -90,26 +102,31 @@ const inputHeight = computed(() => {
     }
     // 多行使用(行数*1.2)rem
     // TODO(wurongjie) 如果写了很长的内容，并不使用换行，input高度不会自动调整
-    return lineNumber * 1.2
+    return lineNumber * 1
 })
-// 回复图片，小浣熊表情和上传图片
-const msgImg = ref({ alt: '', img: '' })
 // 发帖验证码
 const postCaptcha = account.useSmartCaptcha()
+// 点击图片表情
+const clickImage = (imgName: string) => {
+    msg.value += ` :${imgName}: `
+}
 // 人机校验后发布回复
 const submitPost = async (captchaCode: string) => {
     if (!account.is_login) {
         account.gotoLogin()
         return
     }
+    // 发布评论
     try {
-        // 发布评论
-        let message = `<div data-weapp_version="v1">${msg.value}</div>`
-        if (msgImg.value.img) {
-            message = `<div data-weapp_version="v1"> 
-                <img class="emoji" title="${msgImg.value.alt}" src="${msgImg.value.img}" alt="${msgImg.value.alt}">
-            </div>`
+        let val = msg.value
+        if (val.includes(":")) {
+            for (const name of Object.keys(customEmoji)) {
+                const reg = new RegExp(`:${name}:`, "g")
+                const img = `<img class="emoji" title="${name}" src="${customEmoji[name]}" alt="${name}">`
+                val = val.replace(reg, img)
+            }
         }
+        let message = `<div data-weapp_version="v1">${val}</div>`
         await CreateThreadPost({
             message,
             validate: captchaCode,
@@ -121,7 +138,6 @@ const submitPost = async (captchaCode: string) => {
         prompt.showToast('success', "发送成功")
         // 清空输入框内容
         msg.value = ''
-        msgImg.value = { alt: '', img: '' }
         showEmojiList.value = false
         emit('send')
     } catch (err) {
@@ -158,6 +174,10 @@ const tabEmojiValue = ref(0)
 
         .msg-input {
             flex: 1;
+
+            textarea {
+                width: 100%;
+            }
         }
 
         .emoji-btn,

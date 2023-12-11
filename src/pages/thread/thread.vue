@@ -213,9 +213,12 @@ const threadInfo = computedAsync(() => {
 }, undefined, { evaluating: infoLoading })
 
 // 获取回复数据
+const postRefresh = ref(0) // 便于手动触发更新
 const postLoading = ref(true)
 const pagination = ref({ page: 1, limit: 10 })
 const threadPosts = computedAsync(() => {
+    // 在回复时，需要手动刷新
+    postRefresh.value
     return ThreadPostList(threadID.value, {
         page: pagination.value.page,
         pageSize: pagination.value.limit,
@@ -312,6 +315,7 @@ const sendPost = () => {
         last++
     }
     sendPostScroll.value = true
+    postRefresh.value++
     pagination.value.page = last
 }
 </script>
