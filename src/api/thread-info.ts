@@ -1,6 +1,6 @@
 import { http } from "./http";
 
-export async function ThraadInfo(id: number) {
+export async function ThreadInfo(id: number) {
   return http.get<ThreadInfoResponse>("/api/v1/thread/info", {
     params: { id },
   });

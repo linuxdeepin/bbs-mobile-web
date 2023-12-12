@@ -139,7 +139,7 @@ import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
-import { apiServer, ThraadInfo, ThreadPostList } from '@/api';
+import { apiServer, ThreadInfo, ThreadPostList } from '@/api';
 import { computedAsync } from "@vueuse/core";
 
 if (process.env.TARO_ENV === 'h5') {
@@ -209,7 +209,7 @@ if (instance.router) {
 // 获取帖子数据
 const infoLoading = ref(true)
 const threadInfo = computedAsync(() => {
-    return ThraadInfo(threadID.value).then(resp => resp.data.data)
+    return ThreadInfo(threadID.value).then(resp => resp.data.data)
 }, undefined, { evaluating: infoLoading })
 
 // 获取回复数据
