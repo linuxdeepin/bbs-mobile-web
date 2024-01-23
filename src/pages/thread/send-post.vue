@@ -11,7 +11,7 @@
                         <view class="msg-input" :style="{ height: inputHeight + 0.5 + 'rem' }">
                             <textarea :value="msg" :style="{ marginTop: '0.5rem', height: inputHeight + 'rem' }"
                                 placeholder="说点什么吧..." maxlength="1000" :show-confirm-bar="false" :hold-keyboard="true"
-                                :disabled="!account.is_login" @linechange="lineChange"
+                                :cursorSpacing="20" :disabled="!account.is_login" @linechange="lineChange"
                                 @input="msg = ($event as any).detail.value" @blur="showEmojiList = false" />
                         </view>
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
