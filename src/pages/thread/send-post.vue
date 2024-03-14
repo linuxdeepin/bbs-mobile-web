@@ -19,7 +19,7 @@
                         <nut-button class="send-btn" type="primary" size="normal" :disabled="msg.length == 0"
                             @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                         <!-- 未登陆时，点击回复提示前往登陆 -->
-                        <view class="click-mask" v-if="!account.is_login" @click="showLoginDialog = true"></view>
+                        <view class="click-mask" v-if="!account.is_login" @click="emit('login')"></view>
                     </view>
                 </nut-form-item>
             </nut-form>
@@ -48,7 +48,6 @@
 
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
-        <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
     </nut-col>
 </template>
 
@@ -70,7 +69,8 @@ const prompt = usePromptStore()
 const account = useAccountStore()
 
 const emit = defineEmits<{
-    send: []
+    send: [],
+    login: []
 }>()
 const props = defineProps<{
     info: { id: number, forum_id: number, user_id: number }
@@ -145,8 +145,6 @@ const submitPost = async (captchaCode: string) => {
         prompt.showToast('fail', "发送失败，请稍后在试")
     }
 }
-// 提示需要进行登陆
-const showLoginDialog = ref(false)
 const showEmojiList = ref(false)
 const tabEmojiValue = ref(0)
 </script>

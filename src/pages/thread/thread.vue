@@ -43,6 +43,13 @@
                 <view class="thread-message html-message taro_html vditor-reset" @click="htmlClick($event)"
                     v-html="threadInfo.post.message"></view>
             </nut-col>
+            <!-- 投票 -->
+            <Vote v-if="threadInfo.is_poll" :thread-id="threadInfo.id"
+                :is-poll-expired="threadInfo.poll_list.poll_expire" :is-multiple="threadInfo.poll_list.multiple"
+                :max-choices="threadInfo.poll_list.maxchoices" :voter-number="threadInfo.poll_list.voters_number"
+                :poll-option-ids="threadInfo.poll_list.polloptionids"
+                :forum-polloption="threadInfo.poll_list.forum_polloption" @login="showLoginDialog = true"
+                @voting="threadRefresh++" />
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
                 <nut-divider class="post-divider" content-position="left">
@@ -113,7 +120,7 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <SendPost :info="threadInfo" @send="sendPost"></SendPost>
+            <SendPost :info="threadInfo" @login="showLoginDialog = true" @send="sendPost"></SendPost>
         </nut-row>
         <view v-else>
             <view class="skeleton-container">
@@ -126,6 +133,7 @@
                 </view>
             </view>
         </view>
+        <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
     </view>
 </template>
 <script lang="ts" setup>
@@ -133,12 +141,13 @@
 import { watch, ref } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
-import { useConfigStore } from '@/stores'
+import { useConfigStore, useAccountStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
 import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
+import Vote from './vote.vue'
 import { apiServer, ThreadInfo, ThreadPostList } from '@/api';
 import { computedAsync } from "@vueuse/core";
 
@@ -150,10 +159,14 @@ if (process.env.TARO_ENV === 'h5') {
     require('@tarojs/taro/html.css')
 }
 const config = useConfigStore()
+const account = useAccountStore()
 
 const imageUrls = [] as string[]
 
 const option = (Taro as any).options
+
+// 提示需要进行登陆
+const showLoginDialog = ref(false)
 
 // 处理html渲染，仅在小程序中生效
 option.html.transformElement = (el: TaroElement, h5el: Element) => {
@@ -208,7 +221,10 @@ if (instance.router) {
 
 // 获取帖子数据
 const infoLoading = ref(true)
+// 刷新帖子
+const threadRefresh = ref(0)
 const threadInfo = computedAsync(() => {
+    threadRefresh.value
     return ThreadInfo(threadID.value).then(resp => resp.data.data)
 }, undefined, { evaluating: infoLoading })
 

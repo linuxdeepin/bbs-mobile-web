@@ -6,6 +6,10 @@ export async function ThreadInfo(id: number) {
   });
 }
 
+export async function ThreadPoll(tid: number, polloptionid: number[]) {
+  return http.post("/api/v1/thread/poll", { tid, polloptionid });
+}
+
 interface ThreadInfoResponse {
   code: number;
   data: Data;
