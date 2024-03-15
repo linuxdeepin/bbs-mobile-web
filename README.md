@@ -24,3 +24,4 @@ _由于微信限制打包体积，需要设置环境变量 `NODE_ENV=production`
 1. [Taro](https://github.com/NervJS/taro)
 2. [NutUI](https://github.com/jdf2e/nutui)
 3. [Vue.js](https://github.com/vuejs/core)
+4. 🧑‍💻 [student-ice](https://github.com/student-ice)
