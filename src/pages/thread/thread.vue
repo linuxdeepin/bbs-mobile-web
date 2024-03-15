@@ -234,15 +234,18 @@ watch(threadPosts, (_, old) => {
     }
     Taro.nextTick(() => {
         if (sendPostScroll.value) {
-            // TODO(wurongjie) scrollTop 应该获取网页高度
-            Taro.pageScrollTo({ scrollTop: 10000 })
-            sendPostScroll.value = false
-            return
+            Taro.createSelectorQuery().select('.thread-page').boundingClientRect().exec((res) => {
+                Taro.pageScrollTo({
+                    scrollTop: res[0].height
+                })
+                sendPostScroll.value = false
+            })
+        } else {
+            Taro.pageScrollTo({
+                selector: ".post-divider",
+                offsetTop: -100
+            })
         }
-        Taro.pageScrollTo({
-            selector: ".post-divider",
-            offsetTop: -100
-        })
     })
 })
 
