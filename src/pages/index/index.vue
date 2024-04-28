@@ -105,9 +105,10 @@ useDidShow(() => {
 // 加载帖子数据
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
-const threadIndexResponse = computedAsync(async () => {
+const threadIndexResponse = ref()
+computedAsync(async () => {
   const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
-  return resp.data || [];
+  threadIndexResponse.value = resp.data || [];
 }, undefined, { evaluating: isLoading })
 // 翻页后跳转到顶部
 watch(isLoading, () => {
