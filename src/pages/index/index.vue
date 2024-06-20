@@ -88,7 +88,7 @@
 import TopIcon from '@/assets/top.svg'
 
 import { computedAsync } from "@vueuse/core";
-import { apiServer, IndexThread } from '@/api'
+import { apiServer, IndexThread, ThreadIndexResponse } from '@/api'
 
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
 import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
@@ -105,7 +105,7 @@ useDidShow(() => {
 // 加载帖子数据
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
-const threadIndexResponse = ref()
+const threadIndexResponse = ref<ThreadIndexResponse>({ ThreadIndex: [], total_count: 0 })
 computedAsync(async () => {
   const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
   threadIndexResponse.value = resp.data || [];
@@ -126,7 +126,7 @@ const tabChange = (item: Parameters<typeof tabs.change>[0]) => {
   }
 }
 // 跳转到帖子详情
-const goThread = (item: typeof threadIndexResponse.value.ThreadIndex[0]) => {
+const goThread = (item: ThreadIndexResponse["ThreadIndex"][0]) => {
   // 预览数量增加
   item.views_cnt++
   Taro.navigateTo({
