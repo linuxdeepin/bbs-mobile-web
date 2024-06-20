@@ -30,7 +30,7 @@ export async function IndexThread(opt: {
   });
 }
 
-interface ThreadIndexResponse {
+export interface ThreadIndexResponse {
   total_count: number;
   ThreadIndex: ThreadIndex[];
 }
