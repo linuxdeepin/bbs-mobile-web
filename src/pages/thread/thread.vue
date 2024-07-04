@@ -87,18 +87,24 @@
                                         <view class="son-post" v-if="post.son_post?.id">
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
 
-                                            <view class="post-message html-message taro_html vditor-reset"
+                                            <view v-if="post.son_post.deleted_at === null"
+                                                class="post-message html-message taro_html vditor-reset"
                                                 @click="htmlClick($event)" v-html="post.son_post.message">
+                                            </view>
+                                            <view v-else
+                                                class="post-message html-message taro_html vditor-reset del-message">
+                                                该评论已删除!
                                             </view>
                                         </view>
                                         <view class="post-message html-message taro_html vditor-reset"
                                             @click="htmlClick($event)" v-html="post.message">
                                         </view>
+
                                     </template>
                                     <!-- 评论被用户删除 -->
                                     <template #desc v-else>
                                         <view class="post-message html-message taro_html vditor-reset del-message">
-                                            该评论已删除
+                                            该评论已删除!
                                         </view>
                                     </template>
                                 </nut-cell>
