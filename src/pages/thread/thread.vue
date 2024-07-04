@@ -83,7 +83,7 @@
                                     </template>
                                 </nut-cell>
                                 <nut-cell class="content" desc-text-align="left">
-                                    <template #desc>
+                                    <template #desc v-if="post.deleted_at === null">
                                         <view class="son-post" v-if="post.son_post?.id">
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
 
@@ -93,6 +93,12 @@
                                         </view>
                                         <view class="post-message html-message taro_html vditor-reset"
                                             @click="htmlClick($event)" v-html="post.message">
+                                        </view>
+                                    </template>
+                                    <!-- 评论被用户删除 -->
+                                    <template #desc v-else>
+                                        <view class="post-message html-message taro_html vditor-reset del-message">
+                                            该评论已删除
                                         </view>
                                     </template>
                                 </nut-cell>
@@ -394,6 +400,10 @@ const sendPost = () => {
         .h5-h2 {
             line-height: 1.5em;
         }
+    }
+
+    .del-message {
+        color: #97a3b4;
     }
 
     .content>view {
