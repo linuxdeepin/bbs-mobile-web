@@ -1,10 +1,13 @@
 <template>
-  <nut-tabs v-model="tabs">
-    <nut-tab-pane title="主题" pane-key="1">
-      <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
-        :pagination="pagination" @page-turning="onPageTurning" />
-    </nut-tab-pane>
-  </nut-tabs>
+  <view>
+    <nut-tabs v-model="tabs">
+      <nut-tab-pane title="主题" pane-key="1">
+        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
+          :pagination="pagination" @page-turning="onPageTurning" />
+      </nut-tab-pane>
+    </nut-tabs>
+    <Tabbar @tab-change="tabChange"></Tabbar>
+  </view>
 </template>
 
 <script lang="ts" setup>
@@ -13,6 +16,7 @@ import { ref, watch } from 'vue'
 import { Message } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import MessageThread from './message-thread.vue'
+import Tabbar from '@/widgets/tabbar.vue'
 
 const tabs = ref(1)
 const isLoading = ref(true)
@@ -33,6 +37,10 @@ watch(isLoading, () => {
 
 const onPageTurning = (page: number) => {
   pagination.value.page = page
+}
+
+const tabChange = () => {
+  pagination.value.page = 1
 }
 </script>
 

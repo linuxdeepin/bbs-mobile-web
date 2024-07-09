@@ -3,7 +3,7 @@ import { ref } from "vue";
 import Taro from "@tarojs/taro";
 
 export const useTabsStore = defineStore("tabs", () => {
-  const active = ref("index" as "index" | "account");
+  const active = ref("index" as "index" | "account" | "message");
   const change = (item: { name: typeof active.value }) => {
     active.value = item.name;
     const route = `/pages/${item.name}/${item.name}`;

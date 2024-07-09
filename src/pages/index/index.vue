@@ -68,23 +68,7 @@
     </view>
     <!-- 分页组件 -->
     <!-- 底部标签切换 -->
-    <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabChange">
-      <nut-tabbar-item tab-title="首页" name="index">
-        <template #icon>
-          <Home></Home>
-        </template>
-      </nut-tabbar-item>
-      <nut-tabbar-item tab-title="消息" name="message">
-        <template #icon>
-          <Message></Message>
-        </template>
-      </nut-tabbar-item>
-      <nut-tabbar-item tab-title="我的" name="account">
-        <template #icon>
-          <My2></My2>
-        </template>
-      </nut-tabbar-item>
-    </nut-tabbar>
+    <Tabbar @tabChange="tabChange"></Tabbar>
   </view>
 </template>
 
@@ -96,10 +80,11 @@ import { computedAsync } from "@vueuse/core";
 import { apiServer, IndexThread, ThreadIndexResponse } from '@/api'
 
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
-import { Home, Message, My2, Comment, Eye } from "@nutui/icons-vue-taro";
+import { Comment, Eye } from "@nutui/icons-vue-taro";
 import { useConfigStore, useTabsStore } from '@/stores'
 import { watch, ref } from 'vue';
 import NavComponent from "@/widgets/navigation.vue";
+import Tabbar from "@/widgets/tabbar.vue";
 
 const tabs = useTabsStore()
 const config = useConfigStore()
@@ -123,12 +108,8 @@ watch(isLoading, () => {
   })
 })
 // 如果点击了首页导航，跳转返回到第一页
-const tabChange = (item: Parameters<typeof tabs.change>[0]) => {
-  if (item.name === 'index') {
-    pagination.value.page = 1
-  } else {
-    tabs.change(item)
-  }
+const tabChange = () => {
+  pagination.value.page = 1
 }
 // 跳转到帖子详情
 const goThread = (item: ThreadIndexResponse["ThreadIndex"][0]) => {

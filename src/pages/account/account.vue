@@ -47,18 +47,7 @@
                     <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
                 </template>
             </view>
-            <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabs.change">
-                <nut-tabbar-item tab-title="首页" name="index">
-                    <template #icon>
-                        <Home></Home>
-                    </template>
-                </nut-tabbar-item>
-                <nut-tabbar-item tab-title="我的" name="account">
-                    <template #icon>
-                        <My2></My2>
-                    </template>
-                </nut-tabbar-item>
-            </nut-tabbar>
+            <Tabbar />
         </view>
         <view v-else>
             <nut-skeleton width="60vw" height="20px" title avatar row="3">
@@ -80,7 +69,8 @@
                 <nut-input v-model="loginByPassword.username" :readonly="loginByPassword.usernameReadonly"
                     placeholder="请输入手机号或用户名" />
                 <nut-input v-model="loginByPassword.password" placeholder="请输入密码" type="password" />
-                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
+                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx"
+                    @verify="captcha.verify">
                 </ne-captcha>
                 <view class="reset-password">
                     <span @click="resetPassword()">忘记密码</span>
@@ -102,7 +92,7 @@
 import { ref } from 'vue';
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useTabsStore, useAccountStore, usePromptStore, } from '@/stores'
-import { Home, My2, Search2 } from "@nutui/icons-vue-taro";
+import Tabbar from '@/widgets/tabbar.vue'
 
 const tabs = useTabsStore()
 const account = useAccountStore()
