@@ -74,6 +74,11 @@
           <Home></Home>
         </template>
       </nut-tabbar-item>
+      <nut-tabbar-item tab-title="消息" name="message">
+        <template #icon>
+          <Message></Message>
+        </template>
+      </nut-tabbar-item>
       <nut-tabbar-item tab-title="我的" name="account">
         <template #icon>
           <My2></My2>
@@ -91,7 +96,7 @@ import { computedAsync } from "@vueuse/core";
 import { apiServer, IndexThread, ThreadIndexResponse } from '@/api'
 
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
-import { Home, My2, Comment, Eye } from "@nutui/icons-vue-taro";
+import { Home, Message, My2, Comment, Eye } from "@nutui/icons-vue-taro";
 import { useConfigStore, useTabsStore } from '@/stores'
 import { watch, ref } from 'vue';
 import NavComponent from "@/widgets/navigation.vue";

@@ -5,6 +5,7 @@ export default defineAppConfig({
     "pages/register/register",
     "pages/account/account",
     "pages/search/search",
+    "pages/message/message"
   ],
   window: {
     backgroundTextStyle: "light",
