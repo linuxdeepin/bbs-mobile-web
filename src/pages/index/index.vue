@@ -77,8 +77,7 @@
 import TopIcon from '@/assets/top.svg'
 
 import { computedAsync } from "@vueuse/core";
-import { apiServer, IndexThread, ThreadIndexResponse } from '@/api'
-
+import { apiServer, IndexThread, ThreadIndexResponse, MessageCount } from '@/api'
 import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
 import { Comment, Eye } from "@nutui/icons-vue-taro";
 import { useConfigStore, useTabsStore } from '@/stores'
@@ -100,6 +99,11 @@ computedAsync(async () => {
   const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
   threadIndexResponse.value = resp.data || [];
 }, undefined, { evaluating: isLoading })
+// 加载消息数量
+useDidShow(async () => {
+  const res = await MessageCount()
+  tabs.messageCount = Object.values(res.data.data).reduce((acc, cur) => acc + cur, 0)
+})
 // 翻页后跳转到顶部
 watch(isLoading, () => {
   Taro.pageScrollTo({
