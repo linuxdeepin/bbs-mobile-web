@@ -1,15 +1,22 @@
 <template>
   <view class="message-thread-page">
+    <!-- 顶部标题和全部已读按钮 -->
+    <view class="topbar">
+      <view class="title">消息列表</view>
+      <nut-button plain size="small" :disabled="newMsgCount === 0" @click="readAllMsg">全部已读</nut-button>
+    </view>
     <!-- 主题列表 -->
     <view v-if="!props.isLoading" class="message-list">
       <template v-for="item in props.data">
-        <nut-cell-group @click="goThread(item.thread_id)">
+        <nut-cell-group @click="goThread(item.thread_id, item.id)">
           <!-- 用户头像,昵称，时间 -->
           <nut-cell class="user-info" desc-text-align="left">
             <template #icon>
-              <nut-avatar size="40" shape="round">
-                <img :src="item.send_user_avatar" />
-              </nut-avatar>
+              <nut-badge :dot="!item.is_new">
+                <nut-avatar size="40" shape="round">
+                  <img :src="item.send_user_avatar" />
+                </nut-avatar>
+              </nut-badge>
             </template>
             <template #desc>
               <view class="info-desc">
@@ -31,6 +38,10 @@
                   <span class="title">回复:&nbsp;</span>
                   <span class="content">{{ item.message_fmt }}</span>
                 </view>
+                <view class="post-info" v-if="isPost">
+                  <span class="nickname">{{ item.receive_user_nickname }}:&nbsp;</span>
+                  <span class="content">{{ item.send_message_fmt }}</span>
+                </view>
                 <view class="thread-title">
                   {{ item.subject }}
                 </view>
@@ -45,47 +56,65 @@
       <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
       </nut-skeleton>
     </view>
-    <!-- 翻页 -->
-    <nut-pagination class="pagination" v-if="!props.isLoading" v-model="pagination.page" mode="multi"
-      :total-items="props.totalCount" :items-per-page="pagination.limit" @change="pageTurning" />
   </view>
 </template>
 
 <script lang="ts" setup>
-import { Datum } from '@/api';
+import { Datum, MessageRead, MessageReadAll } from '@/api';
 import Taro from '@tarojs/taro'
 import { Del } from "@nutui/icons-vue-taro";
 
 const emit = defineEmits<{
   pageTurning: [number],
+  refresh: [],
 }>()
 
 const props = defineProps<{
   data: Datum[],
   isLoading: Boolean,
+  isPost: Boolean,
   totalCount: number,
-  pagination: { page: number, limit: number }
+  newMsgCount: number,
+  category: number,
 }>()
 
-const goThread = (id: number) => {
+const goThread = (threadId: number, msgId: number) => {
+  // 已读当前消息
+  MessageRead({ id: msgId })
   Taro.navigateTo({
-    url: `/pages/thread/thread?id=${id}`,
+    url: `/pages/thread/thread?id=${threadId}`,
   })
+}
+
+const readAllMsg = async () => {
+  const res = await MessageReadAll({ category: props.category })
+  if (res.data.code === 0) {
+    emit('refresh')
+  }
 }
 
 const deleteMessage = () => {
   console.log('删除消息')
   // TODO: 删除消息
 }
-
-const pageTurning = (page: number): void => {
-  console.log('翻页', page)
-  emit('pageTurning', page)
-}
 </script>
 
 <style lang="scss">
 .message-thread-page {
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 5vw;
+    background: rgb(245, 246, 248);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+
+    .title {
+      font-size: 1.2rem;
+      color: #333;
+    }
+  }
+
   .message-list {
     .info-desc {
       margin-left: 10px;
@@ -122,6 +151,26 @@ const pageTurning = (page: number): void => {
         }
       }
 
+      .post-info {
+        margin: 10px 0;
+        display: flex;
+
+        .nickname {
+          color: #333;
+          white-space: nowrap;
+        }
+
+        .content {
+          color: #999;
+          /** 最多显示两行，超出显示省略号 **/
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+      }
+
       .thread-title {
         display: block;
         background-color: #f8f8f8;
@@ -137,12 +186,6 @@ const pageTurning = (page: number): void => {
   .skeleton-container {
     margin-top: 2rem;
     margin-left: 5vw;
-  }
-
-  .pagination {
-    display: flex;
-    justify-content: center;
-    padding-bottom: 4rem;
   }
 }
 </style>

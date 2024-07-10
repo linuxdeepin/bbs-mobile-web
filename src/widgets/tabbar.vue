@@ -5,7 +5,7 @@
         <Home></Home>
       </template>
     </nut-tabbar-item>
-    <nut-tabbar-item tab-title="消息" name="message">
+    <nut-tabbar-item tab-title="消息" name="message" :value="tabs.messageCount">
       <template #icon>
         <Message></Message>
       </template>
@@ -19,6 +19,8 @@
 </template>
 
 <script lang="ts" setup>
+import { MessageCount } from '@/api';
+import { useDidShow } from '@tarojs/taro'
 import { useTabsStore, useAccountStore } from '@/stores'
 import { Home, Message, My2 } from "@nutui/icons-vue-taro"
 
@@ -27,6 +29,13 @@ const emit = defineEmits<{
 }>()
 const account = useAccountStore()
 const tabs = useTabsStore()
+
+useDidShow(async () => {
+  if (!account.is_login) return;
+  const res = await MessageCount()
+  tabs.messageCount = Object.values(res.data.data).reduce((acc, cur) => acc + cur, 0)
+
+})
 
 const tabSwitch = (item: Parameters<typeof tabs.change>[0]) => {
   if (item.name === 'message' && !account.is_login) {
