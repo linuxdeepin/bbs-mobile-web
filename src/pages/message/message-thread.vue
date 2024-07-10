@@ -8,20 +8,21 @@
     <!-- 主题列表 -->
     <view v-if="!props.isLoading" class="message-list">
       <template v-for="item in props.data">
-        <nut-cell-group @click="goThread(item.thread_id, item.id)">
+        <nut-cell-group @click="clickMessage(item)">
           <!-- 用户头像,昵称，时间 -->
           <nut-cell class="user-info" desc-text-align="left">
             <template #icon>
               <nut-badge :dot="!item.is_new">
                 <nut-avatar size="40" shape="round">
-                  <img :src="item.send_user_avatar" />
+                  <img v-if="item.category !== 3" :src="item.send_user_avatar" />
+                  <Notice v-else />
                 </nut-avatar>
               </nut-badge>
             </template>
             <template #desc>
               <view class="info-desc">
                 <view class="info">
-                  <span class="nickname"> {{ item.send_user_nickname }}</span>
+                  <span class="nickname"> {{ item.category === 3 ? item.type : item.send_user_nickname }}</span>
                   <span class="time">{{ item.created_at.replace("T", " ").slice(0, -1) }}</span>
                 </view>
                 <view class="del-btn">
@@ -33,17 +34,22 @@
           <!-- 回复和帖子标题 -->
           <nut-cell>
             <template #default>
-              <view class="message-content">
+              <view v-if="item.category !== 3" class="message-content">
                 <view class="reply-info">
                   <span class="title">回复:&nbsp;</span>
                   <span class="content">{{ item.message_fmt }}</span>
                 </view>
-                <view class="post-info" v-if="isPost">
+                <view class="post-info" v-if="item.category === 2">
                   <span class="nickname">{{ item.receive_user_nickname }}:&nbsp;</span>
                   <span class="content">{{ item.send_message_fmt }}</span>
                 </view>
                 <view class="thread-title">
                   {{ item.subject }}
+                </view>
+              </view>
+              <view v-else class="message-content">
+                <view class="content">
+                  {{ item.note }}
                 </view>
               </view>
             </template>
@@ -62,7 +68,7 @@
 <script lang="ts" setup>
 import { Datum, MessageRead, MessageReadAll } from '@/api';
 import Taro from '@tarojs/taro'
-import { Del } from "@nutui/icons-vue-taro";
+import { Del, Notice } from "@nutui/icons-vue-taro";
 
 const emit = defineEmits<{
   pageTurning: [number],
@@ -72,17 +78,22 @@ const emit = defineEmits<{
 const props = defineProps<{
   data: Datum[],
   isLoading: Boolean,
-  isPost: Boolean,
   totalCount: number,
   newMsgCount: number,
   category: number,
 }>()
 
-const goThread = (threadId: number, msgId: number) => {
+const clickMessage = (datum: Datum) => {
   // 已读当前消息
-  MessageRead({ id: msgId })
+  MessageRead({ id: datum.id })
+  if (datum.category === 3) {
+    Taro.navigateTo({
+      url: `/pages/notify/notify?title=${datum.type}&content=${datum.note}&time=${datum.created_at}`,
+    })
+    return
+  }
   Taro.navigateTo({
-    url: `/pages/thread/thread?id=${threadId}`,
+    url: `/pages/thread/thread?id=${datum.thread_id}`,
   })
 }
 
@@ -132,22 +143,22 @@ const deleteMessage = () => {
       width: 100%;
       font-size: 1.2rem;
 
+      .content {
+        color: #333;
+        /** 最多显示两行，超出显示省略号 **/
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
       .reply-info {
         display: flex;
 
         .title {
           color: #999;
           white-space: nowrap;
-        }
-
-        .content {
-          color: #333;
-          /** 最多显示两行，超出显示省略号 **/
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
         }
       }
 
@@ -158,16 +169,6 @@ const deleteMessage = () => {
         .nickname {
           color: #333;
           white-space: nowrap;
-        }
-
-        .content {
-          color: #999;
-          /** 最多显示两行，超出显示省略号 **/
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
         }
       }
 
