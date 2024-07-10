@@ -36,7 +36,7 @@
             <template #default>
               <view v-if="item.category !== 3" class="message-content">
                 <view class="reply-info">
-                  <span class="title">回复:&nbsp;</span>
+                  <span class="title">{{ item.category === 6 ? "@我的" : "回复" }}:&nbsp;</span>
                   <span class="content">{{ item.message_fmt }}</span>
                 </view>
                 <view class="post-info" v-if="item.category === 2">
