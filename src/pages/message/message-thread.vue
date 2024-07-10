@@ -144,6 +144,7 @@ const deleteMessage = () => {
       font-size: 1.2rem;
 
       .content {
+        padding: 5px 0;
         color: #333;
         /** 最多显示两行，超出显示省略号 **/
         overflow: hidden;
