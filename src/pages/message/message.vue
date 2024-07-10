@@ -20,6 +20,10 @@
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
           :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
+      <nut-tab-pane pane-key="6">
+        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
+          :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+      </nut-tab-pane>
     </nut-tabs>
     <nut-pagination class="pagination" v-if="!isLoading" v-model="pagination.page" mode="multi"
       :total-items="message?.total_count" :items-per-page="pagination.limit" />
@@ -41,7 +45,8 @@ const tabs = ref(1)
 const tabList = ref([
   { title: '主题', paneKey: 1, msgCategory: "thread_msg_count" },
   { title: '帖子', paneKey: 2, msgCategory: "post_msg_count" },
-  { title: '系统消息', paneKey: 3, msgCategory: "sys_msg_count" }
+  { title: '系统消息', paneKey: 3, msgCategory: "sys_msg_count" },
+  { title: '@我的', paneKey: 6, msgCategory: "at_msg_count" }
 ])
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
