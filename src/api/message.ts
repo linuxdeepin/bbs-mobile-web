@@ -16,6 +16,22 @@ export async function Message(opt: {
   })
 }
 
+export async function MessageCount() {
+  return http.get<MessageCountResponse>("/api/v1/user/msg/count")
+}
+// 已读单条消息
+export async function MessageRead(params: {
+  id: number,
+}) {
+  return http.get<MessageReadResponse>("/api/v1/user/msg/read", { params })
+}
+
+// 已读全部消息
+export async function MessageReadAll(params: { category: number }) {
+  return http.get<MessageReadResponse>("/api/v1/user/msg/readAll", { params })
+}
+
+
 interface MessageResponse {
   data: Datum[];
   total_count: number;
@@ -45,4 +61,23 @@ export interface Datum {
   from_idtype: string;
   category: number;
   created_at: string;
+}
+
+interface MessageCountResponse {
+  code: number;
+  data: MessageCountResponseData;
+  msg: string;
+}
+
+interface MessageCountResponseData {
+  at_msg_count: number;
+  letter_msg_count: number;
+  post_msg_count: number;
+  sys_msg_count: number;
+  thread_msg_count: number;
+}
+
+interface MessageReadResponse {
+  code: number;
+  msg: string;
 }
