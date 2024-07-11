@@ -26,7 +26,7 @@
                   <span class="time">{{ item.created_at.replace("T", " ").slice(0, -1) }}</span>
                 </view>
                 <view class="del-btn">
-                  <Del @click.stop="deleteMessage" />
+                  <Del @click.stop="delBtnClicked(item.id)" />
                 </view>
               </view>
             </template>
@@ -38,7 +38,7 @@
                 </view>
                 <view class="bottom">
                   <view class="content">{{ item.send_message_fmt }}</view>
-                  <Del @click.stop="deleteMessage" />
+                  <Del @click.stop="delBtnClicked(item.id)" />
                 </view>
               </view>
             </template>
@@ -85,6 +85,7 @@ import { Del, Notice } from "@nutui/icons-vue-taro";
 const emit = defineEmits<{
   pageTurning: [number],
   refresh: [],
+  showDelDialog: [number]
 }>()
 
 const props = defineProps<{
@@ -104,6 +105,9 @@ const clickMessage = (datum: Datum) => {
     })
     return
   }
+  if (datum.category === 5) {
+    return
+  }
   Taro.navigateTo({
     url: `/pages/thread/thread?id=${datum.thread_id}`,
   })
@@ -116,9 +120,9 @@ const readAllMsg = async () => {
   }
 }
 
-const deleteMessage = () => {
-  console.log('删除消息')
-  // TODO: 删除消息
+const delBtnClicked = (id: number) => {
+  console.log('delBtnClicked', id)
+  emit('showDelDialog', id)
 }
 </script>
 
@@ -133,7 +137,6 @@ const deleteMessage = () => {
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
 
     .title {
-      font-size: 1.2rem;
       color: #333;
     }
   }
@@ -186,7 +189,6 @@ const deleteMessage = () => {
     .message-content {
       display: block;
       width: 100%;
-      font-size: 1.2rem;
 
       .content {
         padding: 5px 0;
