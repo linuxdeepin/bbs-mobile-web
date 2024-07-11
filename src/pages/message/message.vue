@@ -5,40 +5,47 @@
         <view class="tab-list">
           <nut-badge v-for="item in tabList" :key="item.paneKey" class="tab-item" @click="tabs = item.paneKey"
             :class="{ active: tabs === item.paneKey }" :value="msgCount[item.msgCategory]" :max="9"
-            :hidden="msgCount[item.msgCategory] === 0" top="10" right="-5"> {{ item.title }}</nut-badge>
+            @showDelDialog="showDelDialog" :hidden="msgCount[item.msgCategory] === 0" top="10" right="-5"> {{ item.title
+            }}</nut-badge>
         </view>
       </template>
       <nut-tab-pane pane-key="1">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="1"
-          :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          @showDelDialog="showDelDialog" :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane pane-key="2">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="2"
-          :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          @showDelDialog="showDelDialog" :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane pane-key="3">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
-          :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          @showDelDialog="showDelDialog" :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane pane-key="5">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="5"
-          :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          @showDelDialog="showDelDialog" :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane pane-key="6">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
-          :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          @showDelDialog="showDelDialog" :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
     </nut-tabs>
     <nut-pagination class="pagination" v-if="!isLoading" v-model="pagination.page" mode="multi"
       :total-items="message?.total_count" :items-per-page="pagination.limit" />
     <Tabbar @tab-change="tabChange"></Tabbar>
+    <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
   </view>
 </template>
 
 <script lang="ts" setup>
 import Taro, { useDidShow } from '@tarojs/taro'
 import { ref, watch } from 'vue'
-import { Message, MessageCount } from '@/api';
+import { Message, MessageCount, MessageDelete } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import MessageThread from './message-thread.vue'
 import { useTabsStore } from '@/stores';
@@ -54,6 +61,8 @@ const tabList = ref([
   { title: '@我的', paneKey: 6, msgCategory: "at_msg_count" }
 ])
 const isLoading = ref(true)
+const delDialogShow = ref(false)
+const delMsgId = ref(0)
 const pagination = ref({ page: 1, limit: 20 })
 const message = computedAsync(async () => {
   const res = await Message({ page: pagination.value.page, pageSize: pagination.value.limit, category: tabs.value })
@@ -95,6 +104,23 @@ const onPageTurning = (page: number) => {
 const tabChange = () => {
   pagination.value.page = 1
 }
+
+const showDelDialog = (msgId: number) => {
+  console.log('showDelDialog', msgId)
+  delMsgId.value = msgId
+  delDialogShow.value = true
+}
+
+const deleteMessage = () => {
+  console.log('deleteMessage', delMsgId.value)
+  delDialogShow.value = false
+  MessageDelete({ id: delMsgId.value }).then(res => {
+    if (res.data.code === 0) {
+      refreshData()
+      delMsgId.value = 0
+    }
+  })
+}
 </script>
 
 <style lang="scss">
@@ -112,7 +138,6 @@ const tabChange = () => {
     justify-content: center;
     align-items: center;
     padding: 10px 10px 20px 10px;
-    font-size: 1.3rem;
     color: black;
     cursor: pointer;
   }
