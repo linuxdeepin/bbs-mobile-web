@@ -10,7 +10,7 @@
       <template v-for="item in props.data">
         <nut-cell-group @click="clickMessage(item)">
           <!-- 用户头像,昵称，时间 -->
-          <nut-cell class="user-info" desc-text-align="left">
+          <nut-cell desc-text-align="left">
             <template #icon>
               <nut-badge :dot="!item.is_new">
                 <nut-avatar size="40" shape="round">
@@ -19,7 +19,7 @@
                 </nut-avatar>
               </nut-badge>
             </template>
-            <template #desc>
+            <template v-if="item.category !== 5" #desc>
               <view class="info-desc">
                 <view class="info">
                   <span class="nickname"> {{ item.category === 3 ? item.type : item.send_user_nickname }}</span>
@@ -30,9 +30,21 @@
                 </view>
               </view>
             </template>
+            <template v-else #desc>
+              <view class="letter-content">
+                <view class="top">
+                  <span class="nickname"> {{ item.send_user_nickname }} </span>
+                  <span class="time">{{ item.created_at.replace("T", " ").slice(0, -1) }}</span>
+                </view>
+                <view class="bottom">
+                  <view class="content">{{ item.send_message_fmt }}</view>
+                  <Del @click.stop="deleteMessage" />
+                </view>
+              </view>
+            </template>
           </nut-cell>
           <!-- 回复和帖子标题 -->
-          <nut-cell>
+          <nut-cell v-if="item.category !== 5">
             <template #default>
               <view v-if="item.category !== 3" class="message-content">
                 <view class="reply-info">
@@ -135,6 +147,39 @@ const deleteMessage = () => {
 
       .nickname {
         color: #333;
+      }
+    }
+
+    .letter-content {
+      display: flex;
+      flex-direction: column;
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .nickname {
+          color: #333;
+        }
+
+        .time {
+          color: #999;
+        }
+      }
+
+      .bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10rpx;
+
+        .content {
+          flex: 1;
+          color: #999;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
     }
 

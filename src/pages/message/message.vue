@@ -18,11 +18,15 @@
       </nut-tab-pane>
       <nut-tab-pane pane-key="3">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
-          :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+      </nut-tab-pane>
+      <nut-tab-pane pane-key="5">
+        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="5"
+          :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane pane-key="6">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
-          :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+          :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
     </nut-tabs>
     <nut-pagination class="pagination" v-if="!isLoading" v-model="pagination.page" mode="multi"
@@ -46,6 +50,7 @@ const tabList = ref([
   { title: '主题', paneKey: 1, msgCategory: "thread_msg_count" },
   { title: '帖子', paneKey: 2, msgCategory: "post_msg_count" },
   { title: '系统消息', paneKey: 3, msgCategory: "sys_msg_count" },
+  { title: '私信', paneKey: 5, msgCategory: "letter_msg_count" },
   { title: '@我的', paneKey: 6, msgCategory: "at_msg_count" }
 ])
 const isLoading = ref(true)
