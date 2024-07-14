@@ -33,8 +33,8 @@ const tabs = useTabsStore()
 useDidShow(async () => {
   if (!account.is_login) return;
   const res = await MessageCount()
-  tabs.messageCount = Object.values(res.data.data).reduce((acc, cur) => acc + cur, 0)
-
+  const { at_msg_count, letter_msg_count, post_msg_count, sys_msg_count, thread_msg_count } = res.data.data
+  tabs.messageCount = at_msg_count + letter_msg_count + post_msg_count + sys_msg_count + thread_msg_count
 })
 
 const tabSwitch = (item: Parameters<typeof tabs.change>[0]) => {

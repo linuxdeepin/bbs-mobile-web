@@ -102,7 +102,8 @@ computedAsync(async () => {
 // 加载消息数量
 useDidShow(async () => {
   const res = await MessageCount()
-  tabs.messageCount = Object.values(res.data.data).reduce((acc, cur) => acc + cur, 0)
+  const { at_msg_count, letter_msg_count, post_msg_count, sys_msg_count, thread_msg_count } = res.data.data
+  tabs.messageCount = at_msg_count + letter_msg_count + post_msg_count + sys_msg_count + thread_msg_count
 })
 // 翻页后跳转到顶部
 watch(isLoading, () => {
