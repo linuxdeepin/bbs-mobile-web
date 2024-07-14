@@ -1,5 +1,5 @@
 <template>
-  <view>
+  <view class="message-page">
     <nut-tabs v-model="tabs" auto-height @change="pagination.page = 1">
       <template #titles>
         <view class="tab-list">
@@ -39,6 +39,8 @@
       :total-items="message?.total_count" :items-per-page="pagination.limit" />
     <Tabbar @tab-change="tabChange"></Tabbar>
     <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
+    <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+      :duration="prompt.toast.duration" />
   </view>
 </template>
 
@@ -48,10 +50,11 @@ import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import MessageThread from './message-thread.vue'
-import { useTabsStore } from '@/stores';
+import { useTabsStore, usePromptStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue'
 
 const tabStore = useTabsStore()
+const prompt = usePromptStore()
 const tabs = ref(1)
 const tabList = ref([
   { title: '主题', paneKey: 1, msgCategory: "thread_msg_count" },
@@ -86,7 +89,7 @@ const refreshData = async () => {
   msgCount.value = msgCountRes.data.data
   const msgRes = await Message({ page: pagination.value.page, pageSize: pagination.value.limit, category: tabs.value })
   message.value = msgRes.data
-  tabStore.messageCount = Object.values(msgCountRes.data.data).reduce((acc, cur) => acc + cur, 0)
+  tabStore.messageCount = msgCount.value.at_msg_count + msgCount.value.letter_msg_count + msgCount.value.post_msg_count + msgCount.value.sys_msg_count + msgCount.value.thread_msg_count
 }
 
 // 翻页后跳转到顶部
@@ -106,57 +109,66 @@ const tabChange = () => {
 }
 
 const showDelDialog = (msgId: number) => {
-  console.log('showDelDialog', msgId)
   delMsgId.value = msgId
   delDialogShow.value = true
 }
 
-const deleteMessage = () => {
-  console.log('deleteMessage', delMsgId.value)
+const deleteMessage = async () => {
   delDialogShow.value = false
-  MessageDelete({ id: delMsgId.value }).then(res => {
-    if (res.data.code === 0) {
-      refreshData()
-      delMsgId.value = 0
+  try {
+    if (delMsgId.value === 0) {
+      throw new Error("消息ID错误")
     }
-  })
+    await MessageDelete({ id: delMsgId.value }).then(res => {
+      if (res.data.code === 0) {
+        refreshData()
+        delMsgId.value = 0
+        prompt.showToast("success", "删除成功")
+      }
+    })
+  } catch (error) {
+    console.log("delete message: ", error)
+    prompt.showToast("fail", "删除失败")
+  }
 }
 </script>
 
 <style lang="scss">
-.tab-list {
-  display: flex;
-  justify-content: space-around;
-  width: 100%;
-  padding: 10px 5px;
-  background-color: #fff;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-
-  .tab-item {
+.message-page {
+  .tab-list {
     display: flex;
-    flex-direction: column;
+    justify-content: space-around;
+    width: 100%;
+    padding: 10px 5px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 10px 20px 10px;
+      color: black;
+      cursor: pointer;
+    }
+
+    .tab-item.active {
+      color: red;
+      border-bottom: 2px solid red;
+    }
+  }
+
+
+  .nut-tab-pane {
+    padding: 0;
+  }
+
+
+  .pagination {
+    display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 10px 10px 20px 10px;
-    color: black;
-    cursor: pointer;
+    padding-bottom: 4rem;
   }
-
-  .tab-item.active {
-    color: red;
-    border-bottom: 2px solid red;
-  }
-}
-
-
-.nut-tab-pane {
-  padding: 0;
-}
-
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  padding-bottom: 4rem;
 }
 </style>
