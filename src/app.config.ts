@@ -6,7 +6,8 @@ export default defineAppConfig({
     "pages/account/account",
     "pages/search/search",
     "pages/message/message",
-    "pages/notify/notify"
+    "pages/notify/notify",
+    "pages/dialog/dialog"
   ],
   window: {
     backgroundTextStyle: "light",

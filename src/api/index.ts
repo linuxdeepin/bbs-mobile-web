@@ -8,3 +8,4 @@ export * from "./thread-index";
 export * from "./thread-info";
 export * from "./thread-search";
 export * from "./message";
+export * from "./dialog";

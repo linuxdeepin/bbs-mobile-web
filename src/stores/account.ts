@@ -13,6 +13,7 @@ import {
 const initNECaptcha = import("../assets/captcha");
 
 const EmptyUserInfo = {
+  id: 0,
   nickname: "",
   avatar: "",
   username: "",
@@ -44,7 +45,7 @@ export const useAccountStore = defineStore("account", () => {
 
     // 在网易易盾生成的验证ID
     const captchaID = captcha_id;
-    let callback = (_captchaCode: string) => {};
+    let callback = (_captchaCode: string) => { };
     // 验证成功后的回调函数
     const verify = (event: { detail: [string, string] }) => {
       const [err, validate] = event.detail;
@@ -115,6 +116,7 @@ export const useAccountStore = defineStore("account", () => {
       loaded.value = true;
       is_login.value = true;
       user_info.value = {
+        id: info.id,
         nickname: info.nickname,
         avatar: info.avatar,
         username: info.username,

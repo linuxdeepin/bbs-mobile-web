@@ -23,7 +23,7 @@
               <view class="info-desc">
                 <view class="info">
                   <span class="nickname"> {{ item.category === 3 ? item.type : item.send_user_nickname }}</span>
-                  <span class="time">{{ item.created_at.replace("T", " ").slice(0, -1) }}</span>
+                  <span class="time">{{ formatTime(item.created_at) }}</span>
                 </view>
                 <view class="del-btn">
                   <Del @click.stop="delBtnClicked(item.id)" />
@@ -34,7 +34,7 @@
               <view class="letter-content">
                 <view class="top">
                   <span class="nickname"> {{ item.send_user_nickname }} </span>
-                  <span class="time">{{ item.created_at.replace("T", " ").slice(0, -1) }}</span>
+                  <span class="time">{{ formatTime(item.created_at) }}</span>
                 </view>
                 <view class="bottom">
                   <view class="content">{{ item.send_message_fmt }}</view>
@@ -81,6 +81,7 @@
 import { Datum, MessageRead, MessageReadAll } from '@/api';
 import Taro from '@tarojs/taro'
 import { Del, Notice } from "@nutui/icons-vue-taro";
+import { formatTime } from "@/utils/format"
 
 const emit = defineEmits<{
   pageTurning: [number],
@@ -106,6 +107,9 @@ const clickMessage = (datum: Datum) => {
     return
   }
   if (datum.category === 5) {
+    Taro.navigateTo({
+      url: `/pages/dialog/dialog?uid=${datum.send_user_id}`,
+    })
     return
   }
   Taro.navigateTo({
