@@ -17,7 +17,7 @@ export async function Message(opt: {
 }
 
 export async function MessageDelete(params: { id: number }) {
-  return http.delete<MessageReadResponse>("/api/v1/user/msg/", { params })
+  return http.delete<MessageReadResponse>("/api/v1/user/msg", { params })
 }
 
 export async function MessageCount() {

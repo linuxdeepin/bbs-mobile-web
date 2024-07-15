@@ -103,6 +103,8 @@ const config = {
     "@/assets": path.resolve(__dirname, "..", "src/assets"),
     "@/stores": path.resolve(__dirname, "..", "src/stores"),
     "@/widgets": path.resolve(__dirname, "..", "src/widgets"),
+    "@/utils": path.resolve(__dirname, "..", "src/utils"),
+    "@/pages": path.resolve(__dirname, "..", "src/pages"),
   },
 };
 
