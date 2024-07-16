@@ -42,6 +42,8 @@
                 </view>
                 <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                   @click="showEmojiList = !showEmojiList" />
+                <!-- 发送图片按钮 -->
+                <img class="img-btn" :src="Picture" @click="sendImg" />
                 <nut-button @click="sendMessage" type="primary" size="small"
                   :disabled="message.length == 0">发送</nut-button>
               </view>
@@ -84,10 +86,12 @@ import { Letter, apiServer, SendLetter, LetterResponse } from "@/api";
 import { computedAsync } from "@vueuse/core";
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
+import Picture from '@/assets/picture.svg'
 import { useAccountStore } from "@/stores";
 import { formatTime } from "@/utils/format"
 import unicodeEmoji from '@/pages/thread/unicodeEmoji.json'
 import customEmoji from '@/pages/thread/customEmoji.json'
+
 
 const account = useAccountStore()
 const loading = ref(true);
@@ -140,6 +144,69 @@ const sendMessage = async () => {
   }
 }
 
+const sendImg = () => {
+  console.log("send image")
+  Taro.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    sourceType: ['album', 'camera'],
+    success: async (res) => {
+      console.log("choose image", res)
+      const tempFilePaths = res.tempFilePaths
+      // 图片大小不能超过2M
+      if (res.tempFiles[0].size > 2 * 1024 * 1024) {
+        Taro.showToast({
+          title: '图片大小不能超过2M',
+          icon: 'none',
+          duration: 2000
+        })
+        return
+      }
+      Taro.uploadFile({
+        url: apiServer + '/api/v1/thread/file',
+        filePath: tempFilePaths[0],
+        name: 'image',
+        header: {
+          "Cookie": "bbs=" + JSON.parse(Taro.getStorageSync("PAGE_COOKIE"))["taro.com"]["/"]["bbs"]['value']
+        },
+        formData: {
+          "image": tempFilePaths[0]
+        },
+        success: async (res) => {
+          console.log("upload image", res)
+          const uploadResData = JSON.parse(res.data)
+          console.log(uploadResData)
+          // 获取到上传之后的图片地址
+          const imgUrl = uploadResData.data[0]
+          // 拼接成消息格式
+          const msg = `<p><img src='${imgUrl}' style='max-width: 100%' /></p>`
+          // 发送图片消息
+          const { data } = await SendLetter({ id: receiveUserId.value, msg: msg })
+          if (!data.code) {
+            const content = data.data;
+            content.created_at = new Date().toISOString();
+            content.note = msg
+            content.from_id = account.user_info.id
+            content.send_user_avatar = account.user_info.avatar
+            content.receive_user_avatar = account.user_info.avatar
+            letters.value.push(content)
+            showEmojiList.value = false
+            setTimeout(() => {
+              Taro.createSelectorQuery().select('.dialog-page').boundingClientRect().exec((res) => {
+                Taro.pageScrollTo({
+                  scrollTop: res[0].height,
+                  duration: 300
+                })
+              })
+            }, 1000)
+          }
+        }
+      })
+    }
+
+  })
+}
+
 option.html.transformElement = (el: TaroElement, h5el: Element) => {
   el.setAttribute('data-tag', h5el.tagName)
   switch (el.nodeName) {
@@ -158,11 +225,13 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
         el.style.setProperty('height', '40px')
         break
       }
+
       // 小程序图片不会自动显示宽度，在图片加载后设置图片显示真实宽度，超出屏幕的图片有样式中的 max-width 限制
       el.addEventListener("load", (event: TaroEvent<HTMLImageElement>) => {
         el.style.setProperty('width', event.detail.width + "px")
         imageUrls.push(src)
       }, null)
+
       // 图片点击预览
       el.addEventListener("tap", () => {
         console.log("preview image", imageUrls)
@@ -222,12 +291,15 @@ const inputHeight = computed(() => {
 watch(letters, (_, old) => {
   // 首次加载滚动到底部
   if (!old.length) {
-    Taro.createSelectorQuery().select('.dialog-page').boundingClientRect().exec((res) => {
-      Taro.pageScrollTo({
-        scrollTop: res[0].height,
-        duration: 300
+    // 因为图片加载缓慢，在图片加载完前获取的高度不准确，延迟1秒再滚动
+    setTimeout(() => {
+      Taro.createSelectorQuery().select('.dialog-page').boundingClientRect().exec((res) => {
+        Taro.pageScrollTo({
+          scrollTop: res[0].height,
+          duration: 300
+        })
       })
-    })
+    }, 1000)
     return
   }
 })
@@ -311,7 +383,8 @@ watch(letters, (_, old) => {
         }
       }
 
-      .emoji-btn {
+      .emoji-btn,
+      .img-btn {
         width: 2rem;
         height: 2rem;
       }
