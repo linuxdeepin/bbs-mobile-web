@@ -78,7 +78,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Datum, MessageRead, MessageReadAll } from '@/api';
+import { Datum, MessageRead, MessageReadAll, PostOffset } from '@/api';
 import Taro from '@tarojs/taro'
 import { Del, Notice } from "@nutui/icons-vue-taro";
 import { formatTime } from "@/utils/format"
@@ -97,7 +97,7 @@ const props = defineProps<{
   category: number,
 }>()
 
-const clickMessage = (datum: Datum) => {
+const clickMessage = async (datum: Datum) => {
   // 已读当前消息
   MessageRead({ id: datum.id })
   if (datum.category === 3) {
@@ -112,8 +112,9 @@ const clickMessage = (datum: Datum) => {
     })
     return
   }
+  const res = await PostOffset({ id: datum.send_post_id, thread_id: datum.thread_id, page_size: 10 })
   Taro.navigateTo({
-    url: `/pages/thread/thread?id=${datum.thread_id}`,
+    url: `/pages/thread/thread?id=${datum.thread_id}&postId=${datum.send_post_id}&offset=${res.data.offset}`,
   })
 }
 
