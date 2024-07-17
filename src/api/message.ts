@@ -35,6 +35,9 @@ export async function MessageReadAll(params: { category: number }) {
   return http.get<MessageReadResponse>("/api/v1/user/msg/readAll", { params })
 }
 
+export async function PostOffset(params: { id: number, thread_id: number, page_size: number }) {
+  return http.get<PostOffsetResponse>("/api/v1/user/post/offset", { params })
+}
 
 interface MessageResponse {
   data: Datum[];
@@ -84,4 +87,10 @@ interface MessageCountResponseData {
 interface MessageReadResponse {
   code: number;
   msg: string;
+}
+
+interface PostOffsetResponse {
+  code: number;
+  msg: string;
+  offset: number;
 }

@@ -227,23 +227,28 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
 
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
-if (instance.router) {
-    threadID.value = Number(instance.router.params['id'] || 0)
-}
-
-// 获取帖子数据
+const postId = ref(0)
 const infoLoading = ref(true)
 // 刷新帖子
 const threadRefresh = ref(0)
+const postRefresh = ref(0) // 便于手动触发更新
+const postLoading = ref(true)
+const pagination = ref({ page: 1, limit: 10 })
+if (instance.router) {
+    threadID.value = Number(instance.router.params['id'] || 0)
+    postId.value = Number(instance.router.params['postId'] || 0)
+    const offset = Number(instance.router.params['offset'] || 0)
+    pagination.value.page = offset + 1
+    console.log("page", pagination.value.page)
+}
+
+// 获取帖子数据
 const threadInfo = computedAsync(() => {
     threadRefresh.value
     return ThreadInfo(threadID.value).then(resp => resp.data.data)
 }, undefined, { evaluating: infoLoading })
 
 // 获取回复数据
-const postRefresh = ref(0) // 便于手动触发更新
-const postLoading = ref(true)
-const pagination = ref({ page: 1, limit: 10 })
 const threadPosts = computedAsync(() => {
     // 在回复时，需要手动刷新
     postRefresh.value
@@ -255,11 +260,21 @@ const threadPosts = computedAsync(() => {
 
 // 翻页后滚动到回复分割线，如果是发帖后自动翻页则滚动到底部
 const sendPostScroll = ref(false)
-watch(threadPosts, (_, old) => {
-    // 初始化时不滚动
-    if (old == undefined) {
+watch(threadPosts, (_, oldVal) => {
+    if (oldVal == undefined) {
+        // 如果路由参数中有postId，则滚动到指定位置
+        if (postId.value) {
+            Taro.nextTick(() => {
+                Taro.createSelectorQuery().select(`.post-id-${postId.value}`).boundingClientRect().exec((res) => {
+                    Taro.pageScrollTo({
+                        scrollTop: res[0].top
+                    })
+                })
+            })
+        }
         return
     }
+
     Taro.nextTick(() => {
         if (sendPostScroll.value) {
             Taro.createSelectorQuery().select('.thread-page').boundingClientRect().exec((res) => {
