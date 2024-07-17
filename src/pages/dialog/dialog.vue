@@ -73,6 +73,8 @@
         </view>
       </nut-col>
     </nut-row>
+    <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+      :duration="prompt.toast.duration" />
   </view>
 </template>
 
@@ -87,13 +89,14 @@ import { computedAsync } from "@vueuse/core";
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
 import Picture from '@/assets/picture.svg'
-import { useAccountStore } from "@/stores";
+import { useAccountStore, usePromptStore } from "@/stores";
 import { formatTime } from "@/utils/format"
 import unicodeEmoji from '@/pages/thread/unicodeEmoji.json'
 import customEmoji from '@/pages/thread/customEmoji.json'
 
 
 const account = useAccountStore()
+const prompt = usePromptStore()
 const loading = ref(true);
 const instance = getCurrentInstance();
 const receiveUserId = ref(0);
@@ -155,11 +158,7 @@ const sendImg = () => {
       const tempFilePaths = res.tempFilePaths
       // 图片大小不能超过2M
       if (res.tempFiles[0].size > 2 * 1024 * 1024) {
-        Taro.showToast({
-          title: '图片大小不能超过2M',
-          icon: 'none',
-          duration: 2000
-        })
+        prompt.showToast("fail", "图片大小不能超过2M")
         return
       }
       Taro.uploadFile({
@@ -175,7 +174,6 @@ const sendImg = () => {
         success: async (res) => {
           console.log("upload image", res)
           const uploadResData = JSON.parse(res.data)
-          console.log(uploadResData)
           // 获取到上传之后的图片地址
           const imgUrl = uploadResData.data[0]
           // 拼接成消息格式
@@ -200,6 +198,10 @@ const sendImg = () => {
               })
             }, 1000)
           }
+        },
+        fail: err => {
+          console.log("upload image fail", err)
+          prompt.showToast("fail", "上传图片失败")
         }
       })
     }
