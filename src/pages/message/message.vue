@@ -1,35 +1,35 @@
 <template>
   <view class="message-page">
-    <nut-tabs v-model="tabs" auto-height @change="pagination.page = 1">
+    <nut-tabs v-model="tabs" swipeable auto-height>
       <template #titles>
         <view class="tab-list">
           <nut-badge v-for="item in tabList" :key="item.paneKey" class="tab-item" @click="tabs = item.paneKey"
-            :class="{ active: tabs === item.paneKey }" :value="msgCount[item.msgCategory]" :max="9"
-            @showDelDialog="showDelDialog" :hidden="msgCount[item.msgCategory] === 0" top="10" right="-5"> {{ item.title
+            :class="{ active: tabs == item.paneKey }" :value="msgCount[item.msgCategory]" :max="9"
+            :hidden="msgCount[item.msgCategory] === 0" top="10" right="-5"> {{ item.title
             }}</nut-badge>
         </view>
       </template>
-      <nut-tab-pane pane-key="1">
+      <nut-tab-pane :pane-key="1">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="1"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
-      <nut-tab-pane pane-key="2">
+      <nut-tab-pane :pane-key="2">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="2"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
-      <nut-tab-pane pane-key="3">
+      <nut-tab-pane :pane-key="3">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
-      <nut-tab-pane pane-key="5">
+      <nut-tab-pane :pane-key="5">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="5"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
-      <nut-tab-pane pane-key="6">
+      <nut-tab-pane :pane-key="6">
         <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
