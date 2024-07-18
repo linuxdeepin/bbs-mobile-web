@@ -187,6 +187,9 @@ const delBtnClicked = (id: number) => {
           color: #999;
           overflow: hidden;
           text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
         }
       }
     }
@@ -212,6 +215,7 @@ const delBtnClicked = (id: number) => {
         .title {
           color: #999;
           white-space: nowrap;
+          padding: 5px 0;
         }
       }
 
@@ -220,6 +224,7 @@ const delBtnClicked = (id: number) => {
         display: flex;
 
         .nickname {
+          padding: 5px 0;
           color: #333;
           white-space: nowrap;
         }
