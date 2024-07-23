@@ -22,25 +22,28 @@
                 <nut-button type="primary" @click="clickLoginBtn()">登录</nut-button>
             </view>
             <view class="dataset">
-                <view class="item" span="6" offset="3" @click="datasetClick()">
+                <view class="item" span="6" offset="3" @click="toMyPost(false)">
                     <span class="number">{{ account.user_info.threads_cnt }}</span>
                     <span>帖子</span>
                 </view>
-                <view class="item" span="6" @click="datasetClick()">
+                <view class="item" span="6" @click="toMyPost(true)">
                     <span class="number">{{ account.user_info.posts_cnt }}</span>
                     <span>回复</span>
                 </view>
-                <view class="item" span="6" @click="datasetClick()">
+                <view class="item" span="6" @click="toFavorite">
                     <span class="number">{{ account.user_info.favourite_cnt }}</span>
                     <span>收藏</span>
                 </view>
             </view>
             <view>
                 <template v-if="account.is_login">
+                    <nut-cell title="我的帖子" is-link @click="toMyPost(false)">
+                        <template #desc>
+                            我的主题/回复
+                        </template>
+                    </nut-cell>
+                    <nut-cell title="我的收藏" is-link @click="toFavorite"></nut-cell>
                     <nut-cell title="退出登录" is-link @click="account.logout()"></nut-cell>
-                    <!-- <nut-cell title="我的帖子" desc="暂不可用" is-link></nut-cell> -->
-                    <!-- <nut-cell title="我的回复" desc="暂不可用" is-link></nut-cell> -->
-                    <!-- <nut-cell title="我的收藏" desc="暂不可用" is-link></nut-cell> -->
                     <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
                 </template>
                 <template v-else>
@@ -216,8 +219,12 @@ if (instance.router && !isH5) {
     }
 }
 
-const datasetClick = () => {
-    prompt.showToast("text", "暂不支持", 3000)
+const toMyPost = (isPost = false) => {
+    Taro.navigateTo({ url: `/pages/mypost/mypost?tab=${isPost ? 'mypost' : 'mythread'}` })
+}
+
+const toFavorite = () => {
+    Taro.navigateTo({ url: '/pages/favorite/favorite' })
 }
 
 </script>
