@@ -9,3 +9,4 @@ export * from "./thread-info";
 export * from "./thread-search";
 export * from "./message";
 export * from "./dialog";
+export * from "./user";
