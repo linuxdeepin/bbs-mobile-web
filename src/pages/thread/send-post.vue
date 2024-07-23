@@ -16,6 +16,7 @@
                         </view>
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                             @click="showEmojiList = !showEmojiList" />
+                        <img class="picture-btn" :src="Picture" @click="sendPicture" />
                         <nut-button class="send-btn" type="primary" size="normal" :disabled="msg.length == 0"
                             @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                         <!-- 未登陆时，点击回复提示前往登陆 -->
@@ -30,15 +31,15 @@
                             <view class="image-item" v-for="( emoji, name ) of  customEmoji" @click="clickImage(name)">
                                 <img :alt="name" :src="apiServer + '/' + emoji">
                             </view>
-                            <view class="image-item" v-for=" _  of  Array(10).fill(0) "></view>
+                            <view class="image-item" v-for=" _ of Array(10).fill(0) "></view>
                         </view>
                     </nut-tab-pane>
                     <nut-tab-pane title="Emoji" pane-key="1">
                         <view class="emoji-list">
-                            <view class="emoji-item" v-for=" emoji  of  unicodeEmoji " @click="msg += emoji">
+                            <view class="emoji-item" v-for=" emoji of unicodeEmoji " @click="msg += emoji">
                                 {{ emoji }}
                             </view>
-                            <view class="emoji-item" v-for=" _  of  Array(10).fill(0) "></view>
+                            <view class="emoji-item" v-for=" _ of Array(10).fill(0) "></view>
                         </view>
                     </nut-tab-pane>
                 </nut-tabs>
@@ -56,10 +57,10 @@
 <script lang="ts" setup>
 
 import { ref, computed } from 'vue';
-
+import Taro from '@tarojs/taro';
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
-
+import Picture from '@/assets/picture.svg'
 import { useAccountStore, usePromptStore } from '@/stores';
 import unicodeEmoji from './unicodeEmoji.json'
 import customEmoji from './customEmoji.json'
@@ -145,6 +146,64 @@ const submitPost = async (captchaCode: string) => {
         prompt.showToast('fail', "发送失败，请稍后在试")
     }
 }
+// 发布图片评论
+const sendPicture = async () => {
+    if (!account.is_login) {
+        account.gotoLogin()
+        return
+    }
+
+    postCaptcha.tryVerify(async (captchaCode: string) => {
+        // 发布图片评论
+        // 选择图片
+        const chooseImgRes = await Taro.chooseImage({
+            count: 1,
+            sizeType: ['compressed'],
+            sourceType: ['album', 'camera'],
+        })
+        // 图片大小不能超过2M
+        if (chooseImgRes.tempFiles[0].size > 2 * 1024 * 1024) {
+            prompt.showToast("fail", "图片大小不能超过2M")
+            return
+        }
+        // 上传图片
+        const uploadFileRes = await Taro.uploadFile({
+            url: apiServer + '/api/v1/thread/file',
+            filePath: chooseImgRes.tempFilePaths[0],
+            name: 'image',
+            header: {
+                "Cookie": "bbs=" + JSON.parse(Taro.getStorageSync("PAGE_COOKIE"))["taro.com"]["/"]["bbs"]['value']
+            },
+            formData: {
+                "image": chooseImgRes.tempFilePaths[0]
+            }
+        })
+        if (uploadFileRes.statusCode !== 200) {
+            prompt.showToast("fail", "上传图片失败")
+            return
+        }
+        // 发表回复
+        let message = `<div data-weapp_version="v1"><img src='${JSON.parse(uploadFileRes.data).data[0]}' style='max-width: 100%' /></div>`
+        try {
+            await CreateThreadPost({
+                message,
+                validate: captchaCode,
+                captcha_id: postCaptcha.captchaID,
+                thread_id: props.info.id,
+                forum_id: props.info.forum_id,
+                quote_user_id: props.info.user_id,
+            })
+            prompt.showToast('success', "发送成功")
+            msg.value = ''
+            showEmojiList.value = false
+            emit('send')
+        } catch (err) {
+            console.log("create post", err)
+            prompt.showToast('fail', "发送失败，请稍后在试")
+        }
+    })
+}
+
 const showEmojiList = ref(false)
 const tabEmojiValue = ref(0)
 </script>
@@ -184,7 +243,8 @@ const tabEmojiValue = ref(0)
         }
 
         // 表情按钮图片
-        .emoji-btn {
+        .emoji-btn,
+        .picture-btn {
             width: 2rem;
             height: 2rem;
         }
