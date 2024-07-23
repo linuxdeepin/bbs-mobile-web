@@ -1,6 +1,6 @@
 <template>
   <view class="message-page">
-    <nut-tabs v-model="tabs" swipeable auto-height>
+    <nut-tabs v-model="tabs" swipeable auto-height @change="pagination.page = 1">
       <template #titles>
         <view class="tab-list">
           <nut-badge v-for="item in tabList" :key="item.paneKey" class="tab-item" @click="tabs = item.paneKey"
