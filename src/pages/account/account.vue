@@ -66,8 +66,8 @@
         <nut-action-sheet v-model:visible="loginAction.show" :menu-items="(loginAction.items as any)"
             @choose="$event.callback()" />
         <!-- 密码登录 -->
-        <nut-popup position="bottom" :close-on-click-overlay="true" :style="{ height: '200px' }"
-            v-model:visible="loginByPassword.show">
+        <nut-popup position="bottom" :close-on-click-overlay="true" :style="{ height: '220px' }"
+            v-model:visible="loginByPassword.show" safe-area-inset-bottom>
             <view class="login-by-password">
                 <nut-input v-model="loginByPassword.username" :readonly="loginByPassword.usernameReadonly"
                     placeholder="请输入手机号或用户名" />
