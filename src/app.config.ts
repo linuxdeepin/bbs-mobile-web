@@ -9,7 +9,8 @@ export default defineAppConfig({
     "pages/notify/notify",
     "pages/dialog/dialog",
     "pages/mypost/mypost",
-    "pages/favorite/favorite"
+    "pages/favorite/favorite",
+    "pages/posting/posting"
   ],
   window: {
     backgroundTextStyle: "light",

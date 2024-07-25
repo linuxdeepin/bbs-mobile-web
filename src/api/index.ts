@@ -10,3 +10,4 @@ export * from "./thread-search";
 export * from "./message";
 export * from "./dialog";
 export * from "./user";
+export * from "./posting";
