@@ -12,36 +12,41 @@
       </template>
       <nut-tab-pane pane-key="mythread">
         <view v-if="!loading" class="mypost-list">
-          <nut-cell-group v-for="thread in myThreadData?.data">
-            <nut-cell is-link @click="goToThread(thread)">
-              <template #default>
-                <view class="mythread-item">
-                  <!-- 标题 -->
-                  <view class="title">{{ thread.subject }}</view>
-                  <!-- 昵称和时间 -->
-                  <view class="info">
-                    <view class="nickname">{{ thread.user.nickname }}</view>
-                    <view class="time">{{ formatTime(thread.created_at) }}</view>
-                  </view>
-                  <!-- 标签和浏览量及评论数量 -->
-                  <view class="some">
-                    <nut-tag plain color="#FA2400"> {{ thread.forum.name }} </nut-tag>
-                    <view class="stat">
-                      <view>
-                        <Eye size="10"></Eye>&nbsp;{{ thread.views_cnt }}
-                      </view>
-                      <view>
-                        <Comment size="10"></Comment>&nbsp;{{ thread.posts_cnt }}
+          <template v-if="myThreadData?.total_count">
+            <nut-cell-group v-for="thread in myThreadData?.data">
+              <nut-cell is-link @click="goToThread(thread)">
+                <template #default>
+                  <view class="mythread-item">
+                    <!-- 标题 -->
+                    <view class="title">{{ thread.subject }}</view>
+                    <!-- 昵称和时间 -->
+                    <view class="info">
+                      <view class="nickname">{{ thread.user.nickname }}</view>
+                      <view class="time">{{ formatTime(thread.created_at) }}</view>
+                    </view>
+                    <!-- 标签和浏览量及评论数量 -->
+                    <view class="some">
+                      <nut-tag plain color="#FA2400"> {{ thread.forum.name }} </nut-tag>
+                      <view class="stat">
+                        <view>
+                          <Eye size="10"></Eye>&nbsp;{{ thread.views_cnt }}
+                        </view>
+                        <view>
+                          <Comment size="10"></Comment>&nbsp;{{ thread.posts_cnt }}
+                        </view>
                       </view>
                     </view>
                   </view>
-                </view>
-              </template>
-              <template #link>
-                <view></view>
-              </template>
-            </nut-cell>
-          </nut-cell-group>
+                </template>
+                <template #link>
+                  <view></view>
+                </template>
+              </nut-cell>
+            </nut-cell-group>
+          </template>
+          <view v-else>
+            <nut-empty description="暂无主题帖"></nut-empty>
+          </view>
         </view>
         <view v-else class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7, 8, 9]">
           <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
@@ -50,26 +55,31 @@
       </nut-tab-pane>
       <nut-tab-pane pane-key="mypost">
         <view v-if="!loading" class="mypost-list">
-          <nut-cell-group v-for="post in myPostData?.data">
-            <nut-cell is-link @click="goToPost(post)">
-              <template #default>
-                <view class="mypost-item">
-                  <!-- 昵称和时间 -->
-                  <view class="info">
-                    <view class="nickname">{{ post.user.nickname }}</view>
-                    <view class="time">{{ formatTime(post.created_at) }}</view>
+          <template v-if="myPostData?.total_count">
+            <nut-cell-group v-for="post in myPostData?.data">
+              <nut-cell is-link @click="goToPost(post)">
+                <template #default>
+                  <view class="mypost-item">
+                    <!-- 昵称和时间 -->
+                    <view class="info">
+                      <view class="nickname">{{ post.user.nickname }}</view>
+                      <view class="time">{{ formatTime(post.created_at) }}</view>
+                    </view>
+                    <!-- 回复内容 -->
+                    <view class="content">{{ post.message_fmt }}</view>
+                    <!-- 回复引用内容 -->
+                    <view class="quote">{{ post.thread.subject }}</view>
                   </view>
-                  <!-- 回复内容 -->
-                  <view class="content">{{ post.message_fmt }}</view>
-                  <!-- 回复引用内容 -->
-                  <view class="quote">{{ post.thread.subject }}</view>
-                </view>
-              </template>
-              <template #link>
-                <view></view>
-              </template>
-            </nut-cell>
-          </nut-cell-group>
+                </template>
+                <template #link>
+                  <view></view>
+                </template>
+              </nut-cell>
+            </nut-cell-group>
+          </template>
+          <view v-else>
+            <nut-empty description="暂无我的回复"></nut-empty>
+          </view>
         </view>
         <view v-else class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7, 8, 9]">
           <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
@@ -77,7 +87,9 @@
         </view>
       </nut-tab-pane>
     </nut-tabs>
-    <nut-pagination class="pagination" v-if="!loading" v-model="pagination.page" mode="multi"
+    <nut-pagination class="pagination"
+      v-if="!loading && (currentTab === 'mythread' ? myThreadData?.total_count : myPostData?.total_count)"
+      v-model="pagination.page" mode="multi"
       :total-items="currentTab === 'mythread' ? myThreadData?.total_count : myPostData?.total_count"
       :items-per-page="pagination.limit" @change="pageChange" />
   </view>

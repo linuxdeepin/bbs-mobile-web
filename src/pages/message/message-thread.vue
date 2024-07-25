@@ -7,67 +7,72 @@
     </view>
     <!-- 主题列表 -->
     <view v-if="!props.isLoading" class="message-list">
-      <template v-for="item in props.data">
-        <nut-cell-group @click="clickMessage(item)">
-          <!-- 用户头像,昵称，时间 -->
-          <nut-cell desc-text-align="left">
-            <template #icon>
-              <nut-badge :dot="!item.is_new">
-                <nut-avatar size="40" shape="round">
-                  <img v-if="item.category !== 3" :src="item.send_user_avatar" />
-                  <Notice v-else />
-                </nut-avatar>
-              </nut-badge>
-            </template>
-            <template v-if="item.category !== 5" #desc>
-              <view class="info-desc">
-                <view class="info">
-                  <span class="nickname"> {{ item.category === 3 ? item.type : item.send_user_nickname }}</span>
-                  <span class="time">{{ formatTime(item.created_at) }}</span>
+      <template v-if="totalCount">
+        <template v-for="item in props.data">
+          <nut-cell-group @click="clickMessage(item)">
+            <!-- 用户头像,昵称，时间 -->
+            <nut-cell desc-text-align="left">
+              <template #icon>
+                <nut-badge :dot="!item.is_new">
+                  <nut-avatar size="40" shape="round">
+                    <img v-if="item.category !== 3" :src="item.send_user_avatar" />
+                    <Notice v-else />
+                  </nut-avatar>
+                </nut-badge>
+              </template>
+              <template v-if="item.category !== 5" #desc>
+                <view class="info-desc">
+                  <view class="info">
+                    <span class="nickname"> {{ item.category === 3 ? item.type : item.send_user_nickname }}</span>
+                    <span class="time">{{ formatTime(item.created_at) }}</span>
+                  </view>
+                  <view class="del-btn">
+                    <Del @click.stop="delBtnClicked(item.id)" />
+                  </view>
                 </view>
-                <view class="del-btn">
-                  <Del @click.stop="delBtnClicked(item.id)" />
+              </template>
+              <template v-else #desc>
+                <view class="letter-content">
+                  <view class="top">
+                    <span class="nickname"> {{ item.send_user_nickname }} </span>
+                    <span class="time">{{ formatTime(item.created_at) }}</span>
+                  </view>
+                  <view class="bottom">
+                    <view class="content">{{ item.send_message_fmt }}</view>
+                    <Del @click.stop="delBtnClicked(item.id)" />
+                  </view>
                 </view>
-              </view>
-            </template>
-            <template v-else #desc>
-              <view class="letter-content">
-                <view class="top">
-                  <span class="nickname"> {{ item.send_user_nickname }} </span>
-                  <span class="time">{{ formatTime(item.created_at) }}</span>
+              </template>
+            </nut-cell>
+            <!-- 回复和帖子标题 -->
+            <nut-cell v-if="item.category !== 5">
+              <template #default>
+                <view v-if="item.category !== 3" class="message-content">
+                  <view class="reply-info">
+                    <span class="title">{{ item.category === 6 ? "@我的" : "回复" }}:&nbsp;</span>
+                    <span class="content">{{ item.message_fmt }}</span>
+                  </view>
+                  <view class="post-info" v-if="item.category === 2">
+                    <span class="nickname">{{ item.receive_user_nickname }}:&nbsp;</span>
+                    <span class="content">{{ item.send_message_fmt }}</span>
+                  </view>
+                  <view class="thread-title">
+                    {{ item.subject }}
+                  </view>
                 </view>
-                <view class="bottom">
-                  <view class="content">{{ item.send_message_fmt }}</view>
-                  <Del @click.stop="delBtnClicked(item.id)" />
+                <view v-else class="message-content">
+                  <view class="content">
+                    {{ item.note }}
+                  </view>
                 </view>
-              </view>
-            </template>
-          </nut-cell>
-          <!-- 回复和帖子标题 -->
-          <nut-cell v-if="item.category !== 5">
-            <template #default>
-              <view v-if="item.category !== 3" class="message-content">
-                <view class="reply-info">
-                  <span class="title">{{ item.category === 6 ? "@我的" : "回复" }}:&nbsp;</span>
-                  <span class="content">{{ item.message_fmt }}</span>
-                </view>
-                <view class="post-info" v-if="item.category === 2">
-                  <span class="nickname">{{ item.receive_user_nickname }}:&nbsp;</span>
-                  <span class="content">{{ item.send_message_fmt }}</span>
-                </view>
-                <view class="thread-title">
-                  {{ item.subject }}
-                </view>
-              </view>
-              <view v-else class="message-content">
-                <view class="content">
-                  {{ item.note }}
-                </view>
-              </view>
-            </template>
-          </nut-cell>
-        </nut-cell-group>
+              </template>
+            </nut-cell>
+          </nut-cell-group>
+        </template>
       </template>
+      <view v-else>
+        <nut-empty description="暂无消息"></nut-empty>
+      </view>
     </view>
     <!-- 主题消息列表骨架屏 -->
     <view v-else class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7, 8, 9]">
