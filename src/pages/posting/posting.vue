@@ -58,7 +58,8 @@
       </view>
     </template>
     <!-- 选择版块弹窗 -->
-    <nut-popup v-model:visible="showForumSelection" round position="bottom" :style="{ height: '50%' }">
+    <nut-popup v-model:visible="showForumSelection" round position="bottom" :style="{ height: '50%' }"
+      safe-area-inset-bottom>
       <nut-tabs v-model="activeForumTab" title-scroll style="height: 100%" direction="vertical"
         @change="console.log(activeForumTab)">
         <!-- 渲染全部版块 -->
@@ -109,7 +110,7 @@
       </nut-tabs>
     </nut-popup>
     <nut-popup v-model:visible="showThemeTypeSelection" round position="bottom" class="theme-popup"
-      :style="{ height: '50%' }">
+      :style="{ height: '50%' }" safe-area-inset-bottom>
       <nut-cell-group>
         <template #title>
           <view class="cell-group-title">请选择主题类型</view>
@@ -280,7 +281,7 @@ interface FileItem {
 <style lang="scss">
 .posting-page {
   height: 100%;
-  padding: 5rpx 10rpx;
+  padding: 5rpx 10rpx 4rem;
 
   .title-input {
     padding: 20rpx 0;
