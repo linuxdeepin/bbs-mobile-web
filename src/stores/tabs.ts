@@ -3,7 +3,7 @@ import { ref } from "vue";
 import Taro from "@tarojs/taro";
 
 export const useTabsStore = defineStore("tabs", () => {
-  const active = ref("index" as "index" | "account" | "message");
+  const active = ref("index" as "index" | "account" | "message" | "posting");
   // 消息tab的未读数
   const messageCount = ref(0);
   const change = (item: { name: typeof active.value }) => {

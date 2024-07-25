@@ -151,7 +151,7 @@
 <script lang="ts" setup>
 
 import { watch, ref } from 'vue';
-import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline, useUnload } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
 import { useConfigStore, useAccountStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
@@ -239,8 +239,17 @@ if (instance.router) {
     postId.value = Number(instance.router.params['postId'] || 0)
     const offset = Number(instance.router.params['offset'] || 0)
     pagination.value.page = offset + 1
-    console.log("page", pagination.value.page)
 }
+
+useUnload(() => {
+    if (!instance.router)
+        return
+    if (Number(instance.router.params['posting'] || 0)) {
+        // 携带这个参数说明是从发帖页面跳转过来
+        // 返回时需要多返回一步
+        Taro.navigateBack()
+    }
+})
 
 // 获取帖子数据
 const threadInfo = computedAsync(() => {

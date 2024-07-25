@@ -5,6 +5,11 @@
         <Home></Home>
       </template>
     </nut-tabbar-item>
+    <nut-tabbar-item tab-title="发帖" name="posting">
+      <template #icon>
+        <Edit></Edit>
+      </template>
+    </nut-tabbar-item>
     <nut-tabbar-item tab-title="消息" name="message" :value="tabs.messageCount">
       <template #icon>
         <Message></Message>
@@ -22,7 +27,7 @@
 import { MessageCount } from '@/api';
 import { useDidShow } from '@tarojs/taro'
 import { useTabsStore, useAccountStore } from '@/stores'
-import { Home, Message, My2 } from "@nutui/icons-vue-taro"
+import { Home, Message, My2, Edit } from "@nutui/icons-vue-taro"
 
 const emit = defineEmits<{
   tabChange: [],
@@ -38,7 +43,7 @@ useDidShow(async () => {
 })
 
 const tabSwitch = (item: Parameters<typeof tabs.change>[0]) => {
-  if (item.name === 'message' && !account.is_login) {
+  if ((item.name === 'message' || item.name === 'posting') && !account.is_login) {
     account.gotoLogin();
     return;
   }

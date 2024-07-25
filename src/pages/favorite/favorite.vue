@@ -16,7 +16,7 @@
               </view>
             </template>
           </nut-cell>
-          <nut-cell class="footer">
+          <nut-cell>
             <template #default>
               <!-- 标签和删除按钮 -->
               <view class="some">
@@ -116,15 +116,13 @@ const delFavorite = () => {
       }
     }
 
-    .footer {
-      padding: 10rpx 5rpx;
 
-      .some {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
+
+    .some {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
   }
