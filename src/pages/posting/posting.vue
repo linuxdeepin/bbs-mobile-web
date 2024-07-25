@@ -21,8 +21,14 @@
         </nut-cell>
 
         <!-- 主题内容 -->
-        <nut-textarea v-model="postingContent" :autosize="{ maxHeight: 500, minHeight: 200 }" placeholder="请输入帖子内容"
+        <nut-textarea v-model="postingContent" :autosize="{ maxHeight: 300, minHeight: 300 }" placeholder="请输入帖子内容"
           limit-show :max-length="5000" />
+
+        <!-- 选择图片 -->
+        <nut-cell>
+          <nut-uploader ref="uploadImageRef" :auto-upload="false" v-model:file-list="imgFileList" :maximize="2097152"
+            :maximum="9" :size-type="['compressed']" :media-type="['image']" @change="fileListChange"></nut-uploader>
+        </nut-cell>
 
         <!-- 发布按钮 -->
         <view class="submit-btn">
@@ -40,6 +46,10 @@
       </view>
       <view class="skeleton-container">
         <nut-skeleton width="90vw" height="300px" :title="false" animated row="1">
+        </nut-skeleton>
+      </view>
+      <view class="skeleton-container">
+        <nut-skeleton width="100px" height="100px" :title="false" animated row="1">
         </nut-skeleton>
       </view>
       <view class="skeleton-container">
@@ -124,7 +134,7 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 import Taro from '@tarojs/taro';
-import { GetForum, GetTheme, ThemeResponse, PostingThread } from '@/api'
+import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
 import { computedAsync } from '@vueuse/core';
 import { usePromptStore, useAccountStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue';
@@ -152,6 +162,18 @@ const themeTypeList = ref<ThemeResponse[]>()
 const postingTitle = ref('')
 // 内容
 const postingContent = ref('')
+const uploadImageRef = ref<any>(null)
+const imgFileList = ref<FileItem[]>([])
+
+// 新增文件事件
+const fileListChange = (fileList: { fileList: FileItem[] }, _) => {
+  console.log(fileList)
+  // 将文件状态都修改为success
+  fileList.fileList.forEach((file) => {
+    file.status = 'success'
+  })
+  imgFileList.value = fileList.fileList
+}
 
 // 发布帖子
 const submitPosting = async () => {
@@ -163,10 +185,39 @@ const submitPosting = async () => {
     prompt.showToast('warn', '请选择主题类型')
     return
   }
-  let message = `<div data-editer_version="v2" data-vditor_version="3.9.4"><p>${postingContent.value}</p></div>`
+
   // 人机验证
   postCaptcha.tryVerify(async (captchaId: string) => {
-    console.log('captchaId: ', captchaId)
+    let message = `<div data-editer_version="v2" data-vditor_version="3.9.4"><p>${postingContent.value}</p>`
+    if (imgFileList.value.length) {
+      // 使用Taro.uploadFile上传所有图片,并保存返回的url
+      let imgUrls: string[] = []
+      prompt.showToast("loading", "图片上传中...", 10000)
+      for (let i = 0; i < imgFileList.value.length; i++) {
+        const file = imgFileList.value[i]
+        const uploadFileRes = await Taro.uploadFile({
+          url: apiServer + '/api/v1/thread/file',
+          filePath: file.url,
+          name: 'image',
+          header: {
+            "Cookie": "bbs=" + JSON.parse(Taro.getStorageSync("PAGE_COOKIE"))["taro.com"]["/"]["bbs"]['value']
+          },
+          formData: {
+            "image": file.url
+          }
+        })
+        if (uploadFileRes.statusCode !== 200) {
+          prompt.showToast("fail", "上传图片失败")
+          return
+        }
+        imgUrls.push(JSON.parse(uploadFileRes.data).data[0])
+      }
+      prompt.hideToast()
+      message += imgUrls.map(url => `<p><img src='${url}' style='max-width: 100%' /></p>`).join('')
+    }
+    // 闭合标签
+    message += '</div>'
+
     try {
       const res = await PostingThread({
         captcha_id: captchaId,
@@ -198,7 +249,7 @@ const forumClicked = (id: number, name: string) => {
 }
 // 点击主题类型
 const themeTypeCellClicked = () => {
-  if (!selectedForum.value) {
+  if (!selectedForum.value.id) {
     prompt.showToast('warn', '请先选择版块')
     return
   }
@@ -215,6 +266,15 @@ watch(() => selectedForum.value, async (value) => {
   const res = await GetTheme({ forum_id: value.id })
   themeTypeList.value = res.data
 })
+
+interface FileItem {
+  status: string;
+  uid: string;
+  name: string;
+  url: string;
+  formData: any;
+  percentage: number;
+}
 </script>
 
 <style lang="scss">
