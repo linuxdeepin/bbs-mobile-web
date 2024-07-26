@@ -1,38 +1,46 @@
 <template>
   <view class="favorite-page">
-    <template v-if="myFavoriteData?.total_count">
-      <view class="favorite-list">
-        <view v-for="favorite in myFavoriteData?.data">
-          <nut-cell-group class="favorite-item">
-            <nut-cell is-link @click="goToThread(favorite.oid)">
-              <template #default>
-                <view class="content">
-                  <!-- 标题 -->
-                  <view class="title">{{ favorite.title }}</view>
-                  <!-- 昵称和时间 -->
-                  <view class="info">
-                    <view class="nickname">{{ favorite.user.nickname }}</view>
-                    <view class="time">{{ formatTime(favorite.created_at) }}</view>
+    <template v-if="!loading">
+      <template v-if="myFavoriteData?.total_count">
+        <view class="favorite-list">
+          <view v-for="favorite in myFavoriteData?.data">
+            <nut-cell-group class="favorite-item">
+              <nut-cell is-link @click="goToThread(favorite.oid)">
+                <template #default>
+                  <view class="content">
+                    <!-- 标题 -->
+                    <view class="title">{{ favorite.title }}</view>
+                    <!-- 昵称和时间 -->
+                    <view class="info">
+                      <view class="nickname">{{ favorite.user.nickname }}</view>
+                      <view class="time">{{ formatTime(favorite.created_at) }}</view>
+                    </view>
                   </view>
-                </view>
-              </template>
-            </nut-cell>
-            <nut-cell>
-              <template #default>
-                <!-- 标签和删除按钮 -->
-                <view class="some">
-                  <nut-tag plain color="#FA2400"> {{ favorite.forum.name }} </nut-tag>
-                  <Del @click="showDelDialog(favorite.oid)" />
-                </view>
-              </template>
-            </nut-cell>
-          </nut-cell-group>
+                </template>
+              </nut-cell>
+              <nut-cell>
+                <template #default>
+                  <!-- 标签和删除按钮 -->
+                  <view class="some">
+                    <nut-tag plain color="#FA2400"> {{ favorite.forum.name }} </nut-tag>
+                    <Del @click="showDelDialog(favorite.oid)" />
+                  </view>
+                </template>
+              </nut-cell>
+            </nut-cell-group>
+          </view>
         </view>
+      </template>
+      <view v-else>
+        <nut-empty description="暂无收藏"></nut-empty>
       </view>
     </template>
-    <view v-else>
-      <nut-empty description="暂无收藏"></nut-empty>
-    </view>
+    <template v-else>
+      <view class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7, 8]">
+        <nut-skeleton width="90vw" height="20px" :title="false" animated row="3">
+        </nut-skeleton>
+      </view>
+    </template>
     <nut-pagination class="pagination" v-if="!loading && myFavoriteData?.total_count" v-model="pagination.page"
       mode="multi" :total-items="myFavoriteData?.total_count" :items-per-page="pagination.limit" />
     <nut-dialog title="提示" content="是否删除收藏" v-model:visible="delDialogShow" @ok="delFavorite" />
@@ -136,6 +144,11 @@ const delFavorite = () => {
     display: flex;
     justify-content: center;
     padding-bottom: 4rem;
+  }
+
+  .skeleton-container {
+    margin-top: 2rem;
+    margin-left: 5vw;
   }
 }
 </style>
