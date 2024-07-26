@@ -44,7 +44,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import Taro from '@tarojs/taro';
-import { GetMyFavorite, MyFavoriteResponse, DelMyFavorite } from '@/api';
+import { GetMyFavorite, MyFavoriteResponse, ThreadFavorite } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import { formatTime } from '@/utils/format';
 import { Del } from "@nutui/icons-vue-taro";
@@ -80,7 +80,7 @@ const showDelDialog = (threadId: number) => {
 // 删除收藏
 const delFavorite = () => {
   if (!delFavoriteId.value) return
-  DelMyFavorite({ id: delFavoriteId.value }).then(res => {
+  ThreadFavorite(delFavoriteId.value).then(res => {
     if (res.data.code === 0) {
       prompt.toast = { msg: '删除成功', type: 'success', duration: 1500, visible: true }
       delDialogShow.value = false

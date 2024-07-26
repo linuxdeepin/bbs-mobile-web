@@ -27,11 +27,6 @@ export async function GetMyFavorite(opt: { limit: number, offset: number }) {
   return http.get<MyFavoriteResponse>("/api/v1/user/favorite", { params });
 }
 
-// 取消收藏
-export async function DelMyFavorite(opt: { id: number }) {
-  return http.post<{ code: number, msg: string }>("/api/v1/thread/favorite", { id: opt.id });
-}
-
 export interface MyThreadResonse {
   code: number;
   data: MyThreadDatum[];

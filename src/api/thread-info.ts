@@ -10,13 +10,25 @@ export async function ThreadPoll(tid: number, polloptionid: number[]) {
   return http.post("/api/v1/thread/poll", { tid, polloptionid });
 }
 
+export async function ThreadUP(id: number) {
+  const params = {
+    id: id,
+    idtype: "tid",
+  }
+  return http.post<{ code: number, msg: string }>("/api/v1/thread/up", params);
+}
+
+export async function ThreadFavorite(id: number) {
+  return http.post<{ code: number, msg: string }>("/api/v1/thread/favorite", { id });
+}
+
 interface ThreadInfoResponse {
   code: number;
-  data: Data;
+  data: ThreadInfoData;
   msg: string;
 }
 
-interface Data {
+export interface ThreadInfoData {
   id: number;
   forum_id: number;
   top: number;
