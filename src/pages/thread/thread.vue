@@ -1,6 +1,6 @@
 <template>
     <view class="thread-page">
-        <nut-row v-if="!infoLoading">
+        <nut-row v-if="!infoLoading && threadInfo">
             <!-- 标题 -->
             <nut-col span="22" offset="1">
                 <view>
@@ -50,6 +50,27 @@
                 :poll-option-ids="threadInfo.poll_list.polloptionids"
                 :forum-polloption="threadInfo.poll_list.forum_polloption" @login="showLoginDialog = true"
                 @voting="threadRefresh++" />
+            <!-- 点赞和收藏 -->
+            <nut-col span="22" offset="1">
+                <view class="post-op">
+                    <view v-if="!threadInfo.is_up" class="post-op-item" @click="upThread">
+                        <Heart1 color="#97a3b4"></Heart1>
+                        <text>{{ `点赞 ${threadInfo.like_cnt}` }}</text>
+                    </view>
+                    <view v-else class="post-op-item" @click="upThread">
+                        <HeartFill1 color="rgba(255,0,0,0.68)"></HeartFill1>
+                        <text>{{ `点赞 ${threadInfo.like_cnt}` }}</text>
+                    </view>
+                    <view v-if="!threadInfo.is_favorite" class="post-op-item" @click="favoriteThread">
+                        <StarN color="#97a3b4"></StarN>
+                        <text>{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
+                    </view>
+                    <view v-else class="post-op-item" @click="favoriteThread">
+                        <StarFillN color="rgba(255,0,0,0.68)"></StarFillN>
+                        <text>{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
+                    </view>
+                </view>
+            </nut-col>
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
                 <nut-divider class="post-divider" content-position="left">
@@ -151,7 +172,7 @@
 <script lang="ts" setup>
 
 import { watch, ref } from 'vue';
-import Taro, { useShareAppMessage, useShareTimeline, useUnload } from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
 import { useConfigStore, useAccountStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
@@ -160,8 +181,9 @@ import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
 import Vote from './vote.vue'
-import { apiServer, ThreadInfo, ThreadPostList } from '@/api';
+import { apiServer, ThreadInfo, ThreadPostList, ThreadUP, ThreadInfoData, ThreadFavorite } from '@/api';
 import { computedAsync } from "@vueuse/core";
+import { Heart1, HeartFill1, StarN, StarFillN } from '@nutui/icons-vue-taro'
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -251,10 +273,17 @@ useUnload(() => {
     }
 })
 
+useDidShow(() => {
+    // 登录成功后返回到帖子页面,刷新点赞和收藏状态
+    threadRefresh.value++
+})
+
 // 获取帖子数据
-const threadInfo = computedAsync(() => {
+const threadInfo = ref<ThreadInfoData>()
+computedAsync(async () => {
     threadRefresh.value
-    return ThreadInfo(threadID.value).then(resp => resp.data.data)
+    const { data } = await ThreadInfo(threadID.value)
+    threadInfo.value = data.data
 }, undefined, { evaluating: infoLoading })
 
 // 获取回复数据
@@ -340,7 +369,7 @@ function genShareTitle(title: string) {
 
 // 设置分享标题
 useShareTimeline(() => {
-    if (!threadInfo || !config.weixinShare.state) {
+    if (!threadInfo.value || !config.weixinShare.state) {
         return {}
     }
     return {
@@ -349,7 +378,7 @@ useShareTimeline(() => {
     }
 })
 useShareAppMessage(() => {
-    if (!threadInfo || !config.weixinShare.state) {
+    if (!threadInfo.value || !config.weixinShare.state) {
         return {}
     }
     return {
@@ -372,6 +401,36 @@ const sendPost = () => {
     sendPostScroll.value = true
     postRefresh.value++
     pagination.value.page = last
+}
+
+// 点赞和取消点赞帖子
+const upThread = async () => {
+    if (!account.is_login) {
+        showLoginDialog.value = true
+        return
+    }
+    if (!threadInfo.value)
+        return
+    const { data } = await ThreadUP(threadID.value)
+    if (!data.code) {
+        threadInfo.value.is_up = !threadInfo.value.is_up
+        threadInfo.value.like_cnt += threadInfo.value.is_up ? 1 : -1
+    }
+}
+
+// 收藏和取消收藏帖子
+const favoriteThread = async () => {
+    if (!account.is_login) {
+        showLoginDialog.value = true
+        return
+    }
+    if (!threadInfo.value)
+        return
+    const { data } = await ThreadFavorite(threadID.value)
+    if (!data.code) {
+        threadInfo.value.is_favorite = !threadInfo.value.is_favorite
+        threadInfo.value.favourite_cnt += threadInfo.value.is_favorite ? 1 : -1
+    }
 }
 </script>
 
@@ -434,6 +493,23 @@ const sendPost = () => {
 
     .del-message {
         color: #97a3b4;
+    }
+
+    .post-op {
+        display: flex;
+        padding: 20rpx 0;
+        align-items: center;
+
+        .post-op-item {
+            margin: 0 10rpx;
+            display: flex;
+            align-items: center;
+            color: #97a3b4;
+
+            text {
+                margin-right: 10rpx;
+            }
+        }
     }
 
     .content>view {
