@@ -20,6 +20,7 @@ interface CreatePostRequest {
   thread_id: number;
   message: string;
   quote_user_id: number;
+  quote_post_id?: number;
   user_ids?: number[];
 }
 
