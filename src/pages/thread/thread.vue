@@ -54,19 +54,19 @@
             <nut-col span="22" offset="1">
                 <view class="post-op">
                     <view v-if="!threadInfo.is_up" class="post-op-item" @click="upThread">
-                        <Heart1 color="#97a3b4"></Heart1>
+                        <Heart1 size="28rpx" color="#97a3b4"></Heart1>
                         <text>{{ `点赞 ${threadInfo.like_cnt}` }}</text>
                     </view>
                     <view v-else class="post-op-item" @click="upThread">
-                        <HeartFill1 color="rgba(255,0,0,0.68)"></HeartFill1>
+                        <HeartFill1 size="28rpx" color="rgba(255,0,0,0.68)"></HeartFill1>
                         <text>{{ `点赞 ${threadInfo.like_cnt}` }}</text>
                     </view>
                     <view v-if="!threadInfo.is_favorite" class="post-op-item" @click="favoriteThread">
-                        <StarN color="#97a3b4"></StarN>
+                        <StarN size="28rpx" color="#97a3b4"></StarN>
                         <text>{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
                     </view>
                     <view v-else class="post-op-item" @click="favoriteThread">
-                        <StarFillN color="rgba(255,0,0,0.68)"></StarFillN>
+                        <StarFillN size="28rpx" color="rgba(255,0,0,0.68)"></StarFillN>
                         <text>{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
                     </view>
                 </view>
@@ -129,6 +129,15 @@
                                         </view>
                                     </template>
                                 </nut-cell>
+                                <nut-cell class="op">
+                                    <view class="op-list">
+                                        <view class="op-item"
+                                            @click="replyBtnClicked(post.id, post.post_user_id, post.user.nickname)">
+                                            <Comment size="24rpx" color="#97a3b4"></Comment>
+                                            <text class="content">回复</text>
+                                        </view>
+                                    </view>
+                                </nut-cell>
                             </nut-cell-group>
                         </view>
                     </nut-col>
@@ -153,7 +162,9 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <SendPost :info="threadInfo" @login="showLoginDialog = true" @send="sendPost"></SendPost>
+            <SendPost :info="threadInfo" :is-reply="isReply" :reply-id="replyId" :reply-user-id="replayUserId"
+                :reply-nick-name="replyNickName" @login="showLoginDialog = true" @cancel-reply="cancelReply">
+            </SendPost>
         </nut-row>
         <view v-else>
             <view class="skeleton-container">
@@ -183,7 +194,7 @@ import SendPost from './send-post.vue'
 import Vote from './vote.vue'
 import { apiServer, ThreadInfo, ThreadPostList, ThreadUP, ThreadInfoData, ThreadFavorite } from '@/api';
 import { computedAsync } from "@vueuse/core";
-import { Heart1, HeartFill1, StarN, StarFillN } from '@nutui/icons-vue-taro'
+import { Heart1, HeartFill1, StarN, StarFillN, Comment } from '@nutui/icons-vue-taro'
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -285,6 +296,29 @@ computedAsync(async () => {
     const { data } = await ThreadInfo(threadID.value)
     threadInfo.value = data.data
 }, undefined, { evaluating: infoLoading })
+
+// 当前是否是在回复别人的评论
+const isReply = ref(false)
+const replyId = ref(0)
+const replayUserId = ref(0)
+const replyNickName = ref("")
+
+const replyBtnClicked = (id: number, postUserId: number, nickName: string) => {
+    if (!account.is_login) {
+        showLoginDialog.value = true
+    }
+    isReply.value = true
+    replyId.value = id
+    replayUserId.value = postUserId
+    replyNickName.value = nickName
+}
+// 取消回复
+const cancelReply = () => {
+    isReply.value = false
+    replyId.value = 0
+    replayUserId.value = 0
+    replyNickName.value = ""
+}
 
 // 获取回复数据
 const threadPosts = computedAsync(() => {
@@ -393,15 +427,22 @@ const timeFormat = (timeStr: string) => {
 
 // 在发帖后翻到最后一页
 const sendPost = () => {
+    // 清空回复状态
+    cancelReply()
     let last = Math.ceil(threadPosts.value.total_count / pagination.value.limit)
     // 如果正好换页，跳转到新页
     if (threadPosts.value.total_count % pagination.value.limit === 0) {
         last++
     }
     sendPostScroll.value = true
-    postRefresh.value++
-    pagination.value.page = last
+    if (pagination.value.page !== last) {
+        pagination.value.page = last
+    } else {
+        postRefresh.value++
+    }
 }
+
+Taro.eventCenter.on("sendPost", sendPost)
 
 // 点赞和取消点赞帖子
 const upThread = async () => {
@@ -501,13 +542,37 @@ const favoriteThread = async () => {
         align-items: center;
 
         .post-op-item {
-            margin: 0 10rpx;
             display: flex;
             align-items: center;
             color: #97a3b4;
 
             text {
                 margin-right: 10rpx;
+                margin-left: 5rpx;
+                font-size: 28rpx;
+            }
+        }
+    }
+
+    .post-main {
+        .op {
+            padding-top: 10rpx;
+            padding-bottom: 10rpx;
+
+            .op-list {
+                display: flex;
+                align-items: center;
+
+                .op-item {
+                    display: flex;
+                    align-items: center;
+
+                    text {
+                        margin-right: 10rpx;
+                        font-size: 29rpx;
+                        color: #97a3b4;
+                    }
+                }
             }
         }
     }

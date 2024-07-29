@@ -7,12 +7,18 @@
                     @verify="postCaptcha.verify">
                 </ne-captcha>
                 <nut-form-item>
+                    <view class="reply-info" v-if="isReply">
+                        <text class="title">回复:</text>
+                        <text class="nickname">{{ replyNickName }}</text>
+                        <CircleClose class="cancel-btn" size="18" @click="emit('cancelReply')" />
+                    </view>
                     <view class="form-item">
                         <view class="msg-input" :style="{ height: inputHeight + 0.5 + 'rem' }">
                             <textarea :value="msg" :style="{ marginTop: '0.5rem', height: inputHeight + 'rem' }"
                                 placeholder="说点什么吧..." maxlength="1000" :show-confirm-bar="false" :hold-keyboard="true"
                                 :cursorSpacing="20" :disabled="!account.is_login" @linechange="lineChange"
-                                @input="msg = ($event as any).detail.value" @blur="showEmojiList = false" />
+                                @input="msg = ($event as any).detail.value" :focus="isReply"
+                                @blur="showEmojiList = false" />
                         </view>
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                             @click="showEmojiList = !showEmojiList" />
@@ -65,16 +71,21 @@ import { useAccountStore, usePromptStore } from '@/stores';
 import unicodeEmoji from './unicodeEmoji.json'
 import customEmoji from './customEmoji.json'
 import { apiServer, CreateThreadPost } from '@/api';
+import { CircleClose } from '@nutui/icons-vue-taro';
 
 const prompt = usePromptStore()
 const account = useAccountStore()
 
 const emit = defineEmits<{
-    send: [],
-    login: []
+    login: [],
+    cancelReply: []
 }>()
 const props = defineProps<{
-    info: { id: number, forum_id: number, user_id: number }
+    info: { id: number, forum_id: number, user_id: number },
+    isReply: boolean,
+    replyId: number,
+    replyUserId: number,
+    replyNickName: string
 }>()
 
 // 回复内容
@@ -127,20 +138,33 @@ const submitPost = async (captchaCode: string) => {
                 val = val.replace(reg, img)
             }
         }
-        let message = `<div data-weapp_version="v1">${val}</div>`
-        await CreateThreadPost({
-            message,
-            validate: captchaCode,
-            captcha_id: postCaptcha.captchaID,
-            thread_id: props.info.id,
-            forum_id: props.info.forum_id,
-            quote_user_id: props.info.user_id,
-        })
+        let message = `<div data-weapp_version="v1"><p>${val}</p></div>`
+        if (!props.isReply) {
+            await CreateThreadPost({
+                message,
+                validate: captchaCode,
+                captcha_id: postCaptcha.captchaID,
+                thread_id: props.info.id,
+                forum_id: props.info.forum_id,
+                quote_user_id: props.info.user_id,
+            })
+        } else {
+            await CreateThreadPost({
+                message,
+                validate: captchaCode,
+                captcha_id: postCaptcha.captchaID,
+                thread_id: props.info.id,
+                forum_id: props.info.forum_id,
+                quote_user_id: props.replyUserId,
+                quote_post_id: props.replyId,
+            })
+        }
+
         prompt.showToast('success', "发送成功")
         // 清空输入框内容
         msg.value = ''
         showEmojiList.value = false
-        emit('send')
+        Taro.eventCenter.trigger('sendPost')
     } catch (err) {
         console.log("create post", err)
         prompt.showToast('fail', "发送失败，请稍后在试")
@@ -183,20 +207,31 @@ const sendPicture = async () => {
             return
         }
         // 发表回复
-        let message = `<div data-weapp_version="v1"><img src='${JSON.parse(uploadFileRes.data).data[0]}' style='max-width: 100%' /></div>`
+        let message = `<div data-weapp_version="v1"><p><img src='${JSON.parse(uploadFileRes.data).data[0]}' style='max-width: 100%' /></p></div>`
         try {
-            await CreateThreadPost({
-                message,
-                validate: captchaCode,
-                captcha_id: postCaptcha.captchaID,
-                thread_id: props.info.id,
-                forum_id: props.info.forum_id,
-                quote_user_id: props.info.user_id,
-            })
-            prompt.showToast('success', "发送成功")
+            if (!props.isReply) {
+                await CreateThreadPost({
+                    message,
+                    validate: captchaCode,
+                    captcha_id: postCaptcha.captchaID,
+                    thread_id: props.info.id,
+                    forum_id: props.info.forum_id,
+                    quote_user_id: props.info.user_id,
+                })
+            } else {
+                await CreateThreadPost({
+                    message,
+                    validate: captchaCode,
+                    captcha_id: postCaptcha.captchaID,
+                    thread_id: props.info.id,
+                    forum_id: props.info.forum_id,
+                    quote_user_id: props.replyUserId,
+                    quote_post_id: props.replyId,
+                })
+            }
             msg.value = ''
             showEmojiList.value = false
-            emit('send')
+            Taro.eventCenter.trigger('sendPost')
         } catch (err) {
             console.log("create post", err)
             prompt.showToast('fail', "发送失败，请稍后在试")
@@ -251,6 +286,25 @@ const tabEmojiValue = ref(0)
 
         .send-btn {
             height: 2rem;
+        }
+    }
+
+    .reply-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10rpx;
+
+        .title {
+            color: #333;
+        }
+
+        .nickname {
+            color: #007aff;
+            min-width: 0;
+        }
+
+        .cancel-btn {
+            margin-left: 10rpx;
         }
     }
 
