@@ -15,14 +15,14 @@
         <!-- 多选投票 -->
         <nut-checkbox-group v-if="isMultiple" v-model="voteOptionIds" :max="maxChoices">
           <nut-cell v-for="(item, index) in forumPolloption" :key="index" center>
-            <nut-checkbox :icon-size="18" :label="item.polloptionid">
+            <nut-checkbox class="vote-content" :icon-size="18" :label="item.polloptionid">
               {{ `${index + 1}. ${item.polloption}` }}</nut-checkbox>
           </nut-cell>
         </nut-checkbox-group>
         <!-- 单选投票 -->
         <nut-radio-group v-else v-model="voteOptionId">
           <nut-cell v-for="(item, index) in forumPolloption" :key="index" center>
-            <nut-radio :label="item.polloptionid">
+            <nut-radio class="vote-content" :label="item.polloptionid">
               {{ `${index + 1}. ${item.polloption}` }}</nut-radio>
           </nut-cell>
         </nut-radio-group>
@@ -111,7 +111,7 @@ const voting = () => {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .vote-card {
   .voter-number {
     color: #1890ff;
@@ -119,6 +119,11 @@ const voting = () => {
 
   .vote-count {
     margin-left: 10px;
+  }
+
+  .vote-content {
+    max-width: 100%;
+    word-wrap: break-word;
   }
 }
 </style>
