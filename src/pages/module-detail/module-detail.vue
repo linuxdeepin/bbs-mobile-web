@@ -14,6 +14,21 @@
                     <view class="thread">主题:<text>{{ forumInfo.data.today_posts_cnt }}</text></view>
                   </view>
                 </view>
+                <view class="favorite-btn">
+                  <nut-button class="btn" v-if="!forumIsFavorite" @click="favoriteForum" plain size="small"
+                    type="primary">
+                    <template #icon>
+                      <StarN />
+                    </template>
+                    收藏
+                  </nut-button>
+                  <nut-button class="btn" v-else @click="favoriteForum" plain size="small" type="warning">
+                    <template #icon>
+                      <StarFillN />
+                    </template>
+                    已收藏
+                  </nut-button>
+                </view>
               </view>
               <view class="brief">{{ forumInfo.data.brief }}</view>
               <view class="moderator">
@@ -75,7 +90,7 @@
     </template>
     <view v-else>
       <view class="skeleton-container">
-        <nut-skeleton width="50vw" height="30px" :title="false" avatar animated avatar-shape="square" avatarSize="70px"
+        <nut-skeleton width="68vw" height="30px" :title="false" avatar animated avatar-shape="square" avatarSize="70px"
           row="2">
         </nut-skeleton>
       </view>
@@ -88,23 +103,26 @@
         </nut-skeleton>
       </view>
     </view>
+    <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
   </view>
 </template>
 
 <script lang="ts" setup>
 import { ref, watch } from "vue"
 import Taro from '@tarojs/taro';
-import { ForumById, ForumByIdResponse } from "@/api";
+import { ForumById, ForumByIdResponse, ForumIsFavorite, ForumFavorite } from "@/api";
 import { computedAsync } from "@vueuse/core";
 import TopIcon from '@/assets/top.svg';
-import { Comment, Eye } from "@nutui/icons-vue-taro";
+import { Comment, Eye, StarN, StarFillN } from "@nutui/icons-vue-taro";
+import { useAccountStore } from "@/stores";
 
+const account = useAccountStore()
 const instance = Taro.getCurrentInstance()
 const forumId = ref(0)
 if (instance.router) {
-  console.log(instance.router.params.id)
   forumId.value = Number(instance.router.params["id"] || 0)
 }
+const showLoginDialog = ref(false)
 const loading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
 
@@ -113,6 +131,24 @@ computedAsync(async () => {
   const { data } = await ForumById({ id: forumId.value, order: "last_date", offset: pagination.value.page - 1, languages: "zh_CN" })
   forumInfo.value = data
 }, undefined, { evaluating: loading })
+
+const forumIsFavorite = computedAsync(async () => {
+  if (!account.is_login) {
+    return false
+  }
+  const { data } = await ForumIsFavorite(forumId.value)
+  return data.data
+})
+
+const favoriteForum = async () => {
+  if (!account.is_login) {
+    showLoginDialog.value = true
+  }
+  const { data } = await ForumFavorite(forumId.value)
+  if (data.code === 0) {
+    forumIsFavorite.value = !forumIsFavorite.value
+  }
+}
 
 // 跳转到帖子详情
 const goThread = (item: ForumByIdResponse["data"]["thread"][0]) => {
@@ -134,6 +170,8 @@ watch(loading, () => {
 <style lang="scss">
 .module-detail-page {
   .module-info {
+    width: 100%;
+
     .module-info-header {
       display: flex;
 
@@ -167,6 +205,17 @@ watch(loading, () => {
               color: #000;
             }
           }
+        }
+      }
+
+      .favorite-btn {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+
+        .btn {
+          width: 25vw;
         }
       }
     }
