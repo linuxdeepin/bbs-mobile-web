@@ -53,21 +53,15 @@
             <!-- 点赞和收藏 -->
             <nut-col span="22" offset="1">
                 <view class="post-op">
-                    <view v-if="!threadInfo.is_up" class="post-op-item" @click="upThread">
-                        <Heart1 size="28rpx" color="#97a3b4"></Heart1>
-                        <text>{{ `点赞 ${threadInfo.like_cnt}` }}</text>
+                    <view class="post-op-item up" @click="upThread">
+                        <img :src="threadInfo.is_up ? UpFillIcon : UpIcon" />
+                        <text v-if="threadInfo.like_cnt">{{ `点赞 ${threadInfo.like_cnt}` }}</text>
+                        <text v-else>点赞</text>
                     </view>
-                    <view v-else class="post-op-item" @click="upThread">
-                        <HeartFill1 size="28rpx" color="rgba(255,0,0,0.68)"></HeartFill1>
-                        <text>{{ `点赞 ${threadInfo.like_cnt}` }}</text>
-                    </view>
-                    <view v-if="!threadInfo.is_favorite" class="post-op-item" @click="favoriteThread">
-                        <StarN size="28rpx" color="#97a3b4"></StarN>
-                        <text>{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
-                    </view>
-                    <view v-else class="post-op-item" @click="favoriteThread">
-                        <StarFillN size="28rpx" color="rgba(255,0,0,0.68)"></StarFillN>
-                        <text>{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
+                    <view class="post-op-item" @click="favoriteThread">
+                        <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
+                        <text v-if="threadInfo.favourite_cnt">{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
+                        <text v-else>收藏</text>
                     </view>
                 </view>
             </nut-col>
@@ -79,7 +73,7 @@
             </nut-col>
 
             <!-- 回帖列表 -->
-            <template v-if="!postLoading">
+            <template v-if="!postLoading && threadPosts">
                 <template v-if="threadPosts.total_count > 0">
                     <nut-col v-for="(post, index) in threadPosts.data" span="22" offset="1">
                         <view :class="'.post-id-' + post.id"></view>
@@ -131,9 +125,15 @@
                                 </nut-cell>
                                 <nut-cell class="op">
                                     <view class="op-list">
+                                        <view class="op-item up" @click="likeBtnClicked(post)">
+                                            <img :src="post.is_up ? UpFillIcon : UpIcon" />
+                                            <text v-if="post.like_cnt" class="content">
+                                                {{ `点赞 ${post.like_cnt}` }}</text>
+                                            <text v-else class="content">点赞</text>
+                                        </view>
                                         <view class="op-item"
                                             @click="replyBtnClicked(post.id, post.post_user_id, post.user.nickname)">
-                                            <Comment size="24rpx" color="#97a3b4"></Comment>
+                                            <img :src="CommentIcon" />
                                             <text class="content">回复</text>
                                         </view>
                                     </view>
@@ -185,6 +185,11 @@
 import { watch, ref } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
+import UpIcon from '@/assets/up.svg'
+import UpFillIcon from '@/assets/up-fill.svg'
+import FavoriteIcon from '@/assets/favorite.svg'
+import FavoriteFillIcon from '@/assets/favorite-fill.svg'
+import CommentIcon from '@/assets/comment.svg'
 import { useConfigStore, useAccountStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
@@ -192,9 +197,8 @@ import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
 import Vote from './vote.vue'
-import { apiServer, ThreadInfo, ThreadPostList, ThreadUP, ThreadInfoData, ThreadFavorite } from '@/api';
+import { apiServer, ThreadInfo, ThreadPostList, ThreadUP, ThreadInfoData, ThreadFavorite, PostListResponse } from '@/api';
 import { computedAsync } from "@vueuse/core";
-import { Heart1, HeartFill1, StarN, StarFillN, Comment } from '@nutui/icons-vue-taro'
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -321,14 +325,30 @@ const cancelReply = () => {
 }
 
 // 获取回复数据
-const threadPosts = computedAsync(() => {
+const threadPosts = ref<PostListResponse>()
+computedAsync(async () => {
     // 在回复时，需要手动刷新
     postRefresh.value
-    return ThreadPostList(threadID.value, {
+    const { data } = await ThreadPostList(threadID.value, {
         page: pagination.value.page,
         pageSize: pagination.value.limit,
-    }).then(resp => resp.data)
+    })
+    threadPosts.value = data
 }, undefined, { evaluating: postLoading })
+
+
+// 点赞评论
+const likeBtnClicked = async (post: PostListResponse["data"][0]) => {
+    if (!account.is_login) {
+        showLoginDialog.value = true
+        return
+    }
+    const { data } = await ThreadUP(post.id, "pid")
+    if (!data.code) {
+        post.is_up = !post.is_up
+        post.like_cnt += post.is_up ? 1 : -1
+    }
+}
 
 // 翻页后滚动到回复分割线，如果是发帖后自动翻页则滚动到底部
 const sendPostScroll = ref(false)
@@ -429,6 +449,8 @@ const timeFormat = (timeStr: string) => {
 const sendPost = () => {
     // 清空回复状态
     cancelReply()
+    if (!threadPosts.value)
+        return
     let last = Math.ceil(threadPosts.value.total_count / pagination.value.limit)
     // 如果正好换页，跳转到新页
     if (threadPosts.value.total_count % pagination.value.limit === 0) {
@@ -452,7 +474,7 @@ const upThread = async () => {
     }
     if (!threadInfo.value)
         return
-    const { data } = await ThreadUP(threadID.value)
+    const { data } = await ThreadUP(threadID.value, "tid")
     if (!data.code) {
         threadInfo.value.is_up = !threadInfo.value.is_up
         threadInfo.value.like_cnt += threadInfo.value.is_up ? 1 : -1
@@ -545,10 +567,19 @@ const favoriteThread = async () => {
             display: flex;
             align-items: center;
             color: #97a3b4;
+            margin-right: 10rpx;
+
+            &.up {
+                width: 120rpx;
+            }
+
+            img {
+                width: 30rpx;
+                height: 30rpx;
+                margin-right: 5rpx;
+            }
 
             text {
-                margin-right: 10rpx;
-                margin-left: 5rpx;
                 font-size: 28rpx;
             }
         }
@@ -566,10 +597,20 @@ const favoriteThread = async () => {
                 .op-item {
                     display: flex;
                     align-items: center;
+                    margin-right: 10rpx;
+
+                    &.up {
+                        width: 120rpx;
+                    }
+
+                    img {
+                        width: 30rpx;
+                        height: 30rpx;
+                        margin-right: 5rpx;
+                    }
 
                     text {
-                        margin-right: 10rpx;
-                        font-size: 29rpx;
+                        font-size: 28rpx;
                         color: #97a3b4;
                     }
                 }

@@ -10,10 +10,10 @@ export async function ThreadPoll(tid: number, polloptionid: number[]) {
   return http.post("/api/v1/thread/poll", { tid, polloptionid });
 }
 
-export async function ThreadUP(id: number) {
+export async function ThreadUP(id: number, idType: string) {
   const params = {
     id: id,
-    idtype: "tid",
+    idtype: idType,
   }
   return http.post<{ code: number, msg: string }>("/api/v1/thread/up", params);
 }
