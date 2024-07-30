@@ -24,7 +24,7 @@ export async function ThreadPostList(
   });
 }
 
-interface PostListResponse {
+export interface PostListResponse {
   code: number;
   data: Post[];
   msg: string;
