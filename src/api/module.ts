@@ -4,6 +4,20 @@ export async function ForumById(opt: { id: number, order: string, offset: number
   return http.get<ForumByIdResponse>("/api/v1/forum/id", { params: { ...opt } })
 }
 
+export async function ForumIsFavorite(forumId: number) {
+  return http.get<{ code: number, data: boolean, msg: string }>("/api/v1/forum/user/favorite", { params: { forum_id: forumId } })
+}
+
+// 收藏或取消收藏版块
+export async function ForumFavorite(forumId: number) {
+  return http.post<{ code: number, msg: string }>("/api/v1/forum/favorite", { id: forumId })
+}
+
+// 获取用户收藏的版块
+export async function UserForumFavoriteList() {
+  return http.get<UserForumFavoriteListResponse>("/api/v1/forum/favorite/list")
+}
+
 export interface ForumByIdResponse {
   data: ForumByIdData;
   total_count: number;
@@ -201,4 +215,32 @@ interface Type {
   created_at: string;
   updated_at: string;
   is_tj: number;
+}
+
+interface UserForumFavoriteListResponse {
+  code: number;
+  data: UserFavoriteForumData[];
+  msg: string;
+}
+
+interface UserFavoriteForumData {
+  id: number;
+  name: string;
+  rank: number;
+  threads_cnt: number;
+  posts_cnt: number;
+  visit_cnt: number;
+  today_posts_cnt: number;
+  today_threads_cnt: number;
+  today_visit_cnt: number;
+  brief: string;
+  announcement: string;
+  orderby: number;
+  owner_uids: string;
+  digests_cnt: number;
+  icon: string;
+  created_at: string;
+  updated_at: string;
+  type_id: number;
+  link_url: string;
 }
