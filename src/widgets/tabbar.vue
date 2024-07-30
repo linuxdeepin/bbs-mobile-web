@@ -5,6 +5,11 @@
         <Home></Home>
       </template>
     </nut-tabbar-item>
+    <nut-tabbar-item tab-title="版块" name="module">
+      <template #icon>
+        <Category></Category>
+      </template>
+    </nut-tabbar-item>
     <nut-tabbar-item tab-title="发帖" name="posting">
       <template #icon>
         <Edit></Edit>
@@ -27,7 +32,7 @@
 import { MessageCount } from '@/api';
 import { useDidShow } from '@tarojs/taro'
 import { useTabsStore, useAccountStore } from '@/stores'
-import { Home, Message, My2, Edit } from "@nutui/icons-vue-taro"
+import { Home, Message, My2, Edit, Category } from "@nutui/icons-vue-taro"
 
 const emit = defineEmits<{
   tabChange: [],

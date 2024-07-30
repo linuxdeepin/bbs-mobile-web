@@ -9,6 +9,7 @@ declare module '@vue/runtime-core' {
   export interface GlobalComponents {
     NutActionSheet: typeof import('@nutui/nutui-taro')['ActionSheet']
     NutAvatar: typeof import('@nutui/nutui-taro')['Avatar']
+    NutAvatarGroup: typeof import('@nutui/nutui-taro')['AvatarGroup']
     NutBadge: typeof import('@nutui/nutui-taro')['Badge']
     NutButton: typeof import('@nutui/nutui-taro')['Button']
     NutCell: typeof import('@nutui/nutui-taro')['Cell']
@@ -21,6 +22,8 @@ declare module '@vue/runtime-core' {
     NutEmpty: typeof import('@nutui/nutui-taro')['Empty']
     NutForm: typeof import('@nutui/nutui-taro')['Form']
     NutFormItem: typeof import('@nutui/nutui-taro')['FormItem']
+    NutGrid: typeof import('@nutui/nutui-taro')['Grid']
+    NutGridItem: typeof import('@nutui/nutui-taro')['GridItem']
     NutInput: typeof import('@nutui/nutui-taro')['Input']
     NutPagination: typeof import('@nutui/nutui-taro')['Pagination']
     NutPopup: typeof import('@nutui/nutui-taro')['Popup']

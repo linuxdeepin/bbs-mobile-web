@@ -29,7 +29,7 @@ export async function PostingThread(opt: {
   return http.post<PostingThreadResponse>('/api/v1/thread?captcha_id=f2c00d8c7cb64136a231e7f95f9c5e1a', params);
 }
 
-interface ForumResponse {
+export interface ForumResponse {
   id: number;
   type: number;
   name: string;
