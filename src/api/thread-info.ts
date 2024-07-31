@@ -1,4 +1,4 @@
-import { http } from "./http";
+import { http, apiServer } from "./http";
 
 export async function ThreadInfo(id: number) {
   return http.get<ThreadInfoResponse>("/api/v1/thread/info", {
@@ -20,6 +20,16 @@ export async function ThreadUP(id: number, idType: string) {
 
 export async function ThreadFavorite(id: number) {
   return http.post<{ code: number, msg: string }>("/api/v1/thread/favorite", { id });
+}
+
+export async function DeleteThread(id: number) {
+  // return http.delete<{ code: number, msg: string }>("/api/v1/thread", { id });
+  return http.request<{ code: number, msg: string }>({
+    url: apiServer + "/api/v1/thread",
+    method: "delete",
+    data: { id },
+    params: { id },
+  })
 }
 
 interface ThreadInfoResponse {

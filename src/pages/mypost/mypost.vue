@@ -97,7 +97,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { getCurrentInstance } from '@tarojs/taro';
+import { getCurrentInstance, useDidShow } from '@tarojs/taro';
 import { GetMyThread, MyThreadResonse, GetMyPost, MyPostResponse, PostOffset } from '@/api';
 import { formatTime } from '@/utils/format';
 import { Comment, Eye } from "@nutui/icons-vue-taro";
@@ -127,7 +127,6 @@ const switchTab = (tab: Tab) => {
 }
 // 切换tab时获取对应数据
 const tabChange = async () => {
-  console.log('tabChange')
   loading.value = true
   pagination.value.page = 1
   switch (currentTab.value) {
@@ -153,6 +152,19 @@ const tabChange = async () => {
   loading.value = false
   init.value = false
 })()
+
+useDidShow(async () => {
+  switch (currentTab.value) {
+    case 'mythread':
+      const myThreadRes = await GetMyThread({ offset: pagination.value.page - 1, limit: pagination.value.limit })
+      myThreadData.value = myThreadRes.data
+      break
+    case 'mypost':
+      const myPostRes = await GetMyPost({ offset: pagination.value.page - 1, limit: pagination.value.limit })
+      myPostData.value = myPostRes.data
+      break
+  }
+})
 // 翻页
 const pageChange = async (page: number) => {
   pagination.value.page = page
@@ -225,10 +237,9 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
         margin: 10rpx 0;
         font-weight: 700;
         overflow: hidden;
+        white-space: nowrap;
         text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
+        -o-text-overflow: ellipsis;
       }
 
       .info {
@@ -282,10 +293,9 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
         margin: 12rpx 0;
         color: #000;
         overflow: hidden;
+        white-space: nowrap;
         text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
+        -o-text-overflow: ellipsis;
       }
 
       .quote {
@@ -295,10 +305,9 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
         border-radius: var(--nut-cell-border-radius, 12rpx);
         padding: 12rpx;
         overflow: hidden;
+        white-space: nowrap;
         text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
+        -o-text-overflow: ellipsis;
       }
     }
   }
