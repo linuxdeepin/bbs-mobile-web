@@ -53,15 +53,19 @@
             <!-- 点赞和收藏 -->
             <nut-col span="22" offset="1">
                 <view class="post-op">
-                    <view class="post-op-item up" @click="upThread">
+                    <view class="post-op-item" @click="upThread">
                         <img :src="threadInfo.is_up ? UpFillIcon : UpIcon" />
-                        <text v-if="threadInfo.like_cnt">{{ `点赞 ${threadInfo.like_cnt}` }}</text>
-                        <text v-else>点赞</text>
+                        <text>{{ `点赞${threadInfo.like_cnt}` }}</text>
+
                     </view>
                     <view class="post-op-item" @click="favoriteThread">
                         <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
-                        <text v-if="threadInfo.favourite_cnt">{{ `收藏 ${threadInfo.favourite_cnt}` }}</text>
-                        <text v-else>收藏</text>
+                        <text>{{ `收藏${threadInfo.favourite_cnt}` }}</text>
+                    </view>
+                    <view v-if="account.is_login && account.user_info.id === threadInfo.user_id" class="post-op-item"
+                        @click="showDelDialog = true">
+                        <img :src="DeleteIcon" />
+                        <text>删除</text>
                     </view>
                 </view>
             </nut-col>
@@ -125,16 +129,20 @@
                                 </nut-cell>
                                 <nut-cell class="op">
                                     <view class="op-list">
-                                        <view class="op-item up" @click="likeBtnClicked(post)">
+                                        <view class="op-item" @click="likeBtnClicked(post)">
                                             <img :src="post.is_up ? UpFillIcon : UpIcon" />
-                                            <text v-if="post.like_cnt" class="content">
-                                                {{ `点赞 ${post.like_cnt}` }}</text>
-                                            <text v-else class="content">点赞</text>
+                                            <text class="content">{{ `点赞${post.like_cnt}` }}</text>
                                         </view>
                                         <view class="op-item"
                                             @click="replyBtnClicked(post.id, post.post_user_id, post.user.nickname)">
                                             <img :src="CommentIcon" />
                                             <text class="content">回复</text>
+                                        </view>
+                                        <view
+                                            v-if="account.is_login && account.user_info.id === post.post_user_id && post.deleted_at === null"
+                                            class="op-item" @click="showDelDialog = true; deletePostId = post.id">
+                                            <img :src="DeleteIcon" />
+                                            <text class="content">删除</text>
                                         </view>
                                     </view>
                                 </nut-cell>
@@ -178,6 +186,8 @@
             </view>
         </view>
         <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
+        <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelDialog" @cancel="deletePostId = 0"
+            @ok="deleteThread" />
     </view>
 </template>
 <script lang="ts" setup>
@@ -189,6 +199,7 @@ import UpIcon from '@/assets/up.svg'
 import UpFillIcon from '@/assets/up-fill.svg'
 import FavoriteIcon from '@/assets/favorite.svg'
 import FavoriteFillIcon from '@/assets/favorite-fill.svg'
+import DeleteIcon from '@/assets/delete.svg'
 import CommentIcon from '@/assets/comment.svg'
 import { useConfigStore, useAccountStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
@@ -197,7 +208,7 @@ import dayjs from 'dayjs'
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
 import Vote from './vote.vue'
-import { apiServer, ThreadInfo, ThreadPostList, ThreadUP, ThreadInfoData, ThreadFavorite, PostListResponse } from '@/api';
+import { apiServer, ThreadInfo, ThreadPostList, ThreadUP, ThreadInfoData, ThreadFavorite, PostListResponse, DeleteThread, DeleteThreadPost } from '@/api';
 import { computedAsync } from "@vueuse/core";
 
 if (process.env.TARO_ENV === 'h5') {
@@ -495,6 +506,27 @@ const favoriteThread = async () => {
         threadInfo.value.favourite_cnt += threadInfo.value.is_favorite ? 1 : -1
     }
 }
+
+// 删除帖子确认弹窗
+const showDelDialog = ref(false)
+const deletePostId = ref(0)
+// 删除帖子
+const deleteThread = async () => {
+    if (!deletePostId.value) {
+        // 删除主题帖
+        const { data } = await DeleteThread(threadID.value)
+        if (!data.code) {
+            Taro.navigateBack()
+        }
+    } else {
+        // 删除评论
+        const { data } = await DeleteThreadPost(deletePostId.value)
+        if (!data.code) {
+            postRefresh.value++
+        }
+        deletePostId.value = 0
+    }
+}
 </script>
 
 <style lang="scss">
@@ -558,16 +590,11 @@ const favoriteThread = async () => {
             display: flex;
             align-items: center;
             color: #97a3b4;
-            margin-right: 10rpx;
-
-            &.up {
-                width: 120rpx;
-            }
+            margin-right: 13rpx;
 
             img {
                 width: 30rpx;
                 height: 30rpx;
-                margin-right: 5rpx;
             }
 
             text {
@@ -588,16 +615,11 @@ const favoriteThread = async () => {
                 .op-item {
                     display: flex;
                     align-items: center;
-                    margin-right: 10rpx;
-
-                    &.up {
-                        width: 120rpx;
-                    }
+                    margin-right: 13rpx;
 
                     img {
                         width: 30rpx;
                         height: 30rpx;
-                        margin-right: 5rpx;
                     }
 
                     text {

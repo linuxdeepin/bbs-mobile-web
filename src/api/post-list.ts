@@ -1,4 +1,4 @@
-import { http } from "./http";
+import { http, apiServer } from "./http";
 
 export async function ThreadPostList(
   id: number,
@@ -21,6 +21,15 @@ export async function ThreadPostList(
   }
   return http.get<PostListResponse>("/api/v1/thread/post/list", {
     params,
+  });
+}
+
+export async function DeleteThreadPost(id: number) {
+  return http.request<{ code: number, msg: string }>({
+    url: apiServer + "/api/v1/thread/post",
+    method: "delete",
+    data: { id },
+    params: { id },
   });
 }
 
