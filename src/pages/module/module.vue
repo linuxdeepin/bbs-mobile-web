@@ -51,9 +51,10 @@ import { GetForum, UserForumFavoriteList } from '@/api'
 import { computedAsync } from '@vueuse/core';
 import Tabbar from '@/widgets/tabbar.vue';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useAccountStore } from "@/stores";
+import { useAccountStore, useTabsStore } from "@/stores";
 
 const account = useAccountStore()
+const tab = useTabsStore()
 
 const forumList = computedAsync(async () => {
   const { data } = await GetForum()
@@ -72,6 +73,7 @@ const favoriteForumList = computedAsync(async () => {
 
 // 返回到当前页面时刷新已收藏版块
 useDidShow(() => {
+  tab.change({ name: 'module' })
   favoriteForumRefresh.value++
 })
 
