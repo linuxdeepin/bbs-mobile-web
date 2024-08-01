@@ -80,6 +80,7 @@ const msgCount = ref({
 })
 
 useDidShow(async () => {
+  tabStore.change({ name: 'message' })
   refreshData()
 })
 

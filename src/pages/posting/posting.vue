@@ -134,10 +134,10 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import Taro from '@tarojs/taro';
+import Taro, { useDidShow } from '@tarojs/taro';
 import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
 import { computedAsync } from '@vueuse/core';
-import { usePromptStore, useAccountStore } from '@/stores';
+import { usePromptStore, useAccountStore, useTabsStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue';
 
 const loading = ref(true)
@@ -147,6 +147,10 @@ setTimeout(() => {
 const prompt = usePromptStore()
 const account = useAccountStore()
 const postCaptcha = account.useSmartCaptcha()
+const tab = useTabsStore()
+
+useDidShow(() => tab.change({ name: 'posting' }))
+
 // 选择版块
 const selectedForum = ref({ id: 0, name: '' })
 const showForumSelection = ref(false)
