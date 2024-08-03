@@ -105,6 +105,9 @@ const config = {
     "@/widgets": path.resolve(__dirname, "..", "src/widgets"),
     "@/utils": path.resolve(__dirname, "..", "src/utils"),
     "@/pages": path.resolve(__dirname, "..", "src/pages"),
+    // 解决transformElement报错问题,等待上游修复
+    // https://github.com/NervJS/taro/issues/16224
+    '@tarojs/runtime': require.resolve('@tarojs/runtime'),
   },
 };
 

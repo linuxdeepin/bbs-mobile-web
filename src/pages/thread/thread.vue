@@ -480,15 +480,6 @@ const favoriteThread = async () => {
         .h5-code {
             white-space: pre-wrap;
         }
-
-        // 等待补丁合并 https://github.com/NervJS/taro/pull/14927
-        .h5-h1 {
-            line-height: 2em;
-        }
-
-        .h5-h2 {
-            line-height: 1.5em;
-        }
     }
 
     .del-message {
