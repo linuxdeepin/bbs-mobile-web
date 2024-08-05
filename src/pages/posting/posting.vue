@@ -16,8 +16,7 @@
       <nut-cell-group>
         <!-- 主题标题 -->
         <nut-cell>
-          <nut-input class="title-input" v-model="postingTitle" show-word-limit :max-length="30"
-            placeholder="请输入帖子标题，不超过30字" />
+          <nut-input v-model="postingTitle" show-word-limit :max-length="30" placeholder="请输入帖子标题，不超过30字" />
         </nut-cell>
 
         <!-- 主题内容 -->
@@ -287,7 +286,7 @@ interface FileItem {
   height: 100%;
   padding: 5rpx 10rpx 4rem;
 
-  .title-input {
+  .nut-input {
     padding: 20rpx 0;
   }
 

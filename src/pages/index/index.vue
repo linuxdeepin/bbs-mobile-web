@@ -94,13 +94,19 @@ useDidShow(() => {
 // 加载帖子数据
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
+const threadIndexRefresh = ref(0)
 const threadIndexResponse = ref<ThreadIndexResponse>({ ThreadIndex: [], total_count: 0 })
 computedAsync(async () => {
+  threadIndexRefresh.value
   const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
   threadIndexResponse.value = resp.data || [];
 }, undefined, { evaluating: isLoading })
 // 加载消息数量
 useDidShow(async () => {
+  if (config.indexNeedRefresh) {
+    threadIndexRefresh.value++
+    config.indexNeedRefresh = false
+  }
   const res = await MessageCount()
   const { at_msg_count, letter_msg_count, post_msg_count, sys_msg_count, thread_msg_count } = res.data.data
   tabs.messageCount = at_msg_count + letter_msg_count + post_msg_count + sys_msg_count + thread_msg_count
