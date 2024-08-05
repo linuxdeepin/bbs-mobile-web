@@ -391,6 +391,7 @@ useUnload(() => {
     if (Number(instance.router.params['posting'] || 0)) {
         // 携带这个参数说明是从发帖页面跳转过来
         // 返回时需要多返回一步
+        config.indexNeedRefresh = true
         Taro.navigateBack()
     }
 })
@@ -450,6 +451,7 @@ const moderatorDelDialogClosed = async (action: string) => {
             })
             if (!data.code) {
                 prompt.showToast("success", "删除成功")
+                config.indexNeedRefresh = true
                 Taro.navigateBack()
             }
             return true
@@ -752,6 +754,7 @@ const deleteThread = async () => {
         const { data } = await DeleteThread(threadID.value)
         if (!data.code) {
             prompt.showToast("success", "删除成功")
+            config.indexNeedRefresh = true
             Taro.navigateBack()
         }
     } else {

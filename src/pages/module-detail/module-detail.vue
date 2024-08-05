@@ -109,13 +109,14 @@
 
 <script lang="ts" setup>
 import { ref, watch } from "vue"
-import Taro from '@tarojs/taro';
+import Taro, { useDidShow } from '@tarojs/taro';
 import { ForumById, ForumByIdResponse, ForumIsFavorite, ForumFavorite } from "@/api";
 import { computedAsync } from "@vueuse/core";
 import TopIcon from '@/assets/top.svg';
 import { Comment, Eye, StarN, StarFillN } from "@nutui/icons-vue-taro";
-import { useAccountStore } from "@/stores";
+import { useAccountStore, useConfigStore } from "@/stores";
 
+const config = useConfigStore()
 const account = useAccountStore()
 const instance = Taro.getCurrentInstance()
 const forumId = ref(0)
@@ -126,8 +127,17 @@ const showLoginDialog = ref(false)
 const loading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
 
+useDidShow(() => {
+  if (config.indexNeedRefresh) {
+    forumInfoRefresh.value++
+    config.indexNeedRefresh = false
+  }
+})
+
 const forumInfo = ref<ForumByIdResponse>()
+const forumInfoRefresh = ref(0)
 computedAsync(async () => {
+  forumInfoRefresh.value
   const { data } = await ForumById({ id: forumId.value, order: "last_date", offset: pagination.value.page - 1, languages: "zh_CN" })
   forumInfo.value = data
 }, undefined, { evaluating: loading })
