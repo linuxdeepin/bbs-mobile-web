@@ -159,6 +159,11 @@
                             </nut-cell-group>
                         </view>
                     </nut-col>
+                    <!-- 只在最后一页显示 -->
+                    <nut-col
+                        v-if="interval && pagination.page === Math.ceil(threadPosts.total_count / pagination.limit)">
+                        <view class="refresh-tips">已开启自动刷新</view>
+                    </nut-col>
                     <nut-col>
                         <div class="pagination">
                             <nut-pagination v-if="threadPosts.total_count > pagination.limit" span="24"
@@ -274,7 +279,7 @@
     </view>
 </template>
 <script lang="ts" setup>
-import { watch, ref } from 'vue';
+import { watch, ref, watchEffect } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
 import UpIcon from '@/assets/up.svg'
@@ -392,6 +397,7 @@ if (instance.router) {
 useUnload(() => {
     if (!instance.router)
         return
+    clearInterval(interval.value)
     if (Number(instance.router.params['posting'] || 0)) {
         // 携带这个参数说明是从发帖页面跳转过来
         // 返回时需要多返回一步
@@ -620,6 +626,10 @@ watch(threadPosts, (_, oldVal) => {
     }
 
     Taro.nextTick(() => {
+        if (intervalRefreshPost) {
+            intervalRefreshPost.value = false
+            return
+        }
         if (sendPostScroll.value) {
             Taro.createSelectorQuery().select('.thread-page').boundingClientRect().exec((res) => {
                 Taro.pageScrollTo({
@@ -771,6 +781,31 @@ const deleteThread = async () => {
         deletePostId.value = 0
     }
 }
+
+// 定时刷新评论
+// 如果当前位于评论的最后一页,每三秒刷新一次
+const interval = ref<NodeJS.Timeout>()
+const intervalRefreshPost = ref(false)
+watchEffect(() => {
+    if (!threadPosts.value)
+        return
+    if (pagination.value.page === Math.ceil(threadPosts.value.total_count / pagination.value.limit)) {
+        clearInterval(interval.value)
+        const oldTotalCount = threadPosts.value.total_count
+        interval.value = setInterval(async () => {
+            const { data } = await ThreadPostList(threadID.value, {
+                page: pagination.value.page,
+                pageSize: pagination.value.limit,
+            })
+            if (oldTotalCount !== data.total_count) {
+                intervalRefreshPost.value = true
+                threadPosts.value = data
+            }
+        }, 3000)
+    } else {
+        clearInterval(interval.value)
+    }
+})
 </script>
 
 <style lang="scss">
@@ -893,6 +928,12 @@ const deleteThread = async () => {
 
     .content>view {
         max-width: 100%;
+    }
+
+    .refresh-tips {
+        text-align: center;
+        font-size: 20rpx;
+        margin-bottom: 20rpx;
     }
 
     .pagination {
