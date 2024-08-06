@@ -78,7 +78,7 @@ import TopIcon from '@/assets/top.svg'
 
 import { computedAsync } from "@vueuse/core";
 import { apiServer, IndexThread, ThreadIndexResponse, MessageCount } from '@/api'
-import Taro, { useDidShow, useShareTimeline } from '@tarojs/taro'
+import Taro, { useDidShow, useShareTimeline, usePullDownRefresh } from '@tarojs/taro'
 import { Comment, Eye } from "@nutui/icons-vue-taro";
 import { useConfigStore, useTabsStore } from '@/stores'
 import { watch, ref } from 'vue';
@@ -94,16 +94,23 @@ useDidShow(() => {
 // 加载帖子数据
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
+const threadIndexRefresh = ref(0)
 const threadIndexResponse = ref<ThreadIndexResponse>({ ThreadIndex: [], total_count: 0 })
 computedAsync(async () => {
+  threadIndexRefresh.value
   const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
   threadIndexResponse.value = resp.data || [];
+  Taro.stopPullDownRefresh()
 }, undefined, { evaluating: isLoading })
 // 加载消息数量
 useDidShow(async () => {
   const res = await MessageCount()
   const { at_msg_count, letter_msg_count, post_msg_count, sys_msg_count, thread_msg_count } = res.data.data
   tabs.messageCount = at_msg_count + letter_msg_count + post_msg_count + sys_msg_count + thread_msg_count
+})
+// 首页下拉刷新
+usePullDownRefresh(async () => {
+  threadIndexRefresh.value++
 })
 // 翻页后跳转到顶部
 watch(isLoading, () => {
