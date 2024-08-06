@@ -53,24 +53,26 @@
             <!-- 点赞和收藏 -->
             <nut-col span="22" offset="1">
                 <view class="post-op">
-                    <view class="post-op-item" @click="upThread">
+                    <view class="post-op-item" hover-class="btn-clicked" hover-stay-time="200" @click="upThread">
                         <img :src="threadInfo.is_up ? UpFillIcon : UpIcon" />
                         <text>{{ `点赞${threadInfo.like_cnt}` }}</text>
 
                     </view>
-                    <view class="post-op-item" @click="favoriteThread">
+                    <view class="post-op-item" hover-class="btn-clicked" hover-stay-time="200" @click="favoriteThread">
                         <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
                         <text>{{ `收藏${threadInfo.favourite_cnt}` }}</text>
                     </view>
                     <!--  -->
-                    <view v-if="account.is_login && account.user_info.id === threadInfo.user_id" class="post-op-item"
+                    <view v-if="account.is_login && account.user_info.id === threadInfo.user_id"
+                        hover-class="btn-clicked" hover-stay-time="200" class="post-op-item"
                         @click="showDelDialog = true">
                         <img :src="DeleteIcon" />
                         <text>删除</text>
                     </view>
                     <!-- 版主管理按钮 -->
-                    <view v-if="account.is_login && isModerator" class="post-op-item"
-                        @click="moderatorAction.show = true">
+                    <view v-if="account.is_login && isModerator" hover-class="btn-clicked" hover-stay-time="200"
+                        class="post-op-item right" @click="moderatorAction.show = true">
+                        <img :src="ManagerIcon" />
                         <text>管理</text>
                     </view>
                 </view>
@@ -135,18 +137,20 @@
                                 </nut-cell>
                                 <nut-cell class="op">
                                     <view class="op-list">
-                                        <view class="op-item" @click="likeBtnClicked(post)">
+                                        <view class="op-item" hover-class="btn-clicked" hover-stay-time="200"
+                                            @click="likeBtnClicked(post)">
                                             <img :src="post.is_up ? UpFillIcon : UpIcon" />
                                             <text class="content">{{ `点赞${post.like_cnt}` }}</text>
                                         </view>
-                                        <view class="op-item"
+                                        <view class="op-item" hover-class="btn-clicked" hover-stay-time="200"
                                             @click="replyBtnClicked(post.id, post.post_user_id, post.user.nickname)">
                                             <img :src="CommentIcon" />
                                             <text class="content">回复</text>
                                         </view>
                                         <view
                                             v-if="account.is_login && account.user_info.id === post.post_user_id && post.deleted_at === null"
-                                            class="op-item" @click="showDelDialog = true; deletePostId = post.id">
+                                            class="op-item" hover-class="btn-clicked" hover-stay-time="200"
+                                            @click="showDelDialog = true; deletePostId = post.id">
                                             <img :src="DeleteIcon" />
                                             <text class="content">删除</text>
                                         </view>
@@ -270,7 +274,6 @@
     </view>
 </template>
 <script lang="ts" setup>
-
 import { watch, ref } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
@@ -280,6 +283,7 @@ import FavoriteIcon from '@/assets/favorite.svg'
 import FavoriteFillIcon from '@/assets/favorite-fill.svg'
 import DeleteIcon from '@/assets/delete.svg'
 import CommentIcon from '@/assets/comment.svg'
+import ManagerIcon from '@/assets/manager.svg'
 import { useConfigStore, useAccountStore, usePromptStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
@@ -826,11 +830,17 @@ const deleteThread = async () => {
         padding: 20rpx 0;
         align-items: center;
 
+        .btn-clicked {
+            background-color: #f5f5f5;
+        }
+
         .post-op-item {
             display: flex;
             align-items: center;
             color: #97a3b4;
             margin-right: 13rpx;
+            padding: 10rpx;
+            border-radius: 12rpx;
 
             img {
                 width: 30rpx;
@@ -839,6 +849,10 @@ const deleteThread = async () => {
 
             text {
                 font-size: 28rpx;
+            }
+
+            &.right {
+                margin-left: auto;
             }
         }
     }
@@ -852,10 +866,16 @@ const deleteThread = async () => {
                 display: flex;
                 align-items: center;
 
+                .btn-clicked {
+                    background-color: #f5f5f5;
+                }
+
                 .op-item {
                     display: flex;
                     align-items: center;
+                    padding: 10rpx;
                     margin-right: 13rpx;
+                    border-radius: 12rpx;
 
                     img {
                         width: 30rpx;
