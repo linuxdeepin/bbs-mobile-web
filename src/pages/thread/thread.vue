@@ -9,15 +9,13 @@
                             <template #desc>
                                 <span class="module">【{{ threadInfo.type.name }}】</span>
                                 <span class="title">
-                                    {{ threadInfo.subject }}
+                                    {{ !banUser ? threadInfo.subject : '用户被禁言，该内容已隐藏' }}
                                 </span>
                             </template>
                             <template #icon>
-                                <img v-if="threadInfo.top" style="width:20px;height: 20px;" :src="TopIcon" />
+                                <img v-if="threadInfo.top && !banUser" style="width:20px;height: 20px;"
+                                    :src="TopIcon" />
                             </template>
-                            <!-- <template #link>
-                                <Star></Star>
-                            </template> -->
                         </nut-cell>
                         <nut-cell class="info" desc-text-align="left">
                             <template #icon>
@@ -41,8 +39,9 @@
             </nut-col>
             <!-- 主题 -->
             <nut-col span="22" offset="1">
-                <view class="thread-message html-message taro_html vditor-reset" @click="htmlClick($event)"
-                    v-html="threadInfo.post.message"></view>
+                <view v-if="!banUser" class="thread-message html-message taro_html vditor-reset"
+                    @click="htmlClick($event)" v-html="threadInfo.post.message"></view>
+                <view v-else>用户被禁言，该内容已隐藏</view>
             </nut-col>
             <!-- 投票 -->
             <Vote v-if="threadInfo.is_poll" :thread-id="threadInfo.id"
@@ -112,29 +111,40 @@
                                     </template>
                                 </nut-cell>
                                 <nut-cell class="content" desc-text-align="left">
-                                    <template #desc v-if="post.deleted_at === null">
+                                    <template #desc>
                                         <view class="son-post" v-if="post.son_post?.id">
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
+                                            <template v-if="post.user.state === 0 || post.user.state === 1">
+                                                <view v-if="post.son_post.deleted_at === null"
+                                                    class="post-message html-message taro_html vditor-reset"
+                                                    @click="htmlClick($event)" v-html="post.son_post.message">
+                                                </view>
+                                                <view v-else
+                                                    class="post-message html-message taro_html vditor-reset del-message">
+                                                    该评论已删除!
+                                                </view>
+                                            </template>
 
-                                            <view v-if="post.son_post.deleted_at === null"
+                                            <view v-else-if="post.user.state === 2"
+                                                class="post-message html-message taro_html vditor-reset del-message">
+                                                用户被禁言，该内容已隐藏
+                                            </view>
+                                        </view>
+                                        <template v-if="post.user.state === 0 || post.user.state === 1">
+                                            <view v-if="post.deleted_at === null"
                                                 class="post-message html-message taro_html vditor-reset"
-                                                @click="htmlClick($event)" v-html="post.son_post.message">
+                                                @click="htmlClick($event)" v-html="post.message">
                                             </view>
                                             <view v-else
                                                 class="post-message html-message taro_html vditor-reset del-message">
                                                 该评论已删除!
                                             </view>
-                                        </view>
-                                        <view class="post-message html-message taro_html vditor-reset"
-                                            @click="htmlClick($event)" v-html="post.message">
-                                        </view>
-
-                                    </template>
-                                    <!-- 评论被用户删除 -->
-                                    <template #desc v-else>
-                                        <view class="post-message html-message taro_html vditor-reset del-message">
-                                            该评论已删除!
-                                        </view>
+                                        </template>
+                                        <template v-else-if="post.user.state === 2">
+                                            <view class="post-message html-message taro_html vditor-reset del-message">
+                                                用户被禁言，该内容已隐藏
+                                            </view>
+                                        </template>
                                     </template>
                                 </nut-cell>
                                 <nut-cell class="op">
@@ -282,7 +292,7 @@
 </template>
 <script lang="ts" setup>
 import { watch, ref, watchEffect } from 'vue';
-import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow } from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow, useDidHide } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
 import UpIcon from '@/assets/up.svg'
 import UpFillIcon from '@/assets/up-fill.svg'
@@ -313,7 +323,8 @@ import {
     GetForum,
     GetTheme,
     ThemeResponse,
-    ModeratorMoveThread
+    ModeratorMoveThread,
+    GetUserInfo
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
 
@@ -379,7 +390,8 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
     }
     return el
 }
-
+// 页面是否隐藏
+const hidden = ref(false)
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
 const postId = ref(0)
@@ -389,6 +401,8 @@ const threadRefresh = ref(0)
 const postRefresh = ref(0) // 便于手动触发更新
 const postLoading = ref(true)
 const pagination = ref({ page: 1, limit: 10 })
+// 发帖的用户是否被禁言
+const banUser = ref(false)
 if (instance.router) {
     threadID.value = Number(instance.router.params['id'] || 0)
     postId.value = Number(instance.router.params['postId'] || 0)
@@ -411,6 +425,13 @@ useUnload(() => {
 useDidShow(() => {
     // 登录成功后返回到帖子页面,刷新点赞和收藏状态
     threadRefresh.value++
+    refreshScroll.value = false
+    postRefresh.value++
+    hidden.value = false
+})
+
+useDidHide(() => {
+    hidden.value = true
 })
 
 // 获取帖子数据
@@ -419,6 +440,8 @@ computedAsync(async () => {
     threadRefresh.value
     const { data } = await ThreadInfo(threadID.value)
     threadInfo.value = data.data
+    const { data: userInfo } = await GetUserInfo(threadInfo.value.user_id)
+    banUser.value = !userInfo.allow_speak
 }, undefined, { evaluating: infoLoading })
 
 // 当前登陆用户是否为当前帖子所属版块的版主
@@ -586,6 +609,8 @@ const cancelReply = () => {
 
 // 获取回复数据
 const threadPosts = ref<PostListResponse>()
+// 刷新时是否滚动到回帖分割线
+const refreshScroll = ref(true)
 computedAsync(async () => {
     // 在回复时，需要手动刷新
     postRefresh.value
@@ -628,7 +653,7 @@ watch(threadPosts, (_, oldVal) => {
     }
 
     Taro.nextTick(() => {
-        if (intervalRefreshPost) {
+        if (intervalRefreshPost.value) {
             intervalRefreshPost.value = false
             return
         }
@@ -639,12 +664,13 @@ watch(threadPosts, (_, oldVal) => {
                 })
                 sendPostScroll.value = false
             })
-        } else {
+        } else if (refreshScroll.value) {
             Taro.pageScrollTo({
                 selector: ".post-divider",
                 offsetTop: -100
             })
         }
+        refreshScroll.value = true
     })
 })
 
@@ -795,6 +821,7 @@ watchEffect(() => {
         clearInterval(interval.value)
         const oldTotalCount = threadPosts.value.total_count
         interval.value = setInterval(async () => {
+            if (hidden.value) return
             const { data } = await ThreadPostList(threadID.value, {
                 page: pagination.value.page,
                 pageSize: pagination.value.limit,
