@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
 
-export function formatTime(time: string) {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
+export function formatTime(time: string, format = "YYYY-MM-DD HH:mm:ss") {
+  return dayjs(time).format(format);
 }

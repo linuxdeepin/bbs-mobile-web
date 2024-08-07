@@ -232,7 +232,9 @@ const submitPosting = async () => {
         user_id: account.user_info.id,
 
       })
-      console.log(res.data)
+      if (res.data.code === 4000) {
+        throw ("您已经被禁言")
+      }
       prompt.showToast('success', '发布成功')
       const threadId = res.data.data.id
       // 跳转到帖子详情页
@@ -241,6 +243,7 @@ const submitPosting = async () => {
       })
     }
     catch (e) {
+      prompt.showToast("fail", e)
       console.log('PostingThread fail: ', e)
     }
   })

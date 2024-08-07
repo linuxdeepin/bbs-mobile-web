@@ -21,7 +21,8 @@
                         </nut-cell>
                         <nut-cell class="info" desc-text-align="left">
                             <template #icon>
-                                <nut-avatar size="large" shape="round">
+                                <nut-avatar size="large" shape="round"
+                                    @click="Taro.navigateTo({ url: `/pages/user/user?id=${threadInfo.post.user.id}` })">
                                     <img :src="threadInfo.post.user.avatar" />
                                 </nut-avatar>
                             </template>
@@ -93,7 +94,8 @@
                             <nut-cell-group class="post-main">
                                 <nut-cell class="info" desc-text-align="left">
                                     <template #icon>
-                                        <nut-avatar size="small" shape="round">
+                                        <nut-avatar size="small" shape="round"
+                                            @click="Taro.navigateTo({ url: `/pages/user/user?id=${post.user.id}` })">
                                             <img :src="post.user.avatar" />
                                         </nut-avatar>
                                     </template>

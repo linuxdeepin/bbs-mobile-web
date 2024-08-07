@@ -13,9 +13,10 @@ export default defineAppConfig({
     "pages/posting/posting",
     "pages/module/module",
     "pages/module-detail/module-detail",
+    "pages/user/user",
   ],
   window: {
-    backgroundTextStyle: "light",
+    backgroundTextStyle: "dark",
     navigationBarBackgroundColor: "#fff",
     navigationBarTitleText: "WeChat",
     navigationBarTextStyle: "black",

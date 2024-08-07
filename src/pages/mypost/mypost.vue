@@ -259,14 +259,13 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
         align-items: center;
 
         .stat {
-          display: flex;
+          display: inline;
           color: #97a3b4;
 
           view {
             margin-left: 5rpx;
             margin-right: 10rpx;
-            display: flex;
-            align-items: center;
+            display: inline;
           }
         }
       }
