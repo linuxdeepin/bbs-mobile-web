@@ -21,6 +21,7 @@ const EmptyUserInfo = {
   threads_cnt: 0,
   posts_cnt: 0,
   favourite_cnt: 0,
+  group_id: 0,
 };
 
 export const useAccountStore = defineStore("account", () => {
@@ -124,6 +125,7 @@ export const useAccountStore = defineStore("account", () => {
         threads_cnt: info.threads_cnt,
         posts_cnt: info.posts_cnt,
         favourite_cnt: info.favourite_cnt,
+        group_id: info.group_id,
       };
       return info;
     });

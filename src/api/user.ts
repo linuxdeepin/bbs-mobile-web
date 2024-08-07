@@ -27,6 +27,26 @@ export async function GetMyFavorite(opt: { limit: number, offset: number }) {
   return http.get<MyFavoriteResponse>("/api/v1/user/favorite", { params });
 }
 
+// 获取用户信息
+export async function GetUserInfo(id: number) {
+  return http.get<UserInfoResponse>("/api/v1/user/info", { params: { id } });
+}
+
+// 获取用户帖子
+export async function GetUserThread(user_id: number, limit: number, offset: number) {
+  return http.get<MyThreadResonse>("/api/v1/user/thread", { params: { user_id, limit, offset } });
+}
+
+// 获取用户回复
+export async function GetUserPost(user_id: number, limit: number, offset: number) {
+  return http.get<MyPostResponse>("/api/v1/user/post", { params: { user_id, limit, offset } });
+}
+
+// 禁言和取消禁言
+export async function GetProhibitUser(opt: { action: number, begin_at: string, hide_thread: boolean, reason: string, user_id: number }) {
+  return http.post("/api/v1/user/crime", { ...opt });
+}
+
 export interface MyThreadResonse {
   code: number;
   data: MyThreadDatum[];
@@ -351,4 +371,49 @@ interface MyFavoriteDatum {
   updated_at: string;
   created_at_desc: string;
   updated_at_desc: string;
+}
+
+export interface UserInfoResponse {
+  id: number;
+  account_id: number;
+  group_id: number;
+  group_name: string;
+  email: string;
+  email_checked: number;
+  username: string;
+  realname: string;
+  nickname: string;
+  mobile: string;
+  qq: string;
+  threads_cnt: number;
+  posts_cnt: number;
+  msg_cnt: number;
+  credits_num: number;
+  create_ip: string;
+  created_at: string;
+  updated_at: string;
+  login_ip: string;
+  login_date: string;
+  logins_cnt: number;
+  avatar: string;
+  digests_num: number;
+  state: number;
+  like_cnt: number;
+  favourite_cnt: number;
+  allow_speak: boolean;
+  desc: string;
+  level: number;
+  levels: Levels;
+}
+
+interface Levels {
+  id: number;
+  admin: string;
+  color_id: number;
+  level_icon: string;
+  level_name: string;
+  min: number;
+  max: number;
+  created_at: string;
+  updated_at: string;
 }
