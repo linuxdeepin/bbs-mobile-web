@@ -225,23 +225,27 @@ computedAsync(async () => {
 }, undefined, { evaluating: loading })
 
 // 禁言和取消禁言
-const prohibitUser = async () => {
+const prohibitUser = async (action: string) => {
   if (!userInfo.value)
     return
-  if (prohibitStatement.value.trim().length === 0) {
-    prompt.showToast("warn", "请填写操作说明", 500)
-    return false
+  if (action === "ok") {
+    if (prohibitStatement.value.trim().length === 0) {
+      prompt.showToast("warn", "请填写操作说明", 500)
+      return false
+    }
+    const params = {
+      action: userInfo.value.allow_speak ? 2 : 1, // 1 正常, 2 禁言
+      begin_at: formatTime(new Date().toDateString(), "YYYY-MM-DD"),
+      hide_thread: true,
+      reason: "禁言",
+      user_id: userInfo.value.id
+    }
+    await GetProhibitUser(params)
+    userInfo.value.allow_speak = !userInfo.value.allow_speak
+    return true
+  } else {
+    return true
   }
-  const params = {
-    action: userInfo.value.allow_speak ? 2 : 1, // 1 正常, 2 禁言
-    begin_at: formatTime(new Date().toDateString(), "YYYY-MM-DD"),
-    hide_thread: true,
-    reason: "禁言",
-    user_id: userInfo.value.id
-  }
-  await GetProhibitUser(params)
-  userInfo.value.allow_speak = !userInfo.value.allow_speak
-  return true
 }
 
 watch(loading, () => {
