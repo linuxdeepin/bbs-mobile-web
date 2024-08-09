@@ -84,9 +84,77 @@
                 </nut-divider>
             </nut-col>
 
+            <!-- 精选列表 -->
+            <template v-if="!winnowLoading && winnowPosts">
+                <template v-if="winnowPosts.data.length">
+                    <nut-col span="22" offset="1">精选回复</nut-col>
+                    <nut-col v-for="(post, index) in winnowPosts.data" span="22" offset="1">
+                        <nut-cell-group class="post-main">
+                            <nut-cell class="info" desc-text-align="left">
+                                <template #icon>
+                                    <nut-avatar size="small" shape="round"
+                                        @click="Taro.navigateTo({ url: `/pages/user/user?id=${post.user.id}` })">
+                                        <img :src="post.user.avatar" />
+                                    </nut-avatar>
+                                </template>
+                                <template #desc>
+                                    <view class="post-desc">
+                                        <view class="info-desc">
+                                            <span class="nickname"> {{ post.user.nickname }}</span>
+                                            <span>
+                                                {{ (pagination.page - 1) * pagination.limit + index + 1 }}楼
+                                                回复时间： {{ timeFormat(post.created_at) }}
+                                            </span>
+                                        </view>
+                                    </view>
+                                </template>
+                            </nut-cell>
+                            <nut-cell class="content" desc-text-align="left">
+                                <template #desc>
+                                    <view class="son-post" v-if="post.son_post?.id">
+                                        <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
+                                        <template v-if="post.user.state === 0 || post.user.state === 1">
+                                            <view v-if="post.son_post.deleted_at === null"
+                                                class="post-message html-message taro_html vditor-reset"
+                                                @click="htmlClick($event)" v-html="post.son_post.message">
+                                            </view>
+                                            <view v-else
+                                                class="post-message html-message taro_html vditor-reset del-message">
+                                                该评论已删除!
+                                            </view>
+                                        </template>
+
+                                        <view v-else-if="post.user.state === 2"
+                                            class="post-message html-message taro_html vditor-reset del-message">
+                                            用户被禁言，该内容已隐藏
+                                        </view>
+                                    </view>
+                                    <template v-if="post.user.state === 0 || post.user.state === 1">
+                                        <view v-if="post.deleted_at === null"
+                                            class="post-message html-message taro_html vditor-reset"
+                                            @click="htmlClick($event)" v-html="post.message">
+                                        </view>
+                                        <view v-else
+                                            class="post-message html-message taro_html vditor-reset del-message">
+                                            该评论已删除!
+                                        </view>
+                                    </template>
+                                    <template v-else-if="post.user.state === 2">
+                                        <view class="post-message html-message taro_html vditor-reset del-message">
+                                            用户被禁言，该内容已隐藏
+                                        </view>
+                                    </template>
+                                </template>
+                            </nut-cell>
+                        </nut-cell-group>
+                    </nut-col>
+                </template>
+            </template>
+
             <!-- 回帖列表 -->
             <template v-if="!postLoading && threadPosts">
                 <template v-if="threadPosts.total_count > 0">
+                    <nut-col span="22" offset="1">所有回复</nut-col>
                     <nut-col v-for="(post, index) in threadPosts.data" span="22" offset="1">
                         <view :class="'.post-id-' + post.id"></view>
                         <view>
@@ -147,7 +215,7 @@
                                         </template>
                                     </template>
                                 </nut-cell>
-                                <nut-cell class="op">
+                                <nut-cell v-if="post.deleted_at === null" class="op">
                                     <view class="op-list">
                                         <view class="op-item" hover-class="btn-clicked" hover-stay-time="200"
                                             @click="likeBtnClicked(post)">
@@ -237,6 +305,26 @@
                     </nut-form-item>
                     <nut-form-item prop="notify">
                         <nut-checkbox v-model="delForm.notify">通知作者</nut-checkbox>
+                    </nut-form-item>
+                </nut-form>
+            </template>
+        </nut-dialog>
+        <!-- 版主精选评论对话框 -->
+        <nut-dialog v-model:visible="showModeratorWinnowDialog" title='精选' :before-close="moderatorWinnowDialogClosed">
+            <template #default>
+                <nut-form ref="winnowFormRef" class="moderator-del-form" :model-value="winnowForm">
+                    <nut-form-item prop="top">
+                        <nut-radio-group v-model="winnowForm.top" direction="horizontal">
+                            <nut-radio :label="1">精选</nut-radio>
+                            <nut-radio :label="0">取消精选</nut-radio>
+                        </nut-radio-group>
+                    </nut-form-item>
+                    <nut-form-item prop="reason" required :rules="[{ required: true, message: '请填写说明' }]">
+                        <nut-textarea v-model="winnowForm.reason" style="height: 70px;" placeholder="操作说明"
+                            auto-focusd />
+                    </nut-form-item>
+                    <nut-form-item prop="notify">
+                        <nut-checkbox v-model="winnowForm.notify">通知作者</nut-checkbox>
                     </nut-form-item>
                 </nut-form>
             </template>
@@ -335,7 +423,9 @@ import {
     ThemeResponse,
     ModeratorMoveThread,
     GetUserInfo,
-    DeleteThreadPostByModerator
+    DeleteThreadPostByModerator,
+    WinnowThreadPostByModerator,
+    WinnowThreadPostList
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
 
@@ -519,6 +609,7 @@ const moderatorDelDialogClosed = async (action: string) => {
                     prompt.showToast("success", "删除成功")
                     refreshScroll.value = false
                     postRefresh.value++
+                    winnowPostsRefresh.value++
                 }
             }
             return true
@@ -574,11 +665,28 @@ const moderatorMoveDialogClosed = async (action: string) => {
 
 // 版主管理评论
 const showModeratorWinnowDialog = ref(false)
+const winnowFormRef = ref(null)
+const winnowForm = ref({
+    top: 1,
+    reason: "",
+    notify: false
+})
+const winnowLoading = ref(false)
+const winnowPostsRefresh = ref(0)
+const winnowPosts = computedAsync(() => {
+    winnowPostsRefresh.value
+    return WinnowThreadPostList(threadID.value).then(resp => { return resp.data })
+}, undefined, { evaluating: winnowLoading })
 const moderatorPostAction = ref({
     show: false,
     items: [
         {
             name: "精选", callback: () => {
+                winnowForm.value = {
+                    top: 1,
+                    reason: "",
+                    notify: false
+                }
                 showModeratorWinnowDialog.value = true
             }
         },
@@ -590,6 +698,44 @@ const moderatorPostAction = ref({
         }
     ]
 })
+
+const moderatorWinnowDialogClosed = async (action: string) => {
+    if (!threadInfo.value)
+        return
+    if (action === "ok") {
+        const result = await (winnowFormRef.value as any).validate()
+        if (result.valid) {
+            // 精选评论
+            const { data } = await WinnowThreadPostByModerator({
+                id: delPostId.value,
+                forum_id: threadInfo.value.forum_id,
+                o_user_id: delPostUserId.value,
+                note: winnowForm.value.reason,
+                is_notify: winnowForm.value.notify ? 1 : 0,
+                top: winnowForm.value.top
+            })
+            if (!data.code) {
+                if (winnowForm.value.top === 0) {
+                    prompt.showToast("success", "取消精选成功")
+                } else {
+                    prompt.showToast("success", "精选成功")
+                }
+                winnowPostsRefresh.value++
+                Taro.pageScrollTo({
+                    selector: ".post-divider",
+                    offsetTop: -100
+                })
+            }
+            return true
+        }
+        return false
+    } else {
+        winnowForm.value.top = 1
+        winnowForm.value.reason = ""
+        winnowForm.value.notify = false
+        return true
+    }
+}
 
 const forumList = computedAsync(async () => {
     const { data } = await GetForum()
