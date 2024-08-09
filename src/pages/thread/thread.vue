@@ -166,6 +166,13 @@
                                             <img :src="DeleteIcon" />
                                             <text class="content">删除</text>
                                         </view>
+                                        <!-- 版主管理按钮 -->
+                                        <view v-if="account.is_login && isModerator" hover-class="btn-clicked"
+                                            hover-stay-time="200" class="op-item right"
+                                            @click="delPostId = post.id; delPostUserId = post.post_user_id; moderatorPostAction.show = true">
+                                            <img :src="ManagerIcon" />
+                                            <text>管理</text>
+                                        </view>
                                     </view>
                                 </nut-cell>
                             </nut-cell-group>
@@ -215,8 +222,11 @@
         <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
         <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelDialog" @cancel="deletePostId = 0"
             @ok="deleteThread" />
-        <!-- 版主管理Popup弹窗 -->
+        <!-- 版主管理帖子弹窗 -->
         <nut-action-sheet v-model:visible="moderatorAction.show" :menu-items="(moderatorAction.items as any)"
+            @choose="$event.callback()" cancel-txt="取消" />
+        <!-- 版主管理评论弹窗 -->
+        <nut-action-sheet v-model:visible="moderatorPostAction.show" :menu-items="(moderatorPostAction.items as any)"
             @choose="$event.callback()" cancel-txt="取消" />
         <!-- 版主删除对话框 -->
         <nut-dialog v-model:visible="showModeratorDelDialog" title='删除' :before-close="moderatorDelDialogClosed">
@@ -324,7 +334,8 @@ import {
     GetTheme,
     ThemeResponse,
     ModeratorMoveThread,
-    GetUserInfo
+    GetUserInfo,
+    DeleteThreadPostByModerator
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
 
@@ -446,6 +457,12 @@ computedAsync(async () => {
 
 // 当前登陆用户是否为当前帖子所属版块的版主
 const isModerator = ref(false)
+// 当前是在删除帖子还是删除评论
+const isDelThread = ref(true)
+// 要删除的评论的ID
+const delPostId = ref(0)
+// 要删除的评论的作者id
+const delPostUserId = ref(0)
 const moderatorAction = ref({
     show: false,
     items: [
@@ -456,6 +473,7 @@ const moderatorAction = ref({
         },
         {
             name: "删除", callback: () => {
+                isDelThread.value = true
                 showModeratorDelDialog.value = true
             }
         }
@@ -475,19 +493,33 @@ const moderatorDelDialogClosed = async (action: string) => {
         return
     if (action === "ok") {
         const result = await (delFormRef.value as any).validate()
-        console.log(result)
         if (result.valid) {
-            const { data } = await ModeratorDeleteThread({
-                id: threadID.value,
-                forum_id: threadInfo.value?.forum_id,
-                o_user_id: threadInfo.value?.user_id,
-                note: delForm.value.reason,
-                is_notify: delForm.value.notify ? 1 : 0
-            })
-            if (!data.code) {
-                prompt.showToast("success", "删除成功")
-                config.indexNeedRefresh = true
-                Taro.navigateBack()
+            if (isDelThread.value) {
+                const { data } = await ModeratorDeleteThread({
+                    id: threadID.value,
+                    forum_id: threadInfo.value?.forum_id,
+                    o_user_id: threadInfo.value?.user_id,
+                    note: delForm.value.reason,
+                    is_notify: delForm.value.notify ? 1 : 0
+                })
+                if (!data.code) {
+                    prompt.showToast("success", "删除成功")
+                    config.indexNeedRefresh = true
+                    Taro.navigateBack()
+                }
+            } else {
+                const { data } = await DeleteThreadPostByModerator({
+                    id: delPostId.value,
+                    forum_id: threadInfo.value?.forum_id,
+                    o_user_id: delPostUserId.value,
+                    note: delForm.value.reason,
+                    is_notify: delForm.value.notify ? 1 : 0
+                })
+                if (!data.code) {
+                    prompt.showToast("success", "删除成功")
+                    refreshScroll.value = false
+                    postRefresh.value++
+                }
             }
             return true
         }
@@ -539,6 +571,25 @@ const moderatorMoveDialogClosed = async (action: string) => {
     }
     return true
 }
+
+// 版主管理评论
+const showModeratorWinnowDialog = ref(false)
+const moderatorPostAction = ref({
+    show: false,
+    items: [
+        {
+            name: "精选", callback: () => {
+                showModeratorWinnowDialog.value = true
+            }
+        },
+        {
+            name: "删除", callback: () => {
+                isDelThread.value = false
+                showModeratorDelDialog.value = true
+            }
+        }
+    ]
+})
 
 const forumList = computedAsync(async () => {
     const { data } = await GetForum()
@@ -928,6 +979,7 @@ watchEffect(() => {
 
             .op-list {
                 display: flex;
+                width: 100%;
                 align-items: center;
 
                 .btn-clicked {
@@ -949,6 +1001,10 @@ watchEffect(() => {
                     text {
                         font-size: 28rpx;
                         color: #97a3b4;
+                    }
+
+                    &.right {
+                        margin-left: auto;
                     }
                 }
             }

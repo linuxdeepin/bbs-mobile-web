@@ -23,7 +23,7 @@ export async function ThreadPostList(
     params,
   });
 }
-
+// 用户删除自己的评论
 export async function DeleteThreadPost(id: number) {
   return http.request<{ code: number, msg: string }>({
     url: apiServer + "/api/v1/thread/post",
@@ -31,6 +31,24 @@ export async function DeleteThreadPost(id: number) {
     data: { id },
     params: { id },
   });
+}
+
+// 版主删除评论
+export async function DeleteThreadPostByModerator(opt: {
+  forum_id: number,
+  id: number,
+  is_notify: number,
+  note: string,
+  o_user_id: number,
+}) {
+  const params = {
+    forum_id: opt.forum_id,
+    ids: [opt.id],
+    is_notify: opt.is_notify,
+    note: opt.note,
+    o_user_id: opt.o_user_id,
+  }
+  return http.put<{ code: number, msg: string }>("/api/v1/post/delete", params)
 }
 
 export interface PostListResponse {
