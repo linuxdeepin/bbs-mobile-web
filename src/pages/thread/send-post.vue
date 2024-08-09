@@ -10,7 +10,18 @@
                     <view class="reply-info" v-if="isReply">
                         <text class="title">回复:</text>
                         <text class="nickname">{{ replyNickName }}</text>
-                        <CircleClose class="cancel-btn" size="18" @click="emit('cancelReply')" />
+                        <CircleClose class="cancel-btn" size="18" @click="cancelReply" />
+                    </view>
+                    <view v-if="chooseImgList.length" class="choose-img">
+                        <text class="title">图片:</text>
+                        <view class="image-list">
+                            <view class="image-item" v-for="(img, index) in chooseImgList" :key="index">
+                                <img :src="img" alt="" />
+                                <view class="del-btn">
+                                    <img :src="DeleteIcon" alt="" @click="chooseImgList.splice(index, 1)" />
+                                </view>
+                            </view>
+                        </view>
                     </view>
                     <view class="form-item">
                         <view class="msg-input" :style="{ height: inputHeight + 0.5 + 'rem' }">
@@ -22,7 +33,7 @@
                         </view>
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                             @click="showEmojiList = !showEmojiList" />
-                        <img class="picture-btn" :src="Picture" @click="sendPicture" />
+                        <img class="picture-btn" :src="Picture" @click="chooseImage" />
                         <nut-button class="send-btn" type="primary" size="normal" :disabled="msg.length == 0"
                             @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                         <!-- 未登陆时，点击回复提示前往登陆 -->
@@ -67,6 +78,7 @@ import Taro from '@tarojs/taro';
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
 import Picture from '@/assets/picture.svg'
+import DeleteIcon from '@/assets/delete.svg'
 import { useAccountStore, usePromptStore } from '@/stores';
 import unicodeEmoji from './unicodeEmoji.json'
 import customEmoji from './customEmoji.json'
@@ -88,8 +100,11 @@ const props = defineProps<{
     replyNickName: string
 }>()
 
+const isChooseImage = defineModel()
+
 // 回复内容
 const msg = ref("")
+const chooseImgList = ref<string[]>([])
 const lineCount = ref(1)
 const lineChange = (event: { detail: { lineCount: number, lineHeight: number } }) => {
     console.log(event.detail)
@@ -138,7 +153,35 @@ const submitPost = async (captchaCode: string) => {
                 val = val.replace(reg, img)
             }
         }
-        let message = `<div data-weapp_version="v1"><p>${val}</p></div>`
+        let message = `<div data-weapp_version="v1"><p>${val}</p>`
+        // 如果有选择图片,则上传图片,并追加到评论后面
+        if (chooseImgList.value.length) {
+            // 上传图片
+            let imgUrls: string[] = []
+            prompt.showToast("loading", "图片上传中...", 10000)
+            for (let i = 0; i < chooseImgList.value.length; i++) {
+                const file = chooseImgList.value[i]
+                const uploadFileRes = await Taro.uploadFile({
+                    url: apiServer + '/api/v1/thread/file',
+                    filePath: file,
+                    name: 'image',
+                    header: {
+                        "Cookie": "bbs=" + JSON.parse(Taro.getStorageSync("PAGE_COOKIE"))["taro.com"]["/"]["bbs"]['value']
+                    },
+                    formData: {
+                        "image": file
+                    }
+                })
+                if (uploadFileRes.statusCode !== 200) {
+                    prompt.showToast("fail", "上传图片失败")
+                    return
+                }
+                imgUrls.push(JSON.parse(uploadFileRes.data).data[0])
+            }
+            prompt.hideToast()
+            message += imgUrls.map(url => `<p><img src='${url}' style='max-width: 100%' /></p>`).join('')
+        }
+        message += "</div>"
         if (!props.isReply) {
             await CreateThreadPost({
                 message,
@@ -163,6 +206,8 @@ const submitPost = async (captchaCode: string) => {
         prompt.showToast('success', "发送成功")
         // 清空输入框内容
         msg.value = ''
+        // 清空图片列表
+        chooseImgList.value = []
         showEmojiList.value = false
         Taro.eventCenter.trigger('sendPost')
     } catch (err) {
@@ -170,73 +215,32 @@ const submitPost = async (captchaCode: string) => {
         prompt.showToast('fail', "发送失败，请稍后在试")
     }
 }
-// 发布图片评论
-const sendPicture = async () => {
-    if (!account.is_login) {
-        account.gotoLogin()
+
+// 选择图片
+const chooseImage = async () => {
+    // 最多添加5张
+    if (chooseImgList.value.length >= 5) {
+        prompt.showToast("warn", "最多添加5张图片")
         return
     }
-
-    postCaptcha.tryVerify(async (captchaCode: string) => {
-        // 发布图片评论
-        // 选择图片
-        const chooseImgRes = await Taro.chooseImage({
-            count: 1,
-            sizeType: ['compressed'],
-            sourceType: ['album', 'camera'],
-        })
-        // 图片大小不能超过2M
-        if (chooseImgRes.tempFiles[0].size > 2 * 1024 * 1024) {
-            prompt.showToast("fail", "图片大小不能超过2M")
-            return
-        }
-        // 上传图片
-        const uploadFileRes = await Taro.uploadFile({
-            url: apiServer + '/api/v1/thread/file',
-            filePath: chooseImgRes.tempFilePaths[0],
-            name: 'image',
-            header: {
-                "Cookie": "bbs=" + JSON.parse(Taro.getStorageSync("PAGE_COOKIE"))["taro.com"]["/"]["bbs"]['value']
-            },
-            formData: {
-                "image": chooseImgRes.tempFilePaths[0]
-            }
-        })
-        if (uploadFileRes.statusCode !== 200) {
-            prompt.showToast("fail", "上传图片失败")
-            return
-        }
-        // 发表回复
-        let message = `<div data-weapp_version="v1"><p><img src='${JSON.parse(uploadFileRes.data).data[0]}' style='max-width: 100%' /></p></div>`
-        try {
-            if (!props.isReply) {
-                await CreateThreadPost({
-                    message,
-                    validate: captchaCode,
-                    captcha_id: postCaptcha.captchaID,
-                    thread_id: props.info.id,
-                    forum_id: props.info.forum_id,
-                    quote_user_id: props.info.user_id,
-                })
-            } else {
-                await CreateThreadPost({
-                    message,
-                    validate: captchaCode,
-                    captcha_id: postCaptcha.captchaID,
-                    thread_id: props.info.id,
-                    forum_id: props.info.forum_id,
-                    quote_user_id: props.replyUserId,
-                    quote_post_id: props.replyId,
-                })
-            }
-            msg.value = ''
-            showEmojiList.value = false
-            Taro.eventCenter.trigger('sendPost')
-        } catch (err) {
-            console.log("create post", err)
-            prompt.showToast('fail', "发送失败，请稍后在试")
-        }
+    isChooseImage.value = true
+    const chooseImgRes = await Taro.chooseImage({
+        count: 5,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
     })
+    // 图片大小不能超过2M
+    if (chooseImgRes.tempFiles[0].size > 2 * 1024 * 1024) {
+        prompt.showToast("fail", "图片大小不能超过2M")
+        return
+    }
+    // 添加图片到列表
+    chooseImgList.value = chooseImgList.value.concat(chooseImgRes.tempFilePaths)
+}
+
+const cancelReply = () => {
+    emit("cancelReply")
+    chooseImgList.value = []
 }
 
 const showEmojiList = ref(false)
@@ -305,6 +309,50 @@ const tabEmojiValue = ref(0)
 
         .cancel-btn {
             margin-left: 10rpx;
+        }
+    }
+
+    .choose-img {
+        margin: 10rpx 0;
+
+        .title {
+            color: #333;
+        }
+
+        .image-list {
+            padding: 10rpx 0;
+            display: flex;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .image-item {
+            position: relative;
+            width: 3rem;
+            height: 3rem;
+            margin-right: 10rpx;
+
+            img {
+                width: 100%;
+                height: 100%;
+                border-radius: 12rpx;
+            }
+
+            .del-btn {
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 1rem;
+                height: 1rem;
+                background: rgba(240, 240, 240, 0.8);
+                border-radius: 0 12rpx 0 12rpx;
+                padding: 2rpx;
+
+                img {
+                    width: 100%;
+                    height: 100%;
+                }
+            }
         }
     }
 

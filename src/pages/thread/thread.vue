@@ -197,8 +197,9 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <SendPost :info="threadInfo" :is-reply="isReply" :reply-id="replyId" :reply-user-id="replayUserId"
-                :reply-nick-name="replyNickName" @login="showLoginDialog = true" @cancel-reply="cancelReply">
+            <SendPost v-model="isChooseImage" :info="threadInfo" :is-reply="isReply" :reply-id="replyId"
+                :reply-user-id="replayUserId" :reply-nick-name="replyNickName" @login="showLoginDialog = true"
+                @cancel-reply="cancelReply">
             </SendPost>
         </nut-row>
         <view v-else>
@@ -381,6 +382,7 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
             // 图片点击预览
             el.addEventListener("tap", () => {
                 console.log("preview image", imageUrls)
+                isChooseImage.value = true
                 Taro.previewImage({
                     current: src,
                     urls: imageUrls
@@ -392,6 +394,8 @@ option.html.transformElement = (el: TaroElement, h5el: Element) => {
 }
 // 页面是否隐藏
 const hidden = ref(false)
+// 选择图片后不刷新页面
+const isChooseImage = ref(false)
 const instance = Taro.getCurrentInstance()
 const threadID = ref(0)
 const postId = ref(0)
@@ -423,10 +427,13 @@ useUnload(() => {
 })
 
 useDidShow(() => {
-    // 登录成功后返回到帖子页面,刷新点赞和收藏状态
-    threadRefresh.value++
-    refreshScroll.value = false
-    postRefresh.value++
+    if (!isChooseImage) {
+        // 登录成功后返回到帖子页面,刷新点赞和收藏状态
+        threadRefresh.value++
+        refreshScroll.value = false
+        postRefresh.value++
+    }
+    isChooseImage.value = false
     hidden.value = false
 })
 
@@ -804,6 +811,7 @@ const deleteThread = async () => {
         const { data } = await DeleteThreadPost(deletePostId.value)
         if (!data.code) {
             prompt.showToast("success", "删除成功")
+            refreshScroll.value = false
             postRefresh.value++
         }
         deletePostId.value = 0
