@@ -18,7 +18,8 @@
                         <nut-button size="mini" type="default" @click="searchStore.cleanHistory()">清空</nut-button>
                     </view>
                     <view class="history-list">
-                        <nut-tag v-for="word in searchStore.history" type="primary" @click="keyword = word; searchSubmit()">
+                        <nut-tag v-for="word in searchStore.history" type="primary"
+                            @click="keyword = word; searchSubmit()">
                             {{ word }}
                         </nut-tag>
                     </view>
@@ -120,6 +121,7 @@ const goThread = (id: number) => {
 <style lang="scss">
 .search-page {
     .search-keyword {
+        display: inline;
         color: red;
     }
 
