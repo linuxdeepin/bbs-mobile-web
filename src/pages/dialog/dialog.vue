@@ -107,8 +107,8 @@ if (instance.router) {
 const letters = ref<LetterResponse["data"]>([])
 computedAsync(async () => {
   const res = await Letter({ id: receiveUserId.value, isRefresh: 0, sort: 0, offset: 0 });
-  console.log(res.data);
-  letters.value = res.data.data;
+  if (res.data.data !== null)
+    letters.value = res.data.data;
 }, undefined, { evaluating: loading });
 const option = (Taro as any).options
 const imageUrls = [] as string[]
