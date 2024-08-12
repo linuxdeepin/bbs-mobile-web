@@ -280,7 +280,7 @@ const goToDialog = () => {
   if (!account.is_login) {
     account.gotoLogin()
   }
-  Taro.navigateTo({ url: `/pages/dialog/dialog?uid=${userId}` })
+  Taro.navigateTo({ url: `/pages/dialog/dialog?uid=${userId.value}` })
 }
 
 </script>
