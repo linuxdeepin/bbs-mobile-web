@@ -61,7 +61,7 @@
             <!-- 帖子信息 -->
             <nut-cell class="info" desc-text-align="left">
               <template #icon>
-                <nut-avatar size="20" shape="round">
+                <nut-avatar size="18" shape="round">
                   <img :src="item.user.avatar" />
                 </nut-avatar>
               </template>
@@ -261,6 +261,7 @@ watch(loading, () => {
     .info-desc {
       display: flex;
       justify-content: space-between;
+      font-size: 0.8rem;
 
       .stat {
         display: inline;
