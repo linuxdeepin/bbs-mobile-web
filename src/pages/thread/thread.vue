@@ -54,33 +54,9 @@
                 :poll-option-ids="threadInfo.poll_list.polloptionids"
                 :forum-polloption="threadInfo.poll_list.forum_polloption" @login="showLoginDialog = true"
                 @voting="threadRefresh++" />
-            <!-- 点赞和收藏 -->
-            <nut-col span="22" offset="1">
-                <view class="post-op">
-                    <view class="post-op-item" hover-class="btn-clicked" hover-stay-time="200" @click="upThread">
-                        <img :src="threadInfo.is_up ? UpFillIcon : UpIcon" />
-                        <text>{{ `点赞${threadInfo.like_cnt}` }}</text>
-
-                    </view>
-                    <view class="post-op-item" hover-class="btn-clicked" hover-stay-time="200" @click="favoriteThread">
-                        <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
-                        <text>{{ `收藏${threadInfo.favourite_cnt}` }}</text>
-                    </view>
-                    <!--  -->
-                    <view v-if="account.is_login && account.user_info.id === threadInfo.user_id"
-                        hover-class="btn-clicked" hover-stay-time="200" class="post-op-item"
-                        @click="showDelDialog = true">
-                        <img :src="DeleteIcon" />
-                        <text>删除</text>
-                    </view>
-                    <!-- 版主管理按钮 -->
-                    <view v-if="account.is_login && isModerator" hover-class="btn-clicked" hover-stay-time="200"
-                        class="post-op-item right" @click="moderatorAction.show = true">
-                        <img :src="ManagerIcon" />
-                        <text>管理</text>
-                    </view>
-                </view>
-            </nut-col>
+            <!-- 帖子操作栏 -->
+            <ThreadOp v-model:thread-info="threadInfo" v-model:show-login-dialog="showLoginDialog"
+                v-model:thread-refresh="threadRefresh" :is-moderator="isModerator" />
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
                 <nut-divider class="post-divider" content-position="left">
@@ -238,7 +214,7 @@
                                         <view
                                             v-if="account.is_login && account.user_info.id === post.post_user_id && post.deleted_at === null"
                                             class="op-item" hover-class="btn-clicked" hover-stay-time="200"
-                                            @click="showDelDialog = true; deletePostId = post.id">
+                                            @click="showDelPostDialog = true; userDelPostId = post.id">
                                             <img :src="DeleteIcon" />
                                             <text class="content">删除</text>
                                         </view>
@@ -297,27 +273,12 @@
             </view>
         </view>
         <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
-        <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelDialog" @cancel="deletePostId = 0"
-            @ok="deleteThread" />
-        <!-- 版主管理帖子弹窗 -->
-        <nut-action-sheet v-model:visible="moderatorAction.show" :menu-items="(moderatorAction.items as any)"
-            @choose="$event.callback()" cancel-txt="取消" />
+        <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelPostDialog" @ok="userDelPost" />
+
         <!-- 版主管理评论弹窗 -->
         <nut-action-sheet v-model:visible="moderatorPostAction.show" :menu-items="moderatorPostAction.items"
             @choose="$event.callback()" cancel-txt="取消" />
-        <!-- 版主删除对话框 -->
-        <nut-dialog v-model:visible="showModeratorDelDialog" title='删除' :before-close="moderatorDelDialogClosed">
-            <template #default>
-                <nut-form ref="delFormRef" class="moderator-del-form" :model-value="delForm">
-                    <nut-form-item prop="reason" label="说明" required :rules="[{ required: true, message: '请填写说明' }]">
-                        <nut-input v-model="delForm.reason" placeholder="请填写操作说明" auto-focusd />
-                    </nut-form-item>
-                    <nut-form-item prop="notify">
-                        <nut-checkbox v-model="delForm.notify">通知作者</nut-checkbox>
-                    </nut-form-item>
-                </nut-form>
-            </template>
-        </nut-dialog>
+
         <!-- 版主精选评论对话框 -->
         <nut-dialog v-model:visible="showModeratorWinnowDialog" :title="postIsWinnow ? '取消精选' : '精选'"
             :before-close="moderatorWinnowDialogClosed">
@@ -332,61 +293,19 @@
                 </nut-form>
             </template>
         </nut-dialog>
-        <nut-dialog v-model:visible="showModeratorMoveDialog" title='移动帖子' :before-close="moderatorMoveDialogClosed">
+        <!-- 版主删除评论 -->
+        <nut-dialog v-model:visible="showModeratorDelPostDialog" title='删除' :before-close="moderatorDelDialogClosed">
             <template #default>
-                <nut-cell title="版块" :desc="selectedForum?.name || '请选择'" is-link
-                    @click="showForumSelection = true"></nut-cell>
-                <nut-cell title="主题" :desc="selectedThemeType?.name || '请选择'" is-link @click="themeTypeCellClicked">
-                </nut-cell>
+                <nut-form ref="delFormRef" class="moderator-del-form" :model-value="delForm">
+                    <nut-form-item prop="reason" label="说明" required :rules="[{ required: true, message: '请填写说明' }]">
+                        <nut-input v-model="delForm.reason" placeholder="请填写操作说明" auto-focusd />
+                    </nut-form-item>
+                    <nut-form-item prop="notify">
+                        <nut-checkbox v-model="delForm.notify">通知作者</nut-checkbox>
+                    </nut-form-item>
+                </nut-form>
             </template>
         </nut-dialog>
-        <!-- 选择版块弹窗 -->
-        <nut-popup v-model:visible="showForumSelection" round position="bottom" :style="{ height: '50%' }"
-            safe-area-inset-bottom>
-            <nut-tabs v-model="activeForumTab" title-scroll style="height: 100%" direction="vertical"
-                @change="console.log(activeForumTab)">
-                <!-- 按分类渲染版块 -->
-                <template v-for="forum in forumList" :key="forum.name">
-                    <nut-tab-pane :title="forum.name" :paneKey="forum.name">
-                        <nut-cell-group>
-                            <template #title>
-                                <view class="cell-group-title">{{ forum.name }}</view>
-                            </template>
-                            <!-- 内层遍历forum[] -->
-                            <template v-for="subForum in forum.forum">
-                                <nut-cell :title="subForum.name" center is-link
-                                    @click="forumClicked(subForum.id, subForum.name)">
-                                    <template #icon>
-                                        <nut-avatar shape="square"><img :src="subForum.icon" /></nut-avatar>
-                                    </template>
-                                    <!-- 取消右侧箭头 -->
-                                    <template #link>
-                                        <view></view>
-                                    </template>
-                                </nut-cell>
-                            </template>
-                        </nut-cell-group>
-                    </nut-tab-pane>
-                </template>
-            </nut-tabs>
-        </nut-popup>
-        <nut-popup v-model:visible="showThemeTypeSelection" round position="bottom" class="theme-popup"
-            :style="{ height: '50%' }" safe-area-inset-bottom>
-            <nut-cell-group>
-                <template #title>
-                    <view class="cell-group-title">请选择主题类型</view>
-                </template>
-                <!-- 内层遍历forum[] -->
-                <template v-for="theme in themeTypeList">
-                    <nut-cell :title="theme.name" center is-link @click="themeTypeClicked(theme.id, theme.name)">
-                        <!-- 取消右侧箭头 -->
-                        <template #link>
-                            <view></view>
-                        </template>
-                    </nut-cell>
-                </template>
-            </nut-cell-group>
-        </nut-popup>
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
     </view>
@@ -397,8 +316,6 @@ import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow, useD
 import TopIcon from '@/assets/top.svg'
 import UpIcon from '@/assets/up.svg'
 import UpFillIcon from '@/assets/up-fill.svg'
-import FavoriteIcon from '@/assets/favorite.svg'
-import FavoriteFillIcon from '@/assets/favorite-fill.svg'
 import DeleteIcon from '@/assets/delete.svg'
 import CommentIcon from '@/assets/comment.svg'
 import ManagerIcon from '@/assets/manager.svg'
@@ -415,23 +332,17 @@ import {
     ThreadPostList,
     ThreadUP,
     ThreadInfoData,
-    ThreadFavorite,
     PostListResponse,
-    DeleteThread,
     DeleteThreadPost,
-    ThreadUserList,
-    ModeratorDeleteThread,
-    GetForum,
-    GetTheme,
-    ThemeResponse,
-    ModeratorMoveThread,
-    GetUserInfo,
     DeleteThreadPostByModerator,
+    ThreadUserList,
+    GetUserInfo,
     WinnowThreadPostByModerator,
     WinnowThreadPostList
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
 import Tags from '@/widgets/tags.vue';
+import ThreadOp from "./thread-op.vue"
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -557,70 +468,36 @@ computedAsync(async () => {
 
 // 当前登陆用户是否为当前帖子所属版块的版主
 const isModerator = ref(false)
-// 当前是在删除帖子还是删除评论
-const isDelThread = ref(true)
 // 要删除的评论的ID
 const delPostId = ref(0)
 // 要删除的评论的作者id
 const delPostUserId = ref(0)
-const moderatorAction = ref({
-    show: false,
-    items: [
-        {
-            name: "移动", callback: () => {
-                showModeratorMoveDialog.value = true
-            }
-        },
-        {
-            name: "删除", callback: () => {
-                isDelThread.value = true
-                showModeratorDelDialog.value = true
-            }
-        }
-    ]
-})
-// 版主删帖对话框
-const showModeratorDelDialog = ref(false)
+// 版主删除评论对话框
+const showModeratorDelPostDialog = ref(false)
 const delFormRef = ref(null)
 // 删除表单
 const delForm = ref({
     reason: "",
     notify: false
 })
-
 const moderatorDelDialogClosed = async (action: string) => {
     if (!threadInfo.value)
         return
     if (action === "ok") {
         const result = await (delFormRef.value as any).validate()
         if (result.valid) {
-            if (isDelThread.value) {
-                const { data } = await ModeratorDeleteThread({
-                    id: threadID.value,
-                    forum_id: threadInfo.value?.forum_id,
-                    o_user_id: threadInfo.value?.user_id,
-                    note: delForm.value.reason,
-                    is_notify: delForm.value.notify ? 1 : 0
-                })
-                if (!data.code) {
-                    prompt.showToast("success", "删除成功")
-                    config.indexNeedRefresh = true
-                    Taro.navigateBack()
-                }
-            } else {
-                const { data } = await DeleteThreadPostByModerator({
-                    id: delPostId.value,
-                    forum_id: threadInfo.value?.forum_id,
-                    o_user_id: delPostUserId.value,
-                    note: delForm.value.reason,
-                    is_notify: delForm.value.notify ? 1 : 0
-                })
-                if (!data.code) {
-                    prompt.showToast("success", "删除成功")
-                    refreshScroll.value = false
-                    postRefresh.value++
-                    winnowPostsRefresh.value++
-                }
+            const { data } = await DeleteThreadPostByModerator({
+                id: delPostId.value,
+                forum_id: threadInfo.value?.forum_id,
+                o_user_id: delPostUserId.value,
+                note: delForm.value.reason,
+                is_notify: delForm.value.notify ? 1 : 0
+            })
+            if (!data.code) {
+                prompt.showToast("success", "删除成功")
+                refreshScroll.value = false
+                postRefresh.value++
+                winnowPostsRefresh.value++
             }
             return true
         }
@@ -630,47 +507,6 @@ const moderatorDelDialogClosed = async (action: string) => {
         delForm.value.notify = false
         return true
     }
-}
-
-// 版主移动帖子对话框
-const activeForumTab = ref('全部')
-const showModeratorMoveDialog = ref(false)
-const showForumSelection = ref(false)
-const showThemeTypeSelection = ref(false)
-const themeTypeList = ref<ThemeResponse[]>()
-const selectedForum = ref({
-    id: 0,
-    name: ""
-})
-const selectedThemeType = ref({
-    id: 0,
-    name: ""
-})
-
-const moderatorMoveDialogClosed = async (action: string) => {
-    if (action === "ok") {
-        if (!selectedForum.value.id) {
-            prompt.showToast('warn', '请选择版块')
-            return false
-        }
-        if (!selectedThemeType.value.id) {
-            prompt.showToast('warn', '请选择主题类型')
-            return false
-        }
-        try {
-            await ModeratorMoveThread(threadID.value, selectedForum.value.id, selectedThemeType.value.id)
-        } catch (e) {
-            prompt.showToast('warn', '移动失败')
-            return false
-        } finally {
-            selectedForum.value = { id: 0, name: '' }
-            selectedThemeType.value = { id: 0, name: '' }
-            prompt.showToast('success', '移动成功')
-            threadRefresh.value++
-            return true
-        }
-    }
-    return true
 }
 
 // 版主管理评论
@@ -710,8 +546,11 @@ const moderatorPostAction = ref({
         },
         {
             name: "删除", callback: () => {
-                isDelThread.value = false
-                showModeratorDelDialog.value = true
+                delForm.value = {
+                    reason: "",
+                    notify: false
+                }
+                showModeratorDelPostDialog.value = true
             }
         }]
 })
@@ -754,39 +593,6 @@ const moderatorWinnowDialogClosed = async (action: string) => {
         return true
     }
 }
-
-const forumList = computedAsync(async () => {
-    const { data } = await GetForum()
-    return data
-})
-
-const forumClicked = (id: number, name: string) => {
-    selectedForum.value = { id, name }
-    showForumSelection.value = false
-    selectedThemeType.value = { id: 0, name: '' }
-}
-
-// 点击主题类型
-const themeTypeCellClicked = () => {
-    if (!selectedForum.value.id) {
-        prompt.showToast('warn', '请先选择版块')
-        return
-    }
-    showThemeTypeSelection.value = true
-}
-
-// 选择主题类型
-const themeTypeClicked = (id: number, name: string) => {
-    selectedThemeType.value = { id, name }
-    showThemeTypeSelection.value = false
-}
-
-// 监听selectedForum的变化，获取主题类型
-watch(() => selectedForum.value, async (value) => {
-    if (!value.id) return;
-    const res = await GetTheme({ forum_id: value.id })
-    themeTypeList.value = res.data
-})
 
 // 判断当前用户是否为帖子所属版块的版主
 computedAsync(async () => {
@@ -971,58 +777,19 @@ const sendPost = () => {
 
 Taro.eventCenter.on("sendPost", sendPost)
 
-// 点赞和取消点赞帖子
-const upThread = async () => {
-    if (!account.is_login) {
-        showLoginDialog.value = true
-        return
-    }
-    if (!threadInfo.value)
-        return
-    const { data } = await ThreadUP(threadID.value, "tid")
-    if (!data.code) {
-        threadInfo.value.is_up = !threadInfo.value.is_up
-        threadInfo.value.like_cnt += threadInfo.value.is_up ? 1 : -1
-    }
-}
-
-// 收藏和取消收藏帖子
-const favoriteThread = async () => {
-    if (!account.is_login) {
-        showLoginDialog.value = true
-        return
-    }
-    if (!threadInfo.value)
-        return
-    const { data } = await ThreadFavorite(threadID.value)
-    if (!data.code) {
-        threadInfo.value.is_favorite = !threadInfo.value.is_favorite
-        threadInfo.value.favourite_cnt += threadInfo.value.is_favorite ? 1 : -1
-    }
-}
-
-// 删除帖子确认弹窗
-const showDelDialog = ref(false)
-const deletePostId = ref(0)
-// 删除帖子
-const deleteThread = async () => {
-    if (!deletePostId.value) {
-        // 删除主题帖
-        const { data } = await DeleteThread(threadID.value)
-        if (!data.code) {
-            prompt.showToast("success", "删除成功")
-            config.indexNeedRefresh = true
-            Taro.navigateBack()
-        }
-    } else {
-        // 删除评论
-        const { data } = await DeleteThreadPost(deletePostId.value)
+// 用户删除评论确认弹窗
+const showDelPostDialog = ref(false)
+const userDelPostId = ref(0)
+// 删除评论
+const userDelPost = async () => {
+    if (userDelPostId.value) {
+        const { data } = await DeleteThreadPost(userDelPostId.value)
         if (!data.code) {
             prompt.showToast("success", "删除成功")
             refreshScroll.value = false
             postRefresh.value++
         }
-        deletePostId.value = 0
+        userDelPostId.value = 0
     }
 }
 
@@ -1116,39 +883,6 @@ watchEffect(() => {
         color: #97a3b4;
     }
 
-    .post-op {
-        display: flex;
-        padding: 20rpx 0;
-        align-items: center;
-
-        .btn-clicked {
-            background-color: #f5f5f5;
-        }
-
-        .post-op-item {
-            display: flex;
-            align-items: center;
-            color: #97a3b4;
-            margin-right: 13rpx;
-            padding: 10rpx;
-            border-radius: 12rpx;
-
-            img {
-                width: 30rpx;
-                height: 30rpx;
-            }
-
-            text {
-                font-size: 28rpx;
-                white-space: nowrap;
-            }
-
-            &.right {
-                margin-left: auto;
-            }
-        }
-    }
-
     .post-main {
         .op {
             padding-top: 10rpx;
@@ -1231,10 +965,5 @@ watchEffect(() => {
         }
     }
 
-    .theme-popup {
-        .nut-popup {
-            padding: 20rpx;
-        }
-    }
 }
 </style>
