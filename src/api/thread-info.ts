@@ -46,6 +46,16 @@ export async function ModeratorMoveThread(id: number, forum_id: number, theme_id
   return http.post<{ code: number, msg: string }>("/api/v2/user/threads/move", { ids: [id], forum_id, theme_id });
 }
 
+// 标记帖子为已解决
+export async function ThreadResolved(id: number) {
+  return http.post<{ code: number, msg: string }>(`/api/v2/user/thread/${id}/resolve`);
+}
+
+// 标记帖子为未解决
+export async function ThreadUnResolved(id: number) {
+  return http.post<{ code: number, msg: string }>(`/api/v2/user/thread/${id}/unresolve`);
+}
+
 interface ThreadInfoResponse {
   code: number;
   data: ThreadInfoData;

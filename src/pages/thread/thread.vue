@@ -11,6 +11,7 @@
                                 <span class="title">
                                     {{ !banUser ? threadInfo.subject : '用户被禁言，该内容已隐藏' }}
                                 </span>
+                                <nut-tag class="resolved" v-if="threadResolved" plain color="green">已解决</nut-tag>
                             </template>
                             <template #icon>
                                 <img v-if="threadInfo.top && !banUser" style="width:20px;height: 20px;"
@@ -56,7 +57,8 @@
                 @voting="threadRefresh++" />
             <!-- 帖子操作栏 -->
             <ThreadOp v-model:thread-info="threadInfo" v-model:show-login-dialog="showLoginDialog"
-                v-model:thread-refresh="threadRefresh" :is-moderator="isModerator" />
+                v-model:thread-refresh="threadRefresh" v-model:thread-resolved="threadResolved"
+                :is-moderator="isModerator" />
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
                 <nut-divider class="post-divider" content-position="left">
@@ -458,12 +460,20 @@ useDidHide(() => {
 
 // 获取帖子数据
 const threadInfo = ref<ThreadInfoData>()
+// 帖子是否以解决
+const threadResolved = ref(false)
 computedAsync(async () => {
     threadRefresh.value
     const { data } = await ThreadInfo(threadID.value)
     threadInfo.value = data.data
     const { data: userInfo } = await GetUserInfo(threadInfo.value.user_id)
     banUser.value = !userInfo.allow_speak
+    for (let i = 0; i < threadInfo.value.attrs.length; i++) {
+        if (threadInfo.value.attrs[i].name === "Resolved") {
+            threadResolved.value = true
+            break
+        }
+    }
 }, undefined, { evaluating: infoLoading })
 
 // 当前登陆用户是否为当前帖子所属版块的版主
@@ -827,6 +837,10 @@ watchEffect(() => {
         justify-content: space-between;
         align-items: center;
         height: 100%;
+    }
+
+    .resolved {
+        margin-left: 20rpx;
     }
 
     .info-desc {

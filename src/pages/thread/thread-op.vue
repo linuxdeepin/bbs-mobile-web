@@ -10,20 +10,22 @@
         <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
         <text>{{ `收藏${threadInfo.favourite_cnt}` }}</text>
       </view>
-      <!--  -->
+      <!-- 用户更多操作 -->
       <view v-if="account.is_login && account.user_info.id === threadInfo.user_id" hover-class="btn-clicked"
-        hover-stay-time="200" class="thread-op-item" @click="showDelThreadDialog = true">
-        <img :src="DeleteIcon" />
-        <text>删除</text>
+        hover-stay-time="200" class="thread-op-item more" @click="checkThreadState">
+        <img :src="MoreIcon" />
       </view>
       <!-- 版主管理按钮 -->
       <view v-if="account.is_login && isModerator" hover-class="btn-clicked" hover-stay-time="200"
-        class="thread-op-item right" @click="moderatorAction.show = true">
+        class="thread-op-item right" @click="checkModeratorState">
         <img :src="ManagerIcon" />
         <text>管理</text>
       </view>
     </view>
     <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelThreadDialog" @ok="deleteThread" />
+    <!-- 用户管理帖子弹窗 -->
+    <nut-action-sheet v-model:visible="userAction.show" :menu-items="(userAction.items as any)"
+      @choose="$event.callback()" cancel-txt="取消" />
     <!-- 版主管理帖子弹窗 -->
     <nut-action-sheet v-model:visible="moderatorAction.show" :menu-items="(moderatorAction.items as any)"
       @choose="$event.callback()" cancel-txt="取消" />
@@ -103,8 +105,8 @@ import UpIcon from '@/assets/up.svg'
 import UpFillIcon from '@/assets/up-fill.svg'
 import FavoriteIcon from '@/assets/favorite.svg'
 import FavoriteFillIcon from '@/assets/favorite-fill.svg'
-import DeleteIcon from '@/assets/delete.svg'
 import ManagerIcon from '@/assets/manager.svg'
+import MoreIcon from '@/assets/more.svg'
 import {
   ThreadInfoData,
   ThreadUP,
@@ -114,7 +116,9 @@ import {
   ThemeResponse,
   ModeratorMoveThread,
   GetForum,
-  GetTheme
+  GetTheme,
+  ThreadResolved,
+  ThreadUnResolved
 } from '@/api';
 import Taro from "@tarojs/taro";
 import { computedAsync } from "@vueuse/core";
@@ -122,6 +126,7 @@ import { computedAsync } from "@vueuse/core";
 const threadInfo = defineModel<ThreadInfoData>("threadInfo", { required: true })
 const showLoginDialog = defineModel<boolean>("showLoginDialog", { required: true })
 const threadRefresh = defineModel<number>("threadRefresh", { required: true })
+const threadResolved = defineModel<boolean>("threadResolved", { required: true })
 
 defineProps<{
   isModerator: boolean
@@ -133,6 +138,49 @@ const config = useConfigStore()
 
 const showDelThreadDialog = ref(false)
 
+// 调起用户菜单前检查帖子是否已解决
+const checkThreadState = () => {
+  if (threadResolved.value) {
+    userAction.value.items[0].name = "未解决"
+  } else {
+    userAction.value.items[0].name = "解决"
+  }
+  userAction.value.show = true
+}
+
+// 用户操作
+const userAction = ref({
+  show: false,
+  items: [
+    {
+      name: "解决", callback: async () => {
+        if (threadResolved.value) {
+          const { data } = await ThreadUnResolved(threadInfo.value.id)
+          if (!data.code) {
+            threadResolved.value = false
+            threadRefresh.value++
+          } else {
+            prompt.showToast('warn', '操作失败')
+          }
+        } else {
+          const { data } = await ThreadResolved(threadInfo.value.id)
+          if (!data.code) {
+            threadResolved.value = true
+            threadRefresh.value++
+          } else {
+            prompt.showToast('warn', '操作失败')
+          }
+        }
+      }
+    },
+    {
+      name: "删除", callback: () => {
+        showDelThreadDialog.value = true
+      }
+    }
+  ]
+})
+
 // 版主操作
 const showModeratorMoveDialog = ref(false)
 const showModeratorDelDialog = ref(false)
@@ -142,9 +190,41 @@ const delForm = ref({
   reason: "",
   notify: false
 })
+
+const checkModeratorState = () => {
+  if (threadResolved.value) {
+    moderatorAction.value.items[0].name = "未解决"
+  } else {
+    moderatorAction.value.items[0].name = "解决"
+  }
+  moderatorAction.value.show = true
+}
+
 const moderatorAction = ref({
   show: false,
   items: [
+    {
+      name: "解决",
+      callback: async () => {
+        if (threadResolved.value) {
+          const { data } = await ThreadUnResolved(threadInfo.value.id)
+          if (!data.code) {
+            threadResolved.value = false
+            threadRefresh.value++
+          } else {
+            prompt.showToast('warn', '操作失败')
+          }
+        } else {
+          const { data } = await ThreadResolved(threadInfo.value.id)
+          if (!data.code) {
+            threadResolved.value = true
+            threadRefresh.value++
+          } else {
+            prompt.showToast('warn', '操作失败')
+          }
+        }
+      }
+    },
     {
       name: "移动", callback: () => {
         showModeratorMoveDialog.value = true
@@ -329,6 +409,13 @@ const favoriteThread = async () => {
 
     &.right {
       margin-left: auto;
+    }
+
+    &.more {
+      img {
+        width: 45rpx;
+        height: 45rpx;
+      }
     }
   }
 }

@@ -53,6 +53,8 @@
                 <span class="title">
                   {{ item.subject }}
                 </span>
+                <nut-tag class="resolved" color="green" plain
+                  v-if="item.attrs.some(attr => attr.name === 'Resolved')">已解决</nut-tag>
               </template>
               <template #icon>
                 <img v-if="item.is_top_forum" style="width:20px;height: 20px;" :src="TopIcon" />
@@ -245,6 +247,10 @@ watch(loading, () => {
     .thread-title {
       .h5-span {
         display: inline;
+      }
+
+      .resolved {
+        margin-left: 15rpx;
       }
     }
 
