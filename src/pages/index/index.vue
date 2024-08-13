@@ -24,6 +24,8 @@
                 <span class="title">
                   {{ item.subject }}
                 </span>
+                <nut-tag class="resolved" color="green" plain
+                  v-if="item.attrs.some(attr => attr.name === 'Resolved')">已解决</nut-tag>
               </template>
               <template #icon>
                 <img v-if="item.top" style="width:20px;height: 20px;" :src="TopIcon" />
@@ -167,6 +169,10 @@ useShareTimeline(() => {
     .thread-title {
       .h5-span {
         display: inline;
+      }
+
+      .resolved {
+        margin-left: 15rpx;
       }
     }
 
