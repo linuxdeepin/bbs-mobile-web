@@ -13,7 +13,11 @@
                 </template>
                 <template #desc>
                   <view class="header">
-                    <view class="nickname">{{ userInfo.nickname }}</view>
+                    <view class="info">
+                      <view class="nickname">{{ userInfo.nickname }}</view>
+                      <img class="level" :src="userInfo.levels.level_icon" />
+                    </view>
+                    <Tags :user-id="userInfo.id" />
                     <view class="desc">{{ userInfo.desc || "这个人很懒，什么都没写" }}</view>
                   </view>
 
@@ -171,6 +175,7 @@ import { computedAsync } from "@vueuse/core";
 import { formatTime } from '@/utils/format';
 import { Comment, Eye } from "@nutui/icons-vue-taro";
 import { useAccountStore, usePromptStore } from "@/stores";
+import Tags from "@/widgets/tags.vue";
 
 const instance = Taro.getCurrentInstance()
 const account = useAccountStore()
@@ -297,9 +302,20 @@ const goToDialog = () => {
       padding: 10rpx 0;
       margin-left: 10rpx;
 
-      .nickname {
-        font-size: 5vw;
-        font-weight: bold;
+      .info {
+        display: flex;
+        align-items: center;
+
+        .nickname {
+          font-size: 5vw;
+          font-weight: bold;
+        }
+
+        .level {
+          width: 40rpx;
+          height: 40rpx;
+          margin-left: 10rpx;
+        }
       }
 
       .desc {
