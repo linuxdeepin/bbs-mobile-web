@@ -47,6 +47,11 @@ export async function GetProhibitUser(opt: { action: number, begin_at: string, h
   return http.post("/api/v1/user/crime", { ...opt });
 }
 
+// 获取用户标签
+export async function GetUserTag(user_id: number) {
+  return http.get<UserTags[]>("/api/v2/public/user/tags", { params: { user_id } });
+}
+
 export interface MyThreadResonse {
   code: number;
   data: MyThreadDatum[];
@@ -416,4 +421,15 @@ interface Levels {
   max: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface UserTags {
+  id: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: null;
+  lang: string;
+  user_id: number;
+  text: string;
+  color: string;
 }

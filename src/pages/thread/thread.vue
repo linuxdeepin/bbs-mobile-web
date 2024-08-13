@@ -27,7 +27,11 @@
 
                             <template #desc>
                                 <div class="info-desc">
-                                    <span class="nickname"> {{ threadInfo.post.user.nickname }}</span>
+                                    <view class="info">
+                                        <span class="nickname"> {{ threadInfo.post.user.nickname }} </span>
+                                        <img class="level" :src="threadInfo.user.levels.level_icon" />
+                                    </view>
+                                    <Tags :user-id="threadInfo.user_id" />
                                     <span class="stat">
                                         发帖时间： {{ timeFormat(threadInfo.created_at) }}
                                     </span>
@@ -169,7 +173,11 @@
                                     <template #desc>
                                         <view class="post-desc">
                                             <view class="info-desc">
-                                                <span class="nickname"> {{ post.user.nickname }}</span>
+                                                <view class="info">
+                                                    <span class="nickname"> {{ post.user.nickname }}</span>
+                                                    <img class="level" :src="post.user.levels.level_icon" />
+                                                    <Tags :user-id="post.user.id" />
+                                                </view>
                                                 <span>
                                                     {{ (pagination.page - 1) * pagination.limit + index + 1 }}楼
                                                     回复时间： {{ timeFormat(post.created_at) }}
@@ -423,6 +431,7 @@ import {
     WinnowThreadPostList
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
+import Tags from '@/widgets/tags.vue';
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -1058,15 +1067,26 @@ watchEffect(() => {
         flex-direction: column;
         justify-content: space-between;
         height: 100%;
-    }
 
-    .nickname {
-        min-width: 40vw;
-        max-width: 60vw;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        vertical-align: bottom;
+        .info {
+            display: flex;
+            align-items: center;
+
+            .nickname {
+                max-width: 60vw;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                vertical-align: bottom;
+            }
+
+            .level {
+                width: 40rpx;
+                height: 40rpx;
+                margin-left: 10rpx;
+                margin-right: 10rpx;
+            }
+        }
     }
 
     .html-message {
@@ -1120,6 +1140,7 @@ watchEffect(() => {
 
             text {
                 font-size: 28rpx;
+                white-space: nowrap;
             }
 
             &.right {
