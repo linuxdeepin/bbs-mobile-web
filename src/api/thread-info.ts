@@ -56,6 +56,17 @@ export async function ThreadUnResolved(id: number) {
   return http.post<{ code: number, msg: string }>(`/api/v2/user/thread/${id}/unresolve`);
 }
 
+// 关闭和打开帖子
+export async function ThreadClosed(opt: {
+  is_closed: number,
+  is_notify: number,
+  note: string,
+  o_user_id: number,
+  thread_id: number
+}) {
+  return http.post<{ code: number, msg: string }>("/api/v1/thread/close", { ...opt });
+}
+
 interface ThreadInfoResponse {
   code: number;
   data: ThreadInfoData;

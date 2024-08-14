@@ -58,7 +58,7 @@
             <!-- 帖子操作栏 -->
             <ThreadOp v-model:thread-info="threadInfo" v-model:show-login-dialog="showLoginDialog"
                 v-model:thread-refresh="threadRefresh" v-model:thread-resolved="threadResolved"
-                :is-moderator="isModerator" />
+                v-model:thread-closed="threadClosed" :is-moderator="isModerator" />
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
                 <nut-divider class="post-divider" content-position="left">
@@ -234,7 +234,7 @@
                     </nut-col>
                     <!-- 只在最后一页显示 -->
                     <nut-col
-                        v-if="interval && pagination.page === Math.ceil(threadPosts.total_count / pagination.limit)">
+                        v-if="interval && pagination.page === Math.ceil(threadPosts.total_count / pagination.limit) && !threadClosed">
                         <view class="refresh-tips">已开启自动刷新</view>
                     </nut-col>
                     <nut-col>
@@ -261,9 +261,9 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <SendPost v-model="isChooseImage" :info="threadInfo" :is-reply="isReply" :reply-id="replyId"
-                :reply-user-id="replayUserId" :reply-nick-name="replyNickName" @login="showLoginDialog = true"
-                @cancel-reply="cancelReply">
+            <SendPost v-if="!threadClosed" v-model="isChooseImage" :info="threadInfo" :is-reply="isReply"
+                :reply-id="replyId" :reply-user-id="replayUserId" :reply-nick-name="replyNickName"
+                @login="showLoginDialog = true" @cancel-reply="cancelReply">
             </SendPost>
         </nut-row>
         <view v-else>
@@ -465,6 +465,8 @@ useDidHide(() => {
 const threadInfo = ref<ThreadInfoData>()
 // 帖子是否以解决
 const threadResolved = ref(false)
+// 帖子是否已关闭
+const threadClosed = ref(false)
 computedAsync(async () => {
     threadRefresh.value
     const { data } = await ThreadInfo(threadID.value)
@@ -477,6 +479,7 @@ computedAsync(async () => {
             break
         }
     }
+    threadClosed.value = threadInfo.value.isclosed ? true : false
 }, undefined, { evaluating: infoLoading })
 
 // 当前登陆用户是否为当前帖子所属版块的版主
@@ -626,6 +629,10 @@ const replyNickName = ref("")
 const replyBtnClicked = (id: number, postUserId: number, nickName: string) => {
     if (!account.is_login) {
         showLoginDialog.value = true
+        return
+    }
+    if (threadClosed.value) {
+        prompt.showToast("warn", "帖子已关闭")
         return
     }
     isReply.value = true
@@ -817,7 +824,7 @@ watchEffect(() => {
         clearInterval(interval.value)
         const oldTotalCount = threadPosts.value.total_count
         interval.value = setInterval(async () => {
-            if (hidden.value) return
+            if (hidden.value || threadClosed.value) return
             const { data } = await ThreadPostList(threadID.value, {
                 page: pagination.value.page,
                 pageSize: pagination.value.limit,

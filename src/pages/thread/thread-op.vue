@@ -42,6 +42,20 @@
         </nut-form>
       </template>
     </nut-dialog>
+    <!-- 版主关闭帖子对话框 -->
+    <nut-dialog v-model:visible="showModeratorClosedDialog" :title="threadClosed ? '打开帖子' : '关闭帖子'"
+      :before-close="moderatorClosedDialogClosed">
+      <template #default>
+        <nut-form ref="closeFormRef" class="moderator-del-form" :model-value="closeForm">
+          <nut-form-item prop="reason" label="说明" required :rules="[{ required: true, message: '请填写说明' }]">
+            <nut-input v-model="closeForm.reason" placeholder="请填写操作说明" auto-focusd />
+          </nut-form-item>
+          <nut-form-item prop="notify">
+            <nut-checkbox v-model="closeForm.notify">通知作者</nut-checkbox>
+          </nut-form-item>
+        </nut-form>
+      </template>
+    </nut-dialog>
     <nut-dialog v-model:visible="showModeratorMoveDialog" title='移动帖子' :before-close="moderatorMoveDialogClosed">
       <template #default>
         <nut-cell title="版块" :desc="selectedForum?.name || '请选择'" is-link @click="showForumSelection = true"></nut-cell>
@@ -118,7 +132,8 @@ import {
   GetForum,
   GetTheme,
   ThreadResolved,
-  ThreadUnResolved
+  ThreadUnResolved,
+  ThreadClosed
 } from '@/api';
 import Taro from "@tarojs/taro";
 import { computedAsync } from "@vueuse/core";
@@ -127,6 +142,7 @@ const threadInfo = defineModel<ThreadInfoData>("threadInfo", { required: true })
 const showLoginDialog = defineModel<boolean>("showLoginDialog", { required: true })
 const threadRefresh = defineModel<number>("threadRefresh", { required: true })
 const threadResolved = defineModel<boolean>("threadResolved", { required: true })
+const threadClosed = defineModel<boolean>("threadClosed", { required: true })
 
 defineProps<{
   isModerator: boolean
@@ -184,11 +200,18 @@ const userAction = ref({
 // 版主操作
 const showModeratorMoveDialog = ref(false)
 const showModeratorDelDialog = ref(false)
-const delFormRef = ref(null)
+const showModeratorClosedDialog = ref(false)
 // 删除表单
+const delFormRef = ref(null)
 const delForm = ref({
   reason: "",
   notify: false
+})
+// 关闭帖子表单
+const closeFormRef = ref(null)
+const closeForm = ref({
+  reason: "",
+  notify: true
 })
 
 const checkModeratorState = () => {
@@ -196,6 +219,11 @@ const checkModeratorState = () => {
     moderatorAction.value.items[0].name = "未解决"
   } else {
     moderatorAction.value.items[0].name = "解决"
+  }
+  if (threadClosed.value) {
+    moderatorAction.value.items[2].name = "打开"
+  } else {
+    moderatorAction.value.items[2].name = "关闭"
   }
   moderatorAction.value.show = true
 }
@@ -231,6 +259,15 @@ const moderatorAction = ref({
       }
     },
     {
+      name: "关闭", callback: async () => {
+        closeForm.value = {
+          reason: "",
+          notify: true
+        }
+        showModeratorClosedDialog.value = true
+      }
+    },
+    {
       name: "删除", callback: () => {
         showModeratorDelDialog.value = true
       }
@@ -260,6 +297,32 @@ const moderatorDelDialogClosed = async (action: string) => {
   } else {
     delForm.value.reason = ""
     delForm.value.notify = false
+    return true
+  }
+}
+
+// 确认关闭帖子
+const moderatorClosedDialogClosed = async (action: string) => {
+  if (action === "ok") {
+    const result = await (closeFormRef.value as any).validate()
+    if (result.valid) {
+      const { data } = await ThreadClosed({
+        is_closed: threadClosed.value ? 0 : 1,
+        is_notify: closeForm.value.notify ? 1 : 0,
+        note: closeForm.value.reason,
+        o_user_id: threadInfo.value.user_id,
+        thread_id: threadInfo.value.id
+      })
+      if (!data.code) {
+        prompt.showToast('success', threadClosed.value ? '已开启' : '已关闭')
+        threadClosed.value = !threadClosed.value
+      }
+      return true
+    }
+    return false
+  } else {
+    closeForm.value.reason = ""
+    closeForm.value.notify = true
     return true
   }
 }
