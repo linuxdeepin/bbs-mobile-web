@@ -251,7 +251,7 @@ interface Levels {
   deleted_at?: any;
 }
 
-interface WinnowThreadPostList {
+export interface WinnowThreadPostList {
   code: number;
   data: WinnowThreadPostListData[];
   msg: string;

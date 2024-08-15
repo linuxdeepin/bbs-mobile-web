@@ -34,7 +34,7 @@
                                     </view>
                                     <Tags :user-id="threadInfo.user_id" />
                                     <span class="stat">
-                                        发帖时间： {{ timeFormat(threadInfo.created_at) }}
+                                        发帖时间： {{ formatTime(threadInfo.created_at, "YYYY-MM-DD HH:mm") }}
                                     </span>
                                 </div>
                             </template>
@@ -85,7 +85,7 @@
                                             <span class="nickname"> {{ post.user.nickname }}</span>
                                             <span>
                                                 {{ (pagination.page - 1) * pagination.limit + index + 1 }}楼
-                                                回复时间： {{ timeFormat(post.created_at) }}
+                                                回复时间： {{ formatTime(post.created_at, "YYYY-MM-DD HH:mm") }}
                                             </span>
                                         </view>
                                     </view>
@@ -158,7 +158,7 @@
                                                 </view>
                                                 <span>
                                                     {{ (pagination.page - 1) * pagination.limit + index + 1 }}楼
-                                                    回复时间： {{ timeFormat(post.created_at) }}
+                                                    回复时间： {{ formatTime(post.created_at, "YYYY-MM-DD HH:mm") }}
                                                 </span>
                                             </view>
                                         </view>
@@ -201,34 +201,13 @@
                                         </template>
                                     </template>
                                 </nut-cell>
-                                <nut-cell v-if="post.deleted_at === null" class="op">
-                                    <view class="op-list">
-                                        <view class="op-item" hover-class="btn-clicked" hover-stay-time="200"
-                                            @click="likeBtnClicked(post)">
-                                            <img :src="post.is_up ? UpFillIcon : UpIcon" />
-                                            <text class="content">{{ `点赞${post.like_cnt}` }}</text>
-                                        </view>
-                                        <view class="op-item" hover-class="btn-clicked" hover-stay-time="200"
-                                            @click="replyBtnClicked(post.id, post.post_user_id, post.user.nickname)">
-                                            <img :src="CommentIcon" />
-                                            <text class="content">回复</text>
-                                        </view>
-                                        <view
-                                            v-if="account.is_login && account.user_info.id === post.post_user_id && post.deleted_at === null"
-                                            class="op-item" hover-class="btn-clicked" hover-stay-time="200"
-                                            @click="showDelPostDialog = true; userDelPostId = post.id">
-                                            <img :src="DeleteIcon" />
-                                            <text class="content">删除</text>
-                                        </view>
-                                        <!-- 版主管理按钮 -->
-                                        <view v-if="account.is_login && isModerator" hover-class="btn-clicked"
-                                            hover-stay-time="200" class="op-item right"
-                                            @click="checkPostIsWinnow(post.id, post.post_user_id)">
-                                            <img :src="ManagerIcon" />
-                                            <text>管理</text>
-                                        </view>
-                                    </view>
-                                </nut-cell>
+                                <PostOp v-model:thread-info="threadInfo" v-model:post="threadPosts.data[index]"
+                                    v-model:show-login-dialog="showLoginDialog" v-model:thread-closed="threadClosed"
+                                    v-model:is-reply="isReply" v-model:reply-id="replyId"
+                                    v-model:reply-user-id="replyUserId" v-model:reply-nick-name="replyNickName"
+                                    v-model:refresh-scroll="refreshScroll" v-model:post-refresh="postRefresh"
+                                    v-model:winnow-posts="winnowPosts" v-model:winnow-posts-refresh="winnowPostsRefresh"
+                                    :is-moderator="isModerator" />
                             </nut-cell-group>
                         </view>
                     </nut-col>
@@ -262,7 +241,7 @@
             </template>
             <!-- 自己回帖 -->
             <SendPost v-if="!threadClosed" v-model="isChooseImage" :info="threadInfo" :is-reply="isReply"
-                :reply-id="replyId" :reply-user-id="replayUserId" :reply-nick-name="replyNickName"
+                :reply-id="replyId" :reply-user-id="replyUserId" :reply-nick-name="replyNickName"
                 @login="showLoginDialog = true" @cancel-reply="cancelReply">
             </SendPost>
         </nut-row>
@@ -278,39 +257,7 @@
             </view>
         </view>
         <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
-        <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelPostDialog" @ok="userDelPost" />
 
-        <!-- 版主管理评论弹窗 -->
-        <nut-action-sheet v-model:visible="moderatorPostAction.show" :menu-items="moderatorPostAction.items"
-            @choose="$event.callback()" cancel-txt="取消" />
-
-        <!-- 版主精选评论对话框 -->
-        <nut-dialog v-model:visible="showModeratorWinnowDialog" :title="postIsWinnow ? '取消精选' : '精选'"
-            :before-close="moderatorWinnowDialogClosed">
-            <template #default>
-                <nut-form ref="winnowFormRef" class="moderator-del-form" :model-value="winnowForm">
-                    <nut-form-item prop="reason" label="说明" required :rules="[{ required: true, message: '请填写说明' }]">
-                        <nut-input v-model="winnowForm.reason" placeholder="请输入操作说明" auto-focusd />
-                    </nut-form-item>
-                    <nut-form-item prop="notify">
-                        <nut-checkbox v-model="winnowForm.notify">通知作者</nut-checkbox>
-                    </nut-form-item>
-                </nut-form>
-            </template>
-        </nut-dialog>
-        <!-- 版主删除评论 -->
-        <nut-dialog v-model:visible="showModeratorDelPostDialog" title='删除' :before-close="moderatorDelDialogClosed">
-            <template #default>
-                <nut-form ref="delFormRef" class="moderator-del-form" :model-value="delForm">
-                    <nut-form-item prop="reason" label="说明" required :rules="[{ required: true, message: '请填写说明' }]">
-                        <nut-input v-model="delForm.reason" placeholder="请填写操作说明" auto-focusd />
-                    </nut-form-item>
-                    <nut-form-item prop="notify">
-                        <nut-checkbox v-model="delForm.notify">通知作者</nut-checkbox>
-                    </nut-form-item>
-                </nut-form>
-            </template>
-        </nut-dialog>
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
     </view>
@@ -319,15 +266,10 @@
 import { watch, ref, watchEffect } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow, useDidHide } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
-import UpIcon from '@/assets/up.svg'
-import UpFillIcon from '@/assets/up-fill.svg'
-import DeleteIcon from '@/assets/delete.svg'
-import CommentIcon from '@/assets/comment.svg'
-import ManagerIcon from '@/assets/manager.svg'
 import { useConfigStore, useAccountStore, usePromptStore } from '@/stores'
 import { TaroEvent } from '@tarojs/components';
 import { TaroElement } from '@tarojs/runtime';
-import dayjs from 'dayjs'
+import { formatTime } from '@/utils/format';
 import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
 import Vote from './vote.vue'
@@ -335,19 +277,16 @@ import {
     apiServer,
     ThreadInfo,
     ThreadPostList,
-    ThreadUP,
     ThreadInfoData,
     PostListResponse,
-    DeleteThreadPost,
-    DeleteThreadPostByModerator,
     ThreadUserList,
     GetUserInfo,
-    WinnowThreadPostByModerator,
     WinnowThreadPostList
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
 import Tags from '@/widgets/tags.vue';
 import ThreadOp from "./thread-op.vue"
+import PostOp from "./post-op.vue"
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式
@@ -484,131 +423,15 @@ computedAsync(async () => {
 
 // 当前登陆用户是否为当前帖子所属版块的版主
 const isModerator = ref(false)
-// 要删除的评论的ID
-const delPostId = ref(0)
-// 要删除的评论的作者id
-const delPostUserId = ref(0)
-// 版主删除评论对话框
-const showModeratorDelPostDialog = ref(false)
-const delFormRef = ref(null)
-// 删除表单
-const delForm = ref({
-    reason: "",
-    notify: false
-})
-const moderatorDelDialogClosed = async (action: string) => {
-    if (!threadInfo.value)
-        return
-    if (action === "ok") {
-        const result = await (delFormRef.value as any).validate()
-        if (result.valid) {
-            const { data } = await DeleteThreadPostByModerator({
-                id: delPostId.value,
-                forum_id: threadInfo.value?.forum_id,
-                o_user_id: delPostUserId.value,
-                note: delForm.value.reason,
-                is_notify: delForm.value.notify ? 1 : 0
-            })
-            if (!data.code) {
-                prompt.showToast("success", "删除成功")
-                refreshScroll.value = false
-                postRefresh.value++
-                winnowPostsRefresh.value++
-            }
-            return true
-        }
-        return false
-    } else {
-        delForm.value.reason = ""
-        delForm.value.notify = false
-        return true
-    }
-}
-
 // 版主管理评论
-const showModeratorWinnowDialog = ref(false)
-const winnowFormRef = ref(null)
-const winnowForm = ref({
-    reason: "",
-    notify: true
-})
 const winnowLoading = ref(false)
 const winnowPostsRefresh = ref(0)
-// 判断是否已经精选 已精选 返回true ,否则返回false
-const postIsWinnow = ref(false)
-const checkPostIsWinnow = (postId, postUserId) => {
-    delPostId.value = postId
-    delPostUserId.value = postUserId
-    postIsWinnow.value = winnowPosts.value.data.some(post => post.id === delPostId.value)
-    console.log(postIsWinnow.value)
-    moderatorPostAction.value.items[0].name = postIsWinnow.value ? "取消精选" : "精选"
-    moderatorPostAction.value.show = true
-}
+
+// 精选列表
 const winnowPosts = computedAsync(() => {
     winnowPostsRefresh.value
     return WinnowThreadPostList(threadID.value).then(resp => { return resp.data })
 }, undefined, { evaluating: winnowLoading })
-const moderatorPostAction = ref({
-    show: false,
-    items: [
-        {
-            name: "精选", callback: () => {
-                winnowForm.value = {
-                    reason: "",
-                    notify: true
-                }
-                showModeratorWinnowDialog.value = true
-            }
-        },
-        {
-            name: "删除", callback: () => {
-                delForm.value = {
-                    reason: "",
-                    notify: false
-                }
-                showModeratorDelPostDialog.value = true
-            }
-        }]
-})
-
-const moderatorWinnowDialogClosed = async (action: string) => {
-    if (!threadInfo.value)
-        return
-    if (action === "ok") {
-        const result = await (winnowFormRef.value as any).validate()
-        if (result.valid) {
-            // 精选评论
-            const { data } = await WinnowThreadPostByModerator({
-                id: delPostId.value,
-                forum_id: threadInfo.value.forum_id,
-                o_user_id: delPostUserId.value,
-                note: winnowForm.value.reason,
-                is_notify: winnowForm.value.notify ? 1 : 0,
-
-                top: postIsWinnow.value ? 0 : 1
-            })
-            if (!data.code) {
-                if (postIsWinnow.value) {
-                    prompt.showToast("success", "取消精选成功")
-                } else {
-                    prompt.showToast("success", "精选成功")
-                }
-                delPostId.value = 0
-                winnowPostsRefresh.value++
-                Taro.pageScrollTo({
-                    selector: ".post-divider",
-                    offsetTop: -100
-                })
-            }
-            return true
-        }
-        return false
-    } else {
-        winnowForm.value.reason = ""
-        winnowForm.value.notify = false
-        return true
-    }
-}
 
 // 判断当前用户是否为帖子所属版块的版主
 computedAsync(async () => {
@@ -623,28 +446,14 @@ computedAsync(async () => {
 // 当前是否是在回复别人的评论
 const isReply = ref(false)
 const replyId = ref(0)
-const replayUserId = ref(0)
+const replyUserId = ref(0)
 const replyNickName = ref("")
 
-const replyBtnClicked = (id: number, postUserId: number, nickName: string) => {
-    if (!account.is_login) {
-        showLoginDialog.value = true
-        return
-    }
-    if (threadClosed.value) {
-        prompt.showToast("warn", "帖子已关闭")
-        return
-    }
-    isReply.value = true
-    replyId.value = id
-    replayUserId.value = postUserId
-    replyNickName.value = nickName
-}
 // 取消回复
 const cancelReply = () => {
     isReply.value = false
     replyId.value = 0
-    replayUserId.value = 0
+    replyUserId.value = 0
     replyNickName.value = ""
 }
 
@@ -661,20 +470,6 @@ computedAsync(async () => {
     })
     threadPosts.value = data
 }, undefined, { evaluating: postLoading })
-
-
-// 点赞评论
-const likeBtnClicked = async (post: PostListResponse["data"][0]) => {
-    if (!account.is_login) {
-        showLoginDialog.value = true
-        return
-    }
-    const { data } = await ThreadUP(post.id, "pid")
-    if (!data.code) {
-        post.is_up = !post.is_up
-        post.like_cnt += post.is_up ? 1 : -1
-    }
-}
 
 // 翻页后滚动到回复分割线，如果是发帖后自动翻页则滚动到底部
 const sendPostScroll = ref(false)
@@ -773,11 +568,6 @@ useShareAppMessage(() => {
     }
 })
 
-// 时间格式化
-const timeFormat = (timeStr: string) => {
-    return dayjs(timeStr).format("YYYY-MM-DD HH:mm")
-}
-
 // 在发帖后翻到最后一页
 const sendPost = () => {
     // 清空回复状态
@@ -798,22 +588,6 @@ const sendPost = () => {
 }
 
 Taro.eventCenter.on("sendPost", sendPost)
-
-// 用户删除评论确认弹窗
-const showDelPostDialog = ref(false)
-const userDelPostId = ref(0)
-// 删除评论
-const userDelPost = async () => {
-    if (userDelPostId.value) {
-        const { data } = await DeleteThreadPost(userDelPostId.value)
-        if (!data.code) {
-            prompt.showToast("success", "删除成功")
-            refreshScroll.value = false
-            postRefresh.value++
-        }
-        userDelPostId.value = 0
-    }
-}
 
 // 定时刷新评论
 // 如果当前位于评论的最后一页,每三秒刷新一次
@@ -912,45 +686,6 @@ watchEffect(() => {
 
     .del-message {
         color: #97a3b4;
-    }
-
-    .post-main {
-        .op {
-            padding-top: 10rpx;
-            padding-bottom: 10rpx;
-
-            .op-list {
-                display: flex;
-                width: 100%;
-                align-items: center;
-
-                .btn-clicked {
-                    background-color: #f5f5f5;
-                }
-
-                .op-item {
-                    display: flex;
-                    align-items: center;
-                    padding: 10rpx;
-                    margin-right: 13rpx;
-                    border-radius: 12rpx;
-
-                    img {
-                        width: 30rpx;
-                        height: 30rpx;
-                    }
-
-                    text {
-                        font-size: 28rpx;
-                        color: #97a3b4;
-                    }
-
-                    &.right {
-                        margin-left: auto;
-                    }
-                }
-            }
-        }
     }
 
     .content>view {
