@@ -67,6 +67,21 @@ export async function ThreadClosed(opt: {
   return http.post<{ code: number, msg: string }>("/api/v1/thread/close", { ...opt });
 }
 
+// 获取举报类型
+export async function ReportType() {
+  return http.get<ReportTypeResponse>("/api/v1/thread/post/report/list")
+}
+
+// 发起举报
+export async function Report(opt: {
+  forum_id: number,
+  message: string,
+  post_id: number,
+  report_type: number,
+  thread_id: number
+}) {
+  return http.post<{ code: number, msg: string }>("/api/v1/thread/post/report", { ...opt });
+}
 interface ThreadInfoResponse {
   code: number;
   data: ThreadInfoData;
@@ -264,4 +279,23 @@ interface ThreadUserListData {
   username: string;
   nickname: string;
   avatar: string;
+}
+
+interface ReportTypeResponse {
+  code: number;
+  data: ReportTypeData;
+  msg: string;
+}
+
+export interface ReportTypeData {
+  '1': string;
+  '2': string;
+  '3': string;
+  '4': string;
+  '5': string;
+  '6': string;
+  '7': string;
+  '8': string;
+  '9': string;
+  '10': string;
 }
