@@ -1,29 +1,36 @@
 <template>
   <nut-cell v-if="post.deleted_at === null" class="post-op">
     <view class="post-op-list">
-      <view class="op-item" hover-class="btn-clicked" hover-stay-time="200" @click="likeBtnClicked(post)">
+      <view class="op-item" hover-class="btn-clicked" hover-stay-time="200" @click="likeBtnClicked">
         <img :src="post.is_up ? UpFillIcon : UpIcon" />
         <text class="content">{{ `点赞${post.like_cnt}` }}</text>
       </view>
-      <view class="op-item" hover-class="btn-clicked" hover-stay-time="200"
-        @click="replyBtnClicked(post.id, post.post_user_id, post.user.nickname)">
+      <view class="op-item" hover-class="btn-clicked" hover-stay-time="200" @click="replyBtnClicked">
         <img :src="CommentIcon" />
         <text class="content">回复</text>
       </view>
       <view v-if="account.is_login && account.user_info.id === post.post_user_id && post.deleted_at === null"
-        class="op-item" hover-class="btn-clicked" hover-stay-time="200"
-        @click="showDelPostDialog = true; userDelPostId = post.id">
-        <img :src="DeleteIcon" />
-        <text class="content">删除</text>
+        class="op-item more" hover-class="btn-clicked" hover-stay-time="200" @click="authorPostAction.show = true">
+        <img :src="MoreIcon" />
+      </view>
+      <view v-else class="op-item more" hover-class="btn-clicked" hover-stay-time="200"
+        @click="userPostAction.show = true">
+        <img :src="MoreIcon" />
       </view>
       <!-- 版主管理按钮 -->
       <view v-if="account.is_login && isModerator" hover-class="btn-clicked" hover-stay-time="200" class="op-item right"
-        @click="checkPostIsWinnow(post.id, post.post_user_id)">
+        @click="checkPostIsWinnow">
         <img :src="ManagerIcon" />
         <text>管理</text>
       </view>
     </view>
-    <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelPostDialog" @ok="userDelPost" />
+    <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelPostDialog" @ok="authorDelPost" />
+    <!-- 楼主管理评论弹窗 -->
+    <nut-action-sheet v-model:visible="authorPostAction.show" :menu-items="authorPostAction.items"
+      @choose="$event.callback()" cancel-txt="取消" />
+    <!-- 普通用户管理评论弹窗 -->
+    <nut-action-sheet v-model:visible="userPostAction.show" :menu-items="userPostAction.items"
+      @choose="$event.callback()" cancel-txt="取消" />
     <!-- 版主管理评论弹窗 -->
     <nut-action-sheet v-model:visible="moderatorPostAction.show" :menu-items="moderatorPostAction.items"
       @choose="$event.callback()" cancel-txt="取消" />
@@ -54,6 +61,34 @@
         </nut-form>
       </template>
     </nut-dialog>
+    <!-- 举报对话框 -->
+    <nut-popup v-model:visible="showReportDialog" pop-class="report-dailog" :catch-move="true" round style="width: 90%;"
+      safe-area-inset-bottom closeable>
+      <template #default>
+        <nut-form ref="reportFormRef" label-position="top" class="moderator-del-form" :model-value="reportForm">
+          <nut-form-item prop="type" label="您为什么要举报此信息" required :rules="[{ required: true, message: '请选择举报类型' }]">
+            <nut-radio-group v-model="reportForm.type">
+              <nut-grid :center="false" :border="false" :column-num="2">
+                <nut-grid-item v-for="(type, index) in reportType">
+                  <template #default>
+                    <nut-radio :label="index + 1">{{ type
+                      }}</nut-radio>
+                  </template>
+                </nut-grid-item>
+              </nut-grid>
+            </nut-radio-group>
+          </nut-form-item>
+          <nut-form-item v-if="reportForm.type === 10" prop="reason" required
+            :rules="[{ required: true, message: '请输入举报理由' }]">
+            <nut-input v-model='reportForm.reason' placeholder="举报理由"></nut-input>
+          </nut-form-item>
+          <view class="op">
+            <nut-button size="small" @click="showReportDialog = false">取消</nut-button>
+            <nut-button size="small" type="primary" @click="reportPost">确定</nut-button>
+          </view>
+        </nut-form>
+      </template>
+    </nut-popup>
   </nut-cell>
 </template>
 
@@ -66,12 +101,14 @@ import {
   ThreadUP,
   DeleteThreadPost,
   DeleteThreadPostByModerator,
-  WinnowThreadPostByModerator
+  WinnowThreadPostByModerator,
+  ReportType,
+  Report
 } from '@/api';
 import { useAccountStore, usePromptStore } from '@/stores';
 import UpIcon from '@/assets/up.svg'
 import UpFillIcon from '@/assets/up-fill.svg'
-import DeleteIcon from '@/assets/delete.svg'
+import MoreIcon from '@/assets/more.svg'
 import CommentIcon from '@/assets/comment.svg'
 import ManagerIcon from '@/assets/manager.svg'
 import Taro from '@tarojs/taro';
@@ -96,30 +133,10 @@ defineProps<{
   isModerator: boolean
 }>()
 
-// 用户删除评论确认弹窗
-const showDelPostDialog = ref(false)
-const userDelPostId = ref(0)
-// 用户删除评论
-const userDelPost = async () => {
-  if (userDelPostId.value) {
-    const { data } = await DeleteThreadPost(userDelPostId.value)
-    if (!data.code) {
-      prompt.showToast("success", "删除成功")
-      refreshScroll.value = false
-      postRefresh.value++
-    }
-    userDelPostId.value = 0
-  }
-}
-
 // 版主操作
-// 要删除的评论的ID
-const delPostId = ref(0)
-// 要删除的评论的作者id
-const delPostUserId = ref(0)
 // 版主删除评论对话框
 const showModeratorDelPostDialog = ref(false)
-// 精选
+// 版主精选评论对话框
 const showModeratorWinnowDialog = ref(false)
 // 判断是否已经精选 已精选 返回true ,否则返回false
 const postIsWinnow = ref(false)
@@ -135,10 +152,8 @@ const delForm = ref({
   reason: "",
   notify: false
 })
-const checkPostIsWinnow = (postId, postUserId) => {
-  delPostId.value = postId
-  delPostUserId.value = postUserId
-  postIsWinnow.value = winnowPosts.value.data.some(item => item.id === postId)
+const checkPostIsWinnow = () => {
+  postIsWinnow.value = winnowPosts.value.data.some(item => item.id === post.value.id)
   moderatorPostAction.value.items[0].name = postIsWinnow.value ? "取消精选" : "精选"
   moderatorPostAction.value.show = true
 }
@@ -174,9 +189,9 @@ const moderatorDelDialogClosed = async (action: string) => {
     const result = await (delFormRef.value as any).validate()
     if (result.valid) {
       const { data } = await DeleteThreadPostByModerator({
-        id: delPostId.value,
+        id: post.value.id,
         forum_id: threadInfo.value?.forum_id,
-        o_user_id: delPostUserId.value,
+        o_user_id: post.value.post_user_id,
         note: delForm.value.reason,
         is_notify: delForm.value.notify ? 1 : 0
       })
@@ -205,9 +220,9 @@ const moderatorWinnowDialogClosed = async (action: string) => {
     if (result.valid) {
       // 精选评论
       const { data } = await WinnowThreadPostByModerator({
-        id: delPostId.value,
+        id: post.value.id,
         forum_id: threadInfo.value.forum_id,
-        o_user_id: delPostUserId.value,
+        o_user_id: post.value.post_user_id,
         note: winnowForm.value.reason,
         is_notify: winnowForm.value.notify ? 1 : 0,
 
@@ -219,7 +234,6 @@ const moderatorWinnowDialogClosed = async (action: string) => {
         } else {
           prompt.showToast("success", "精选成功")
         }
-        delPostId.value = 0
         winnowPostsRefresh.value++
         Taro.pageScrollTo({
           selector: ".post-divider",
@@ -236,7 +250,78 @@ const moderatorWinnowDialogClosed = async (action: string) => {
   }
 }
 
-const replyBtnClicked = (id: number, postUserId: number, nickName: string) => {
+// 楼主管理评论
+// 楼主删除评论确认弹窗
+const showDelPostDialog = ref(false)
+// 楼主管理评论操作
+const authorPostAction = ref({
+  show: false,
+  items: [
+    {
+      name: "删除", callback: () => {
+        showDelPostDialog.value = true
+      }
+    }
+  ]
+})
+
+// 楼主删除评论
+const authorDelPost = async () => {
+  const { data } = await DeleteThreadPost(post.value.id)
+  if (!data.code) {
+    prompt.showToast("success", "删除成功")
+    refreshScroll.value = false
+    postRefresh.value++
+  }
+}
+
+// 普通用户举报评论
+const showReportDialog = ref(false)
+const reportFormRef = ref([])
+const reportForm = ref({
+  type: 1,
+  reason: ""
+})
+const reportType = ref()
+const userPostAction = ref({
+  show: false,
+  items: [
+    {
+      name: "举报", callback: async () => {
+        if (!account.is_login) {
+          showLoginDialog.value = true
+          return
+        }
+        const { data } = await ReportType()
+        reportType.value = Object.values(data.data)
+        reportForm.value = {
+          type: 1,
+          reason: ""
+        }
+        showReportDialog.value = true
+      }
+    }
+  ]
+})
+// 发起举报
+const reportPost = async () => {
+  const result = await (reportFormRef.value as any).validate()
+  if (result.valid) {
+    const { data } = await Report({
+      forum_id: threadInfo.value.forum_id,
+      message: reportForm.value.reason,
+      report_type: reportForm.value.type,
+      post_id: post.value.id,
+      thread_id: threadInfo.value.id
+    })
+    if (!data.code) {
+      prompt.showToast('success', '举报成功')
+      showReportDialog.value = false
+    }
+  }
+}
+
+const replyBtnClicked = () => {
   if (!account.is_login) {
     showLoginDialog.value = true
     return
@@ -246,21 +331,21 @@ const replyBtnClicked = (id: number, postUserId: number, nickName: string) => {
     return
   }
   isReply.value = true
-  replyId.value = id
-  replyUserId.value = postUserId
-  replyNickName.value = nickName
+  replyId.value = post.value.id
+  replyUserId.value = post.value.post_user_id
+  replyNickName.value = post.value.user.nickname
 }
 
 // 点赞评论
-const likeBtnClicked = async (post: PostListResponse["data"][0]) => {
+const likeBtnClicked = async () => {
   if (!account.is_login) {
     showLoginDialog.value = true
     return
   }
-  const { data } = await ThreadUP(post.id, "pid")
+  const { data } = await ThreadUP(post.value.id, "pid")
   if (!data.code) {
-    post.is_up = !post.is_up
-    post.like_cnt += post.is_up ? 1 : -1
+    post.value.is_up = !post.value.is_up
+    post.value.like_cnt += post.value.is_up ? 1 : -1
   }
 }
 </script>
@@ -298,6 +383,13 @@ const likeBtnClicked = async (post: PostListResponse["data"][0]) => {
 
       &.right {
         margin-left: auto;
+      }
+
+      &.more {
+        img {
+          width: 45rpx;
+          height: 45rpx;
+        }
       }
     }
   }
