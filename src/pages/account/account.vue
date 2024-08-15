@@ -27,7 +27,7 @@
                     <span>帖子</span>
                 </view>
                 <view class="item" span="6" @click="toMyPost(true)">
-                    <span class="number">{{ account.user_info.posts_cnt }}</span>
+                    <span class="number">{{ account.user_info.posts_cnt - account.user_info.threads_cnt }}</span>
                     <span>回复</span>
                 </view>
                 <view class="item" span="6" @click="toFavorite">

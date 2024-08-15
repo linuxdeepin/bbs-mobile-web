@@ -29,12 +29,12 @@
                     <view class="count">
                       <view class="item">
                         <view class="item-label">帖子:</view>
-                        <view class="item-value">{{ userInfo.threads_cnt }}</view>
+                        <view class="item-value">{{ userInfo.posts_cnt - userInfo.threads_cnt }}</view>
                       </view>
                       <nut-divider direction="vertical" />
                       <view class="item">
                         <view class="item-label">主题:</view>
-                        <view class="item-value">{{ userInfo.posts_cnt }}</view>
+                        <view class="item-value">{{ userInfo.threads_cnt }}</view>
                       </view>
                     </view>
                     <view class="action" v-if="!isMe">
