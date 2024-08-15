@@ -10,9 +10,14 @@
         <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
         <text>{{ `收藏${threadInfo.favourite_cnt}` }}</text>
       </view>
-      <!-- 用户更多操作 -->
+      <!-- 楼主更多操作 -->
       <view v-if="account.is_login && account.user_info.id === threadInfo.user_id" hover-class="btn-clicked"
         hover-stay-time="200" class="thread-op-item more" @click="checkThreadState">
+        <img :src="MoreIcon" />
+      </view>
+      <!-- 普通用户操作 -->
+      <view v-else hover-class="btn-clicked" hover-stay-time="200" class="thread-op-item more"
+        @click="userAction.show = true">
         <img :src="MoreIcon" />
       </view>
       <!-- 版主管理按钮 -->
@@ -23,7 +28,10 @@
       </view>
     </view>
     <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelThreadDialog" @ok="deleteThread" />
-    <!-- 用户管理帖子弹窗 -->
+    <!-- 楼主管理帖子弹窗 -->
+    <nut-action-sheet v-model:visible="authorAction.show" :menu-items="(authorAction.items as any)"
+      @choose="$event.callback()" cancel-txt="取消" />
+    <!-- 普通用户管理帖子弹窗 -->
     <nut-action-sheet v-model:visible="userAction.show" :menu-items="(userAction.items as any)"
       @choose="$event.callback()" cancel-txt="取消" />
     <!-- 版主管理帖子弹窗 -->
@@ -56,6 +64,34 @@
         </nut-form>
       </template>
     </nut-dialog>
+    <!-- 举报对话框 -->
+    <nut-popup v-model:visible="showReportDialog" pop-class="report-dailog" :catch-move="true" round style="width: 90%;"
+      safe-area-inset-bottom closeable>
+      <template #default>
+        <nut-form ref="reportFormRef" label-position="top" class="moderator-del-form" :model-value="reportForm">
+          <nut-form-item prop="type" label="您为什么要举报此信息" required :rules="[{ required: true, message: '请选择举报类型' }]">
+            <nut-radio-group v-model="reportForm.type">
+              <nut-grid :center="false" :border="false" :column-num="2">
+                <nut-grid-item v-for="(type, index) in reportType">
+                  <template #default>
+                    <nut-radio :label="index + 1">{{ type
+                      }}</nut-radio>
+                  </template>
+                </nut-grid-item>
+              </nut-grid>
+            </nut-radio-group>
+          </nut-form-item>
+          <nut-form-item v-if="reportForm.type === 10" prop="reason" required
+            :rules="[{ required: true, message: '请输入举报理由' }]">
+            <nut-input v-model='reportForm.reason' placeholder="举报理由"></nut-input>
+          </nut-form-item>
+          <view class="op">
+            <nut-button size="small" @click="showReportDialog = false">取消</nut-button>
+            <nut-button size="small" type="primary" @click="report">确定</nut-button>
+          </view>
+        </nut-form>
+      </template>
+    </nut-popup>
     <nut-dialog v-model:visible="showModeratorMoveDialog" title='移动帖子' :before-close="moderatorMoveDialogClosed">
       <template #default>
         <nut-cell title="版块" :desc="selectedForum?.name || '请选择'" is-link @click="showForumSelection = true"></nut-cell>
@@ -133,7 +169,9 @@ import {
   GetTheme,
   ThreadResolved,
   ThreadUnResolved,
-  ThreadClosed
+  ThreadClosed,
+  ReportType,
+  Report
 } from '@/api';
 import Taro from "@tarojs/taro";
 import { computedAsync } from "@vueuse/core";
@@ -153,19 +191,20 @@ const prompt = usePromptStore()
 const config = useConfigStore()
 
 const showDelThreadDialog = ref(false)
+const showReportDialog = ref(false)
 
-// 调起用户菜单前检查帖子是否已解决
+// 调起楼主菜单前检查帖子是否已解决
 const checkThreadState = () => {
   if (threadResolved.value) {
-    userAction.value.items[0].name = "未解决"
+    authorAction.value.items[0].name = "未解决"
   } else {
-    userAction.value.items[0].name = "解决"
+    authorAction.value.items[0].name = "解决"
   }
-  userAction.value.show = true
+  authorAction.value.show = true
 }
 
-// 用户操作
-const userAction = ref({
+// 楼主操作
+const authorAction = ref({
   show: false,
   items: [
     {
@@ -196,6 +235,53 @@ const userAction = ref({
     }
   ]
 })
+
+// 举报表单
+const reportFormRef = ref([])
+const reportForm = ref({
+  type: 1,
+  reason: ""
+})
+const reportType = ref()
+// 普通用户操作
+const userAction = ref({
+  show: false,
+  items: [
+    {
+      name: "举报", callback: async () => {
+        if (!account.is_login) {
+          showLoginDialog.value = true
+          return
+        }
+        const { data } = await ReportType()
+        reportType.value = Object.values(data.data)
+        reportForm.value = {
+          type: 1,
+          reason: ""
+        }
+        showReportDialog.value = true
+      }
+    }
+  ]
+})
+
+// 发起举报
+const report = async () => {
+  const result = await (reportFormRef.value as any).validate()
+  if (result.valid) {
+    const { data } = await Report({
+      forum_id: threadInfo.value.forum_id,
+      message: reportForm.value.reason,
+      report_type: reportForm.value.type,
+      post_id: threadInfo.value.post.id,
+      thread_id: threadInfo.value.id
+    })
+    if (!data.code) {
+      prompt.showToast('success', '举报成功')
+      showReportDialog.value = false
+    }
+  }
+}
 
 // 版主操作
 const showModeratorMoveDialog = ref(false)
@@ -495,6 +581,22 @@ const favoriteThread = async () => {
 .theme-popup {
   .nut-popup {
     padding: 20rpx;
+  }
+}
+
+.report-dailog {
+  .nut-grid-item__content {
+    padding-bottom: 5rpx;
+  }
+
+  .op {
+    display: flex;
+    justify-content: space-between;
+    margin: 20rpx 40rpx;
+
+    .nut-button {
+      width: 40%;
+    }
   }
 }
 </style>
