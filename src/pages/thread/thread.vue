@@ -271,6 +271,9 @@
                     <nut-col span="24">
                         <nut-empty description="暂无回复，快来抢沙发吧"></nut-empty>
                     </nut-col>
+                    <nut-col>
+                        <view class="refresh-tips pagination">已开启自动刷新</view>
+                    </nut-col>
                 </template>
             </template>
             <template v-else>
@@ -1033,7 +1036,7 @@ const intervalRefreshPost = ref(false)
 watchEffect(() => {
     if (!threadPosts.value)
         return
-    if (pagination.value.page === Math.ceil(threadPosts.value.total_count / pagination.value.limit)) {
+    if (pagination.value.page === Math.ceil(threadPosts.value.total_count / pagination.value.limit) || threadPosts.value.total_count === 0) {
         clearInterval(interval.value)
         const oldTotalCount = threadPosts.value.total_count
         interval.value = setInterval(async () => {
@@ -1216,12 +1219,6 @@ watchEffect(() => {
         background-color: #eee;
         padding: 12rpx;
     }
-
-    // 添加边距，避免空回复列表被回帖输入框遮挡
-    .nut-empty {
-        padding-bottom: 200rpx;
-    }
-
 
     .moderator-del-form {
         margin: 0;
