@@ -221,6 +221,7 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
       padding: 10px 10px 20px 10px;
       color: black;
       cursor: pointer;
+      font-size: 16Px;
     }
 
     .tab-item.active {
@@ -316,7 +317,7 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
   }
 
   .skeleton-container {
-    margin-top: 2rem;
+    margin-top: 1rem;
     margin-left: 5vw;
   }
 

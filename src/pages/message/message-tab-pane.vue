@@ -148,6 +148,7 @@ const delBtnClicked = (id: number) => {
 
     .title {
       color: #333;
+      font-size: 16Px;
     }
   }
 
@@ -157,6 +158,11 @@ const delBtnClicked = (id: number) => {
       width: 100%;
       display: flex;
       justify-content: space-between;
+
+      .info {
+        display: flex;
+        flex-direction: column;
+      }
 
       .nickname {
         color: #333;

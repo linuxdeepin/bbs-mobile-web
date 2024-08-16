@@ -379,6 +379,7 @@ const goToDialog = () => {
       padding: 10px 10px 20px 10px;
       color: black;
       cursor: pointer;
+      font-size: 16Px;
     }
 
     .tab-item.active {
