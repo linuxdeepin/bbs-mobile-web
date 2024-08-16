@@ -29,7 +29,7 @@
                     <view class="count">
                       <view class="item">
                         <view class="item-label">帖子:</view>
-                        <view class="item-value">{{ userInfo.posts_cnt - userInfo.threads_cnt }}</view>
+                        <view class="item-value">{{ Math.max(userInfo.posts_cnt - userInfo.threads_cnt, 0) }}</view>
                       </view>
                       <nut-divider direction="vertical" />
                       <view class="item">
