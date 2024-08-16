@@ -138,7 +138,7 @@
                 <template v-if="threadPosts.total_count > 0">
                     <nut-col span="22" offset="1" class="post-title">所有回复</nut-col>
                     <nut-col v-for="(post, index) in threadPosts.data" span="22" offset="1">
-                        <view :class="'.post-id-' + post.id"></view>
+                        <view :class="'post-id-' + post.id"></view>
                         <view>
                             <nut-cell-group class="post-main">
                                 <nut-cell class="info" desc-text-align="left">
@@ -683,11 +683,13 @@ watch(threadPosts, (_, oldVal) => {
         // 如果路由参数中有postId，则滚动到指定位置
         if (postId.value) {
             Taro.nextTick(() => {
-                Taro.createSelectorQuery().select(`.post-id-${postId.value}`).boundingClientRect().exec((res) => {
-                    Taro.pageScrollTo({
-                        scrollTop: res[0].top
+                setTimeout(() => {
+                    Taro.createSelectorQuery().select(`.post-id-${postId.value}`).boundingClientRect().exec((res) => {
+                        Taro.pageScrollTo({
+                            scrollTop: res[0].top
+                        })
                     })
-                })
+                }, 1000)
             })
         }
         return
@@ -862,6 +864,7 @@ watchEffect(() => {
         .info {
             display: flex;
             align-items: center;
+            height: 22Px;
 
             .nickname {
                 max-width: 60vw;
