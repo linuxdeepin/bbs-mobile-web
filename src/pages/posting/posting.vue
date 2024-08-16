@@ -1,61 +1,37 @@
 <template>
   <view class="posting-page">
-    <view v-show="!loading">
+    <!-- 网易易盾验证码，小程序插件引入 -->
+    <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
+      @verify="postCaptcha.verify">
+    </ne-captcha>
+    <nut-cell-group>
+      <!-- 选择版块 -->
+      <nut-cell :title="selectedForum?.name || '选择版块'" is-link @click="showForumSelection = true"></nut-cell>
+      <!-- 主题类型 -->
+      <nut-cell :title="selectedThemeType?.name || '主题类型'" is-link @click="themeTypeCellClicked">
+      </nut-cell>
+    </nut-cell-group>
+    <nut-cell-group>
+      <!-- 主题标题 -->
+      <nut-cell>
+        <nut-input v-model="postingTitle" show-word-limit :max-length="30" placeholder="请输入帖子标题，不超过30字" />
+      </nut-cell>
 
-      <!-- 网易易盾验证码，小程序插件引入 -->
-      <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
-        @verify="postCaptcha.verify">
-      </ne-captcha>
-      <nut-cell-group>
-        <!-- 选择版块 -->
-        <nut-cell :title="selectedForum?.name || '选择版块'" is-link @click="showForumSelection = true"></nut-cell>
-        <!-- 主题类型 -->
-        <nut-cell :title="selectedThemeType?.name || '主题类型'" is-link @click="themeTypeCellClicked">
-        </nut-cell>
-      </nut-cell-group>
-      <nut-cell-group>
-        <!-- 主题标题 -->
-        <nut-cell>
-          <nut-input v-model="postingTitle" show-word-limit :max-length="30" placeholder="请输入帖子标题，不超过30字" />
-        </nut-cell>
+      <!-- 主题内容 -->
+      <nut-textarea v-model="postingContent" placeholder="请输入帖子内容" limit-show :max-length="5000" />
 
-        <!-- 主题内容 -->
-        <nut-textarea v-model="postingContent" :autosize="{ maxHeight: 300, minHeight: 300 }" placeholder="请输入帖子内容"
-          limit-show :max-length="5000" />
+      <!-- 选择图片 -->
+      <nut-cell>
+        <nut-uploader ref="uploadImageRef" :auto-upload="false" v-model:file-list="imgFileList" :maximize="2097152"
+          :maximum="9" :size-type="['compressed']" :media-type="['image']" @change="fileListChange"></nut-uploader>
+      </nut-cell>
 
-        <!-- 选择图片 -->
-        <nut-cell>
-          <nut-uploader ref="uploadImageRef" :auto-upload="false" v-model:file-list="imgFileList" :maximize="2097152"
-            :maximum="9" :size-type="['compressed']" :media-type="['image']" @change="fileListChange"></nut-uploader>
-        </nut-cell>
-
-        <!-- 发布按钮 -->
-        <view class="submit-btn">
-          <nut-button :disabled="postingTitle === '' || postingContent === ''" type="primary" block
-            @click="submitPosting">发布帖子</nut-button>
-        </view>
-      </nut-cell-group>
-
-    </view>
-    <!-- 骨架屏 -->
-    <template v-if="loading">
-      <view class="skeleton-container" v-for=" in [1, 2, 3]">
-        <nut-skeleton width="90vw" height="40px" :title="false" animated row="1">
-        </nut-skeleton>
+      <!-- 发布按钮 -->
+      <view class="submit-btn">
+        <nut-button :disabled="postingTitle === '' || postingContent === ''" type="primary" block
+          @click="submitPosting">发布帖子</nut-button>
       </view>
-      <view class="skeleton-container">
-        <nut-skeleton width="90vw" height="300px" :title="false" animated row="1">
-        </nut-skeleton>
-      </view>
-      <view class="skeleton-container">
-        <nut-skeleton width="100px" height="100px" :title="false" animated row="1">
-        </nut-skeleton>
-      </view>
-      <view class="skeleton-container">
-        <nut-skeleton width="90vw" height="40px" :title="false" animated row="1">
-        </nut-skeleton>
-      </view>
-    </template>
+    </nut-cell-group>
     <!-- 选择版块弹窗 -->
     <nut-popup v-model:visible="showForumSelection" round position="bottom" :style="{ height: '50%' }"
       safe-area-inset-bottom>
@@ -139,10 +115,6 @@ import { computedAsync } from '@vueuse/core';
 import { usePromptStore, useAccountStore, useTabsStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue';
 
-const loading = ref(true)
-setTimeout(() => {
-  loading.value = false
-}, 1000)
 const prompt = usePromptStore()
 const account = useAccountStore()
 const postCaptcha = account.useSmartCaptcha()
@@ -286,7 +258,6 @@ interface FileItem {
 
 <style lang="scss">
 .posting-page {
-  height: 100%;
   padding: 5rpx 10rpx 4rem;
 
   .nut-input {
@@ -311,12 +282,18 @@ interface FileItem {
   }
 
   .nut-textarea {
-    padding: 20rpx 30rpx;
+    padding: 10Px 16Px;
+    height: 300Px;
 
-    textarea {
-      padding: 10rpx;
+    .nut-textarea__textarea {
+      padding: 10Px;
       background: #eee;
       border-radius: 12rpx;
+      height: 100%;
+    }
+
+    .nut-textarea__limit {
+      right: 18Px;
     }
 
   }

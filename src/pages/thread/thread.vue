@@ -69,7 +69,7 @@
             <!-- 精选列表 -->
             <template v-if="!winnowLoading && winnowPosts">
                 <template v-if="winnowPosts.data.length">
-                    <nut-col span="22" offset="1">精选回复</nut-col>
+                    <nut-col span="22" offset="1" class="post-title">精选回复</nut-col>
                     <nut-col v-for="(post, index) in winnowPosts.data" span="22" offset="1">
                         <nut-cell-group class="post-main">
                             <nut-cell class="info" desc-text-align="left">
@@ -136,7 +136,7 @@
             <!-- 回帖列表 -->
             <template v-if="!postLoading && threadPosts">
                 <template v-if="threadPosts.total_count > 0">
-                    <nut-col span="22" offset="1">所有回复</nut-col>
+                    <nut-col span="22" offset="1" class="post-title">所有回复</nut-col>
                     <nut-col v-for="(post, index) in threadPosts.data" span="22" offset="1">
                         <view :class="'.post-id-' + post.id"></view>
                         <view>
@@ -901,6 +901,10 @@ watchEffect(() => {
         .h5-code {
             white-space: pre-wrap;
         }
+    }
+
+    .post-title {
+        font-size: 18Px;
     }
 
     .del-message {

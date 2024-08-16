@@ -10,27 +10,27 @@
         </view>
       </template>
       <nut-tab-pane :pane-key="1">
-        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="1"
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="1"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="2">
-        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="2"
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="2"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="3">
-        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="5">
-        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="5"
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="5"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="6">
-        <message-thread :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
           @showDelDialog="showDelDialog" :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning"
           @refresh="refreshData" />
       </nut-tab-pane>
@@ -49,7 +49,7 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
 import { computedAsync } from '@vueuse/core';
-import MessageThread from './message-thread.vue'
+import MessageTabPane from './message-tab-pane.vue'
 import { useTabsStore, usePromptStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue'
 
@@ -152,6 +152,7 @@ const deleteMessage = async () => {
       padding: 10px 10px 20px 10px;
       color: black;
       cursor: pointer;
+      font-size: 16Px;
     }
 
     .tab-item.active {
