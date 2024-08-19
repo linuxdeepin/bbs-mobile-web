@@ -5,7 +5,7 @@
         <Notice />
       </nut-avatar>
       <view class="notify-title">{{ title }}</view>
-      <view class="notify-time">{{ time.replace("T", " ").slice(0, -1) }}</view>
+      <view class="notify-time">{{ time }}</view>
     </view>
     <nut-divider />
     <view class="notify-content">
@@ -24,9 +24,9 @@ const title = ref("");
 const content = ref("");
 const time = ref("");
 if (instance.router) {
-  title.value = instance.router.params.title || "";
-  content.value = instance.router.params.content || "";
-  time.value = instance.router.params.time || "";
+  title.value = decodeURIComponent(instance.router.params.title || "");
+  content.value = decodeURIComponent(instance.router.params.content || "");
+  time.value = decodeURIComponent(instance.router.params.time || "");
 }
 
 </script>
@@ -39,11 +39,11 @@ if (instance.router) {
     display: flex;
     align-items: center;
     height: 100rpx;
+    font-size: 18Px;
 
     .notify-title {
       margin-left: 10rpx;
       flex: 1;
-      font-size: 1.3rem;
     }
 
     .notify-time {
@@ -52,7 +52,7 @@ if (instance.router) {
   }
 
   .notify-content {
-    font-size: 1.2rem;
+    font-size: 16Px;
   }
 }
 </style>

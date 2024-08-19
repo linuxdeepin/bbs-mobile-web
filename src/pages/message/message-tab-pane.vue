@@ -107,7 +107,7 @@ const clickMessage = async (datum: Datum) => {
   MessageRead({ id: datum.id })
   if (datum.category === 3) {
     Taro.navigateTo({
-      url: `/pages/notify/notify?title=${datum.type}&content=${datum.note}&time=${datum.created_at}`,
+      url: `/pages/notify/notify?title=${encodeURIComponent(datum.type)}&content=${encodeURIComponent(datum.note)}&time=${encodeURIComponent(formatTime(datum.created_at))}`,
     })
     return
   }
