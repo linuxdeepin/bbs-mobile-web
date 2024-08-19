@@ -64,6 +64,9 @@
         </nut-form>
       </template>
     </nut-dialog>
+    <!-- 解决对话框 -->
+    <nut-dialog v-model:visible="showResolvedDialog" title="提示" :content="threadResolved ? '标记帖子为未解决状态' : '标记帖子为已解决状态'"
+      @ok="resolved"></nut-dialog>
     <!-- 举报对话框 -->
     <nut-popup v-model:visible="showReportDialog" pop-class="report-dailog" :catch-move="true" round style="width: 90%;"
       safe-area-inset-bottom closeable>
@@ -192,6 +195,7 @@ const config = useConfigStore()
 
 const showDelThreadDialog = ref(false)
 const showReportDialog = ref(false)
+const showResolvedDialog = ref(false)
 
 // 调起楼主菜单前检查帖子是否已解决
 const checkThreadState = () => {
@@ -208,24 +212,8 @@ const authorAction = ref({
   show: false,
   items: [
     {
-      name: "解决", callback: async () => {
-        if (threadResolved.value) {
-          const { data } = await ThreadUnResolved(threadInfo.value.id)
-          if (!data.code) {
-            threadResolved.value = false
-            threadRefresh.value++
-          } else {
-            prompt.showToast('warn', '操作失败')
-          }
-        } else {
-          const { data } = await ThreadResolved(threadInfo.value.id)
-          if (!data.code) {
-            threadResolved.value = true
-            threadRefresh.value++
-          } else {
-            prompt.showToast('warn', '操作失败')
-          }
-        }
+      name: "解决", callback: () => {
+        showResolvedDialog.value = true
       }
     },
     {
@@ -235,6 +223,28 @@ const authorAction = ref({
     }
   ]
 })
+
+// 楼主标记帖子为已解决
+const resolved = async () => {
+  const action = threadResolved.value ? ThreadUnResolved : ThreadResolved;
+  const { data } = await action(threadInfo.value.id);
+  if (!data.code) {
+    threadResolved.value = !threadResolved.value;
+    threadRefresh.value++;
+  } else {
+    prompt.showToast('warn', '操作失败');
+  }
+}
+
+// 楼主删除帖子
+const deleteThread = async () => {
+  const { data } = await DeleteThread(threadInfo.value.id)
+  if (!data.code) {
+    prompt.showToast("success", "删除成功")
+    config.indexNeedRefresh = true
+    Taro.navigateBack()
+  }
+}
 
 // 举报表单
 const reportFormRef = ref([])
@@ -320,23 +330,7 @@ const moderatorAction = ref({
     {
       name: "解决",
       callback: async () => {
-        if (threadResolved.value) {
-          const { data } = await ThreadUnResolved(threadInfo.value.id)
-          if (!data.code) {
-            threadResolved.value = false
-            threadRefresh.value++
-          } else {
-            prompt.showToast('warn', '操作失败')
-          }
-        } else {
-          const { data } = await ThreadResolved(threadInfo.value.id)
-          if (!data.code) {
-            threadResolved.value = true
-            threadRefresh.value++
-          } else {
-            prompt.showToast('warn', '操作失败')
-          }
-        }
+        showResolvedDialog.value = true
       }
     },
     {
@@ -486,16 +480,6 @@ watch(() => selectedForum.value, async (value) => {
   const res = await GetTheme({ forum_id: value.id })
   themeTypeList.value = res.data
 })
-
-// 删除帖子
-const deleteThread = async () => {
-  const { data } = await DeleteThread(threadInfo.value.id)
-  if (!data.code) {
-    prompt.showToast("success", "删除成功")
-    config.indexNeedRefresh = true
-    Taro.navigateBack()
-  }
-}
 
 // 点赞和取消点赞帖子
 const upThread = async () => {
