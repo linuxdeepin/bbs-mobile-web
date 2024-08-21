@@ -1,5 +1,6 @@
 <template>
     <view class="register-page">
+        <NavH5 title="注册" />
         <nut-skeleton width="60vw" height="20px" title avatar row="3">
         </nut-skeleton>
         <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
@@ -24,7 +25,8 @@
                 </nut-checkbox>
 
                 <!-- 网易易盾验证码，小程序插件引入 -->
-                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx" @verify="captcha.verify">
+                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx"
+                    @verify="captcha.verify">
                 </ne-captcha>
                 <nut-button :type="btnDisable ? 'default' : 'primary'" @click="captcha.tryVerify(register)"
                     :disabled="btnDisable">
@@ -38,11 +40,11 @@
     </view>
 </template>
 <script lang="ts" setup>
-
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
 import { useAccountStore, usePromptStore } from '@/stores'
 import { GetAgreement } from '@/api';
+import NavH5 from "@/widgets/navigation-h5.vue";
 
 const account = useAccountStore()
 const prompt = usePromptStore()

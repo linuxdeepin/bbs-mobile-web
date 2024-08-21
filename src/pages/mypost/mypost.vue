@@ -1,5 +1,6 @@
 <template>
   <view class="mypost-page">
+    <NavH5 title="我的帖子" />
     <nut-tabs v-model="currentTab" swipeable auto-height @change="tabChange">
       <template #titles>
         <view class="tab-list">
@@ -102,6 +103,7 @@ import { GetMyThread, MyThreadResonse, GetMyPost, MyPostResponse, PostOffset } f
 import { formatTime } from '@/utils/format';
 import { Comment, Eye } from "@nutui/icons-vue-taro";
 import Taro from '@tarojs/taro';
+import NavH5 from '@/widgets/navigation-h5.vue'
 
 type Tab = 'mythread' | 'mypost'
 

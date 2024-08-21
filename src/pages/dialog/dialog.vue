@@ -1,5 +1,6 @@
 <template>
   <view class="dialog-page">
+    <NavH5 title="发私信" />
     <view class="dialog-content" v-if="!loading" v-for="letter in letters">
       <view class="time">
         {{ formatTime(letter.created_at) }}
@@ -93,7 +94,7 @@ import { useAccountStore, usePromptStore } from "@/stores";
 import { formatTime } from "@/utils/format"
 import unicodeEmoji from '@/pages/thread/unicodeEmoji.json'
 import customEmoji from '@/pages/thread/customEmoji.json'
-
+import NavH5 from '@/widgets/navigation-h5.vue'
 
 const account = useAccountStore()
 const prompt = usePromptStore()

@@ -25,6 +25,7 @@ declare module 'vue' {
     NutGrid: typeof import('@nutui/nutui-taro')['Grid']
     NutGridItem: typeof import('@nutui/nutui-taro')['GridItem']
     NutInput: typeof import('@nutui/nutui-taro')['Input']
+    NutNavbar: typeof import('@nutui/nutui-taro')['Navbar']
     NutPagination: typeof import('@nutui/nutui-taro')['Pagination']
     NutPopup: typeof import('@nutui/nutui-taro')['Popup']
     NutProgress: typeof import('@nutui/nutui-taro')['Progress']
