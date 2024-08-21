@@ -1,5 +1,6 @@
 <template>
   <view class="notify-page">
+    <NavH5 title="系统通知" />
     <view class="notify-header">
       <nut-avatar size="50" shape="round">
         <Notice />
@@ -18,6 +19,7 @@
 import { ref } from "vue";
 import { Notice } from "@nutui/icons-vue-taro";
 import { getCurrentInstance } from "@tarojs/taro";
+import NavH5 from "@/widgets/navigation-h5.vue";
 
 const instance = getCurrentInstance();
 const title = ref("");

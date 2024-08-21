@@ -1,5 +1,6 @@
 <template>
     <view class="search-page">
+        <NavH5 title="搜索" />
         <!-- TODO autofocus 属性在h5环境会导致页面有卡顿的情况 -->
         <nut-searchbar v-model="keyword" autofocus @search="searchSubmit" @clear="showHistory = true">
             <template #leftin>
@@ -73,6 +74,7 @@ import { Search2 } from "@nutui/icons-vue-taro";
 import { useSearchStore } from '@/stores'
 import { ref } from 'vue';
 import { computedAsync } from '@vueuse/core';
+import NavH5 from "@/widgets/navigation-h5.vue";
 
 let searchStore = useSearchStore()
 

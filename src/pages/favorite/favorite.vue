@@ -1,5 +1,6 @@
 <template>
   <view class="favorite-page">
+    <NavH5 title="我的收藏" />
     <template v-if="!loading">
       <template v-if="myFavoriteData?.total_count">
         <view class="favorite-list">
@@ -58,6 +59,7 @@ import { computedAsync } from '@vueuse/core';
 import { formatTime } from '@/utils/format';
 import { Del } from "@nutui/icons-vue-taro";
 import { usePromptStore } from '@/stores';
+import NavH5 from '@/widgets/navigation-h5.vue'
 
 const prompt = usePromptStore()
 const delDialogShow = ref(false)

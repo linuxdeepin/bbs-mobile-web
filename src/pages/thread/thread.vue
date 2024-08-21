@@ -1,5 +1,6 @@
 <template>
     <view class="thread-page">
+        <NavH5 title="帖子详情" />
         <nut-row v-if="!infoLoading && threadInfo">
             <!-- 标题 -->
             <nut-col span="22" offset="1">
@@ -287,6 +288,7 @@ import { computedAsync } from "@vueuse/core";
 import Tags from '@/widgets/tags.vue';
 import ThreadOp from "./thread-op.vue"
 import PostOp from "./post-op.vue"
+import NavH5 from "@/widgets/navigation-h5.vue";
 
 if (process.env.TARO_ENV === 'h5') {
     // 加载vditor样式

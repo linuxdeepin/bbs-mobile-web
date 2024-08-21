@@ -1,5 +1,6 @@
 <template>
   <view class="user-page">
+    <NavH5 title="个人主页" />
     <nut-row>
       <nut-col span="22" offset="1">
         <template v-if="!userInfoLoading">
@@ -176,6 +177,7 @@ import { formatTime } from '@/utils/format';
 import { Comment, Eye } from "@nutui/icons-vue-taro";
 import { useAccountStore, usePromptStore } from "@/stores";
 import Tags from "@/widgets/tags.vue";
+import NavH5 from "@/widgets/navigation-h5.vue";
 
 const instance = Taro.getCurrentInstance()
 const account = useAccountStore()

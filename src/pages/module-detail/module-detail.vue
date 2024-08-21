@@ -1,5 +1,6 @@
 <template>
   <view class="module-detail-page">
+    <NavH5 title="版块详情" />
     <template v-if="!loading && forumInfo">
       <nut-cell-group>
         <nut-cell>
@@ -117,6 +118,7 @@ import { computedAsync } from "@vueuse/core";
 import TopIcon from '@/assets/top.svg';
 import { Comment, Eye, StarN, StarFillN } from "@nutui/icons-vue-taro";
 import { useAccountStore, useConfigStore } from "@/stores";
+import NavH5 from '@/widgets/navigation-h5.vue'
 
 const config = useConfigStore()
 const account = useAccountStore()
