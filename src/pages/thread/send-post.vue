@@ -212,7 +212,7 @@ const submitPost = async (captchaCode: string) => {
         Taro.eventCenter.trigger('sendPost')
     } catch (err) {
         console.log("create post", err)
-        prompt.showToast('fail', "发送失败，请稍后在试")
+        prompt.showToast('fail', "发送失败，请稍后再试")
     }
 }
 

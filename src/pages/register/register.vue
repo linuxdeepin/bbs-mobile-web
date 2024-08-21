@@ -97,7 +97,7 @@ const registerCode = async (captchaCode: string) => {
             setTimeout(() => account.gotoPasswordLogin(phone.value), 3000)
             return
         }
-        prompt.showToast('fail', "发送失败，请稍后在试", 2000)
+        prompt.showToast('fail', "发送失败，请稍后再试", 2000)
     }
 }
 
