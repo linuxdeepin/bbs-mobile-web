@@ -41,7 +41,8 @@
         </nut-skeleton>
       </view>
     </template>
-    <nut-pagination class="pagination" v-if="!loading && myFavoriteData?.total_count" v-model="pagination.page"
+    <nut-pagination class="pagination"
+      v-if="!loading && myFavoriteData && myFavoriteData.total_count > pagination.limit" v-model="pagination.page"
       mode="multi" :total-items="myFavoriteData?.total_count" :items-per-page="pagination.limit" />
     <nut-dialog title="提示" content="是否删除收藏" v-model:visible="delDialogShow" @ok="delFavorite" />
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"

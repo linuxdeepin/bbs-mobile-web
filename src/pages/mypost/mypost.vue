@@ -88,7 +88,7 @@
       </nut-tab-pane>
     </nut-tabs>
     <nut-pagination class="pagination"
-      v-if="!loading && (currentTab === 'mythread' ? myThreadData?.total_count : myPostData?.total_count)"
+      v-if="!loading && currentTab === 'mythread' ? myThreadData && myThreadData.total_count > pagination.limit : myPostData && myPostData?.total_count > pagination.limit"
       v-model="pagination.page" mode="multi"
       :total-items="currentTab === 'mythread' ? myThreadData?.total_count : myPostData?.total_count"
       :items-per-page="pagination.limit" @change="pageChange" />

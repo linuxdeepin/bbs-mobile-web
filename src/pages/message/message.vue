@@ -35,8 +35,10 @@
           @refresh="refreshData" />
       </nut-tab-pane>
     </nut-tabs>
-    <nut-pagination class="pagination" v-if="!isLoading && message?.total_count" v-model="pagination.page" mode="multi"
-      :total-items="message?.total_count" :items-per-page="pagination.limit" />
+    <view class="pagination">
+      <nut-pagination v-if="!isLoading && message?.total_count > pagination.limit" v-model="pagination.page" mode="multi"
+        :total-items="message?.total_count" :items-per-page="pagination.limit" />
+    </view>
     <Tabbar @tab-change="tabChange"></Tabbar>
     <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
