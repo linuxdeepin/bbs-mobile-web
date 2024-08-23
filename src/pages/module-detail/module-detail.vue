@@ -84,7 +84,7 @@
           </nut-cell-group>
         </template>
 
-        <view class="pagination" v-if="forumInfo">
+        <view class="pagination" v-if="forumInfo.total_count > pagination.limit">
           <nut-pagination v-model="pagination.page" mode="multi" :total-items="forumInfo.total_count"
             :items-per-page="pagination.limit" />
         </view>
