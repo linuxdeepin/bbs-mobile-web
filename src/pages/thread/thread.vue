@@ -31,7 +31,7 @@
                                         <span class="nickname"> {{ threadInfo.post.user.nickname }} </span>
                                         <img class="level" :src="threadInfo.user.levels.level_icon" />
                                     </view>
-                                    <Tags :user-id="threadInfo.user_id" />
+                                    <Tags :user-tags="userTags" :group-name="userGroupName" />
                                     <span class="stat">
                                         发帖时间： {{ formatTime(threadInfo.created_at, "YYYY-MM-DD HH:mm") }}
                                     </span>
@@ -153,7 +153,8 @@
                                                 <view class="info">
                                                     <span class="nickname"> {{ post.user.nickname }}</span>
                                                     <img class="level" :src="post.user.levels.level_icon" />
-                                                    <Tags :user-id="post.user.id" />
+                                                    <Tags :user-tags="getTagsByPostUserId(post.user.id)"
+                                                        :group-name="post.user.group_name" />
                                                 </view>
                                                 <span>
                                                     {{ (pagination.page - 1) * pagination.limit + index + 1 }}楼
@@ -280,7 +281,9 @@ import {
     PostListResponse,
     ThreadUserList,
     GetUserInfo,
-    WinnowThreadPostList
+    WinnowThreadPostList,
+    GetUserTag,
+    UserTags
 } from '@/api';
 import { computedAsync } from "@vueuse/core";
 import Tags from '@/widgets/tags.vue';
@@ -406,12 +409,19 @@ const threadInfo = ref<ThreadInfoData>()
 const threadResolved = ref(false)
 // 帖子是否已关闭
 const threadClosed = ref(false)
+// 楼主所属group name
+const userGroupName = ref("")
+// 楼主标签
+const userTags = ref<UserTags[]>([])
 computedAsync(async () => {
     threadRefresh.value
     const { data } = await ThreadInfo(threadID.value)
     threadInfo.value = data.data
     const { data: userInfo } = await GetUserInfo(threadInfo.value.user_id)
     banUser.value = !userInfo.allow_speak
+    userGroupName.value = userInfo.group_name
+    const { data: _userTags } = await GetUserTag(threadInfo.value.user_id)
+    userTags.value = _userTags.filter(tag => tag.lang === 'zh_CN')
     for (let i = 0; i < threadInfo.value.attrs.length; i++) {
         if (threadInfo.value.attrs[i].name === "Resolved") {
             threadResolved.value = true
@@ -461,6 +471,8 @@ const cancelReply = () => {
 const threadPosts = ref<PostListResponse>()
 // 刷新时是否滚动到回帖分割线
 const refreshScroll = ref(true)
+// 回复中的所有用户id以及标签
+const replyUserTags = ref<{ id: number, tags: UserTags[] }[]>([])
 computedAsync(async () => {
     // 在回复时，需要手动刷新
     postRefresh.value
@@ -469,7 +481,21 @@ computedAsync(async () => {
         pageSize: pagination.value.limit,
     })
     threadPosts.value = data
+    // 根据回复中的用户id获取用户Tag
+    for (var i = 0; i < threadPosts.value.data.length; i++) {
+        const post = threadPosts.value.data[i]
+        if (replyUserTags.value.some(user => user.id === post.user.id)) {
+            continue
+        }
+        const { data } = await GetUserTag(post.user.id)
+        replyUserTags.value.push({ id: post.user.id, tags: data.filter(tag => tag.lang === 'zh_CN') })
+    }
 }, undefined, { evaluating: postLoading })
+
+const getTagsByPostUserId = ((postUserId) => {
+    const tags = replyUserTags.value.find(user => user.id === postUserId)?.tags
+    return tags || []
+})
 
 // 翻页后滚动到回复分割线，如果是发帖后自动翻页则滚动到底部
 const sendPostScroll = ref(false)

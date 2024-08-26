@@ -18,7 +18,7 @@
                       <view class="nickname">{{ userInfo.nickname }}</view>
                       <img class="level" :src="userInfo.levels.level_icon" />
                     </view>
-                    <Tags :user-id="userInfo.id" />
+                    <Tags :user-tags="userTags" :group-name="userInfo.group_name" />
                     <view class="desc">{{ userInfo.desc || "这个人很懒，什么都没写" }}</view>
                   </view>
 
@@ -170,7 +170,9 @@ import {
   MyThreadResonse,
   MyPostResponse,
   PostOffset,
-  GetProhibitUser
+  GetProhibitUser,
+  UserTags,
+  GetUserTag
 } from "@/api"
 import { computedAsync } from "@vueuse/core";
 import { formatTime } from '@/utils/format';
@@ -191,6 +193,7 @@ type Tab = 'thread' | 'post'
 const userInfoLoading = ref(true)
 const loading = ref(true)
 const userInfo = ref<UserInfoResponse>()
+const userTags = ref<UserTags[]>([])
 const userThread = ref<MyThreadResonse>()
 const userPost = ref<MyPostResponse>()
 const currentTab = ref<Tab>('thread')
@@ -216,6 +219,8 @@ computedAsync(async () => {
   refresh.value
   const { data } = await GetUserInfo(userId.value)
   userInfo.value = data
+  const { data: tags } = await GetUserTag(userId.value)
+  userTags.value = tags.filter(tag => tag.lang === 'zh_CN')
 }, undefined, { evaluating: userInfoLoading })
 
 computedAsync(async () => {
