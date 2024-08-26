@@ -1,5 +1,5 @@
 <template>
-  <view class="module-detail-page">
+  <nut-config-provider :theme="config.theme" class="module-detail-page">
     <NavH5 title="版块详情" />
     <template v-if="!loading && forumInfo">
       <nut-cell-group>
@@ -49,13 +49,12 @@
           <nut-cell-group>
             <!-- 帖子标题 -->
             <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item)">
-              <template #desc>
-                <span class="module">【{{ item.type.name }}】</span>
-                <span class="title">
-                  {{ item.subject }}
-                </span>
-                <nut-tag class="resolved" color="green" plain
-                  v-if="item.attrs.some(attr => attr.name === 'Resolved')">已解决</nut-tag>
+              <template #title>
+                <view>
+                  【{{ item.type.name }}】{{ item.subject }}
+                  <nut-tag class="resolved" color="green" plain
+                    v-if="item.attrs.some(attr => attr.name === 'Resolved')">已解决</nut-tag>
+                </view>
               </template>
               <template #icon>
                 <img v-if="item.is_top_forum" style="width:20px;height: 20px;" :src="TopIcon" />
@@ -69,17 +68,17 @@
                 </nut-avatar>
               </template>
               <template #desc>
-                <div class="info-desc">
-                  <span class="nickname"> {{ item.user.nickname }}</span>
-                  <span class="stat">
-                    <span>
+                <view class="info-desc">
+                  <view class="nickname"> {{ item.user.nickname }}</view>
+                  <view class="stat">
+                    <view>
                       <Eye size="10"></Eye> {{ item.views_cnt }}
-                    </span>
-                    <span>
+                    </view>
+                    <view>
                       <Comment size="10"></Comment> {{ item.posts_cnt }}
-                    </span>
-                  </span>
-                </div>
+                    </view>
+                  </view>
+                </view>
               </template>
             </nut-cell>
           </nut-cell-group>
@@ -107,7 +106,7 @@
       </view>
     </view>
     <nut-dialog content="请先登录账号" v-model:visible="showLoginDialog" @ok="account.gotoLogin()" />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -183,6 +182,8 @@ watch(loading, () => {
 
 <style lang="scss">
 .module-detail-page {
+  padding: 0 10Px;
+
   .module-info {
     width: 100%;
 
@@ -247,9 +248,7 @@ watch(loading, () => {
 
   .thread-list {
     .thread-title {
-      .h5-span {
-        display: inline;
-      }
+      font-size: 16Px;
 
       .resolved {
         margin-left: 15rpx;
@@ -269,12 +268,13 @@ watch(loading, () => {
     .info-desc {
       display: flex;
       justify-content: space-between;
-      font-size: 0.8rem;
+      font-size: 14Px;
+      color: var(--text-desc-color);
 
       .stat {
         display: inline;
 
-        span {
+        view {
           display: inline;
           margin-left: 1rem;
         }

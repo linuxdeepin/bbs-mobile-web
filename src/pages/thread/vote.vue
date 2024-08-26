@@ -125,5 +125,9 @@ const voting = () => {
     max-width: 100%;
     word-wrap: break-word;
   }
+
+  .nut-radio-group {
+    width: 100%;
+  }
 }
 </style>

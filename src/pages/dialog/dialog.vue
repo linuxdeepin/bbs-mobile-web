@@ -1,5 +1,5 @@
 <template>
-  <view class="dialog-page">
+  <nut-config-provider :theme="config.theme" class="dialog-page">
     <NavH5 title="发私信" />
     <view class="dialog-content" v-if="!loading" v-for="letter in letters">
       <view class="time">
@@ -76,7 +76,7 @@
     </nut-row>
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -90,7 +90,7 @@ import { computedAsync } from "@vueuse/core";
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
 import Picture from '@/assets/picture.svg'
-import { useAccountStore, usePromptStore } from "@/stores";
+import { useAccountStore, usePromptStore, useConfigStore } from "@/stores";
 import { formatTime } from "@/utils/format"
 import unicodeEmoji from '@/pages/thread/unicodeEmoji.json'
 import customEmoji from '@/pages/thread/customEmoji.json'
@@ -98,6 +98,7 @@ import NavH5 from '@/widgets/navigation-h5.vue'
 
 const account = useAccountStore()
 const prompt = usePromptStore()
+const config = useConfigStore()
 const loading = ref(true);
 const instance = getCurrentInstance();
 const receiveUserId = ref(0);
@@ -365,7 +366,7 @@ watch(letters, (_, old) => {
     bottom: 0;
     width: 92vw;
     left: 4vw;
-    background-color: #fff;
+    background: var(--page-bg-color);
 
     form {
       margin-top: 0;
@@ -381,8 +382,10 @@ watch(letters, (_, old) => {
       .msg-input {
         flex: 1;
 
-        textarea {
+        textarea,
+        .taro-textarea {
           width: 100%;
+          background: var(--send-post-textarea-bg-color);
         }
       }
 
@@ -396,6 +399,10 @@ watch(letters, (_, old) => {
         height: 2rem;
       }
     }
+  }
+
+  .nut-tab-pane {
+    background: var(--emoji-pane-bg-color);
   }
 
   .emoji-list,

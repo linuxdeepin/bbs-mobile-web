@@ -17,6 +17,7 @@ declare module 'vue' {
     NutCheckbox: typeof import('@nutui/nutui-taro')['Checkbox']
     NutCheckboxGroup: typeof import('@nutui/nutui-taro')['CheckboxGroup']
     NutCol: typeof import('@nutui/nutui-taro')['Col']
+    NutConfigProvider: typeof import('@nutui/nutui-taro')['ConfigProvider']
     NutDialog: typeof import('@nutui/nutui-taro')['Dialog']
     NutDivider: typeof import('@nutui/nutui-taro')['Divider']
     NutEmpty: typeof import('@nutui/nutui-taro')['Empty']

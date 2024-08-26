@@ -1,5 +1,5 @@
 <template>
-  <view class="message-page">
+  <nut-config-provider :theme="config.theme" class="message-page">
     <nut-tabs v-model="tabs" swipeable auto-height @change="pagination.page = 1">
       <template #titles>
         <view class="tab-list">
@@ -43,7 +43,7 @@
     <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -52,10 +52,11 @@ import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import MessageTabPane from './message-tab-pane.vue'
-import { useTabsStore, usePromptStore } from '@/stores';
+import { useTabsStore, usePromptStore, useConfigStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue'
 
 const tabStore = useTabsStore()
+const config = useConfigStore()
 const prompt = usePromptStore()
 const tabs = ref(1)
 const tabList = ref([
@@ -143,7 +144,7 @@ const deleteMessage = async () => {
     justify-content: space-around;
     width: 100%;
     padding: 10px 5px;
-    background-color: #fff;
+    background-color: var(--page-bg-color);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 
     .tab-item {
@@ -152,7 +153,7 @@ const deleteMessage = async () => {
       justify-content: center;
       align-items: center;
       padding: 10px 10px 20px 10px;
-      color: black;
+      color: var(--text-color);
       cursor: pointer;
       font-size: 16Px;
     }

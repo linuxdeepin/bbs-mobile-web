@@ -1,106 +1,109 @@
 <template>
-    <view class="account-page">
-        <view v-if="account.loaded">
-            <view class="info" v-if="account.is_login">
-                <nut-row>
-                    <nut-col span="5" offset="1">
-                        <nut-avatar size="large" shape="round">
-                            <img :src="account.user_info.avatar" />
-                        </nut-avatar>
-                    </nut-col>
-                    <nut-col span="18">
-                        <view class="info-desc">
-                            <span class="nickname"> {{ account.user_info.nickname }} </span>
-                            <span class="desc">
-                                {{ account.user_info.desc }}
-                            </span>
-                        </view>
-                    </nut-col>
-                </nut-row>
-            </view>
-            <view class="login" v-else>
-                <nut-button type="primary" @click="clickLoginBtn()">登录</nut-button>
-            </view>
-            <view class="dataset">
-                <view class="item" span="6" offset="3" @click="toMyPost(false)">
-                    <span class="number">{{ account.user_info.threads_cnt }}</span>
-                    <span>帖子</span>
+    <nut-config-provider :theme="config.theme">
+        <view class="account-page">
+            <view v-if="account.loaded">
+                <view class="info" v-if="account.is_login">
+                    <nut-row>
+                        <nut-col span="5" offset="1">
+                            <nut-avatar size="large" shape="round">
+                                <img :src="account.user_info.avatar" />
+                            </nut-avatar>
+                        </nut-col>
+                        <nut-col span="18">
+                            <view class="info-desc">
+                                <span class="nickname"> {{ account.user_info.nickname }} </span>
+                                <span class="desc">
+                                    {{ account.user_info.desc }}
+                                </span>
+                            </view>
+                        </nut-col>
+                    </nut-row>
                 </view>
-                <view class="item" span="6" @click="toMyPost(true)">
-                    <span class="number">{{ Math.max(account.user_info.posts_cnt - account.user_info.threads_cnt, 0)
-                        }}</span>
-                    <span>回复</span>
+                <view class="login" v-else>
+                    <nut-button type="primary" @click="clickLoginBtn()">登录</nut-button>
                 </view>
-                <view class="item" span="6" @click="toFavorite">
-                    <span class="number">{{ account.user_info.favourite_cnt }}</span>
-                    <span>收藏</span>
+                <view class="dataset">
+                    <view class="item" span="6" offset="3" @click="toMyPost(false)">
+                        <span class="number">{{ account.user_info.threads_cnt }}</span>
+                        <span>帖子</span>
+                    </view>
+                    <view class="item" span="6" @click="toMyPost(true)">
+                        <span class="number">{{ Math.max(account.user_info.posts_cnt - account.user_info.threads_cnt, 0)
+                            }}</span>
+                        <span>回复</span>
+                    </view>
+                    <view class="item" span="6" @click="toFavorite">
+                        <span class="number">{{ account.user_info.favourite_cnt }}</span>
+                        <span>收藏</span>
+                    </view>
                 </view>
+                <view>
+                    <template v-if="account.is_login">
+                        <nut-cell title="我的帖子" is-link @click="toMyPost(false)">
+                            <template #desc>
+                                我的主题/回复
+                            </template>
+                        </nut-cell>
+                        <nut-cell title="我的收藏" is-link @click="toFavorite"></nut-cell>
+                        <nut-cell title="退出登录" is-link @click="account.logout()"></nut-cell>
+                        <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
+                    </template>
+                    <template v-else>
+                        <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
+                    </template>
+                </view>
+                <Tabbar />
             </view>
-            <view>
-                <template v-if="account.is_login">
-                    <nut-cell title="我的帖子" is-link @click="toMyPost(false)">
-                        <template #desc>
-                            我的主题/回复
-                        </template>
-                    </nut-cell>
-                    <nut-cell title="我的收藏" is-link @click="toFavorite"></nut-cell>
-                    <nut-cell title="退出登录" is-link @click="account.logout()"></nut-cell>
-                    <!-- <nut-cell title="我的消息" desc="暂不可用" is-link></nut-cell> -->
-                </template>
-                <template v-else>
-                    <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
-                </template>
-            </view>
-            <Tabbar />
-        </view>
-        <view v-else>
-            <nut-skeleton width="60vw" height="20px" title avatar row="3">
-            </nut-skeleton>
+            <view v-else>
+                <nut-skeleton width="60vw" height="20px" title avatar row="3">
+                </nut-skeleton>
 
-            <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
-            </nut-skeleton>
-        </view>
-        <!-- 提示信息 -->
-        <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
-            :duration="prompt.toast.duration" />
-        <!-- 登录方式选择 -->
-        <nut-action-sheet v-model:visible="loginAction.show" :menu-items="(loginAction.items as any)"
-            @choose="$event.callback()" />
-        <!-- 密码登录 -->
-        <nut-popup position="bottom" :close-on-click-overlay="true" :style="{ height: '220px' }"
-            v-model:visible="loginByPassword.show" safe-area-inset-bottom>
-            <view class="login-by-password">
-                <nut-input v-model="loginByPassword.username" :readonly="loginByPassword.usernameReadonly"
-                    placeholder="请输入手机号或用户名" />
-                <nut-input v-model="loginByPassword.password" placeholder="请输入密码" type="password" />
-                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx"
-                    @verify="captcha.verify">
-                </ne-captcha>
-                <view class="reset-password">
-                    <span @click="resetPassword()">忘记密码</span>
-                </view>
-                <view class="btn-group">
-                    <nut-button type="primary"
-                        @click="captcha.tryVerify((code) => loginByPassword.login(code))">登录</nut-button>
-                    <nut-button type="default" @click="loginByPassword.show = false">取消</nut-button>
-                </view>
+                <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
+                </nut-skeleton>
             </view>
-        </nut-popup>
+            <!-- 提示信息 -->
+            <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+                :duration="prompt.toast.duration" />
+            <!-- 登录方式选择 -->
+            <nut-action-sheet v-model:visible="loginAction.show" :menu-items="(loginAction.items as any)"
+                @choose="$event.callback()" />
+            <!-- 密码登录 -->
+            <nut-popup position="bottom" :close-on-click-overlay="true" :style="{ height: '220px' }"
+                v-model:visible="loginByPassword.show" safe-area-inset-bottom>
+                <view class="login-by-password">
+                    <nut-input v-model="loginByPassword.username" :readonly="loginByPassword.usernameReadonly"
+                        placeholder="请输入手机号或用户名" />
+                    <nut-input v-model="loginByPassword.password" placeholder="请输入密码" type="password" />
+                    <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx"
+                        @verify="captcha.verify">
+                    </ne-captcha>
+                    <view class="reset-password">
+                        <span @click="resetPassword()">忘记密码</span>
+                    </view>
+                    <view class="btn-group">
+                        <nut-button type="primary"
+                            @click="captcha.tryVerify((code) => loginByPassword.login(code))">登录</nut-button>
+                        <nut-button type="default" @click="loginByPassword.show = false">取消</nut-button>
+                    </view>
+                </view>
+            </nut-popup>
 
-        <nut-dialog no-cancel-btn :title="bindDialog.title" :content="bindDialog.content"
-            v-model:visible="bindDialog.visible" />
-    </view>
+            <nut-dialog no-cancel-btn :title="bindDialog.title" :content="bindDialog.content"
+                v-model:visible="bindDialog.visible" />
+        </view>
+    </nut-config-provider>
 </template>
 <script lang="ts" setup>
 
 import { ref } from 'vue';
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useTabsStore, useAccountStore, usePromptStore, } from '@/stores'
+import { useTabsStore, useAccountStore, usePromptStore, useConfigStore } from '@/stores'
 import Tabbar from '@/widgets/tabbar.vue'
 
 const tabs = useTabsStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
+const config = useConfigStore()
 const captcha = account.useForceCaptcha()
 const instance = Taro.getCurrentInstance()
 const isH5 = process.env.TARO_ENV === "h5";
@@ -234,7 +237,7 @@ const toFavorite = () => {
 .account-page {
     padding: 1rem;
     min-height: 90vh;
-    background: linear-gradient(to bottom, #1890ff 10rem, whitesmoke 10rem);
+    background: var(--account-bg-color);
 
     .info {
         margin-top: 1rem;
@@ -265,7 +268,7 @@ const toFavorite = () => {
     .dataset {
         display: flex;
         width: 100%;
-        background-color: white;
+        background-color: var(--page-bg-color);
         justify-content: space-around;
         border-radius: 4px;
 
@@ -277,10 +280,10 @@ const toFavorite = () => {
             width: 30%;
             height: 4rem;
             font-size: small;
-            color: gray;
+            color: var(--text-desc-color);
 
             .number {
-                color: black;
+                color: var(--text-color);
                 font-size: large;
             }
         }

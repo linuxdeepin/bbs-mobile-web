@@ -3,12 +3,12 @@
     <view class="thread-op">
       <view class="thread-op-item" hover-class="btn-clicked" hover-stay-time="200" @click="upThread">
         <img :src="threadInfo.is_up ? UpFillIcon : UpIcon" />
-        <text>{{ `点赞${threadInfo.like_cnt}` }}</text>
+        <view>{{ `点赞${threadInfo.like_cnt}` }}</view>
 
       </view>
       <view class="thread-op-item" hover-class="btn-clicked" hover-stay-time="200" @click="favoriteThread">
         <img :src="threadInfo.is_favorite ? FavoriteFillIcon : FavoriteIcon" />
-        <text>{{ `收藏${threadInfo.favourite_cnt}` }}</text>
+        <view>{{ `收藏${threadInfo.favourite_cnt}` }}</view>
       </view>
       <!-- 楼主更多操作 -->
       <view v-if="account.is_login && account.user_info.id === threadInfo.user_id" hover-class="btn-clicked"
@@ -24,7 +24,7 @@
       <view v-if="account.is_login && isModerator" hover-class="btn-clicked" hover-stay-time="200"
         class="thread-op-item right" @click="checkModeratorState">
         <img :src="ManagerIcon" />
-        <text>管理</text>
+        <view>管理</view>
       </view>
     </view>
     <nut-dialog content="是否确认删除该条帖子" v-model:visible="showDelThreadDialog" @ok="deleteThread" />
@@ -104,7 +104,7 @@
     </nut-dialog>
     <!-- 选择版块弹窗 -->
     <nut-popup v-model:visible="showForumSelection" round position="bottom" :style="{ height: '50%' }"
-      safe-area-inset-bottom>
+      safe-area-inset-bottom pop-class="forum-popup">
       <nut-tabs v-model="activeForumTab" title-scroll style="height: 100%" direction="vertical"
         @change="console.log(activeForumTab)">
         <!-- 按分类渲染版块 -->
@@ -519,25 +519,27 @@ const favoriteThread = async () => {
   align-items: center;
 
   .btn-clicked {
-    background-color: #f5f5f5;
+    background-color: var(--btn-clicked-bg-color);
   }
 
   .thread-op-item {
     display: flex;
     align-items: center;
     color: #97a3b4;
-    margin-right: 13rpx;
-    padding: 10rpx;
-    border-radius: 12rpx;
+    margin-right: 6Px;
+    padding: 5Px;
+    border-radius: 6Px;
 
     img {
-      width: 30rpx;
-      height: 30rpx;
+      width: 16Px;
+      height: 16Px;
     }
 
-    text {
-      font-size: 28rpx;
+    view {
+      font-size: 16Px;
       white-space: nowrap;
+      height: 16Px;
+      line-height: 1;
     }
 
     &.right {
@@ -561,10 +563,31 @@ const favoriteThread = async () => {
   }
 }
 
+.forum-popup {
+
+  .nut-tabs__titles,
+  .nut-tabs__titles-item {
+    background: var(--nut-tab-title-bg-color);
+    color: var(--text-color)
+  }
+
+  .nut-tabs__titles-item.active {
+    background: var(--nut-tab-title-active-bg-color) !important;
+    color: var(--text-color) !important;
+  }
+
+  .cell-group-title {
+    color: var(--text-color);
+  }
+}
 
 .theme-popup {
   .nut-popup {
     padding: 20rpx;
+  }
+
+  .cell-group-title {
+    color: var(--text-color);
   }
 }
 

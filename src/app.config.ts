@@ -15,11 +15,13 @@ export default defineAppConfig({
     "pages/module-detail/module-detail",
     "pages/user/user",
   ],
+  darkmode: true,
+  themeLocation: "theme.json",
   window: {
-    backgroundTextStyle: "dark",
-    navigationBarBackgroundColor: "#fff",
+    backgroundTextStyle: "@bgTextStyleColor",
+    navigationBarBackgroundColor: "@navBarBgColor",
     navigationBarTitleText: "WeChat",
-    navigationBarTextStyle: "black",
+    navigationBarTextStyle: "@navBarTextStyle",
   },
   plugins: {
     // 网易易盾验证码

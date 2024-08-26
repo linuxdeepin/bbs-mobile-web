@@ -1,5 +1,5 @@
 <template>
-  <view class="favorite-page">
+  <nut-config-provider :theme="config.theme" class="favorite-page">
     <NavH5 title="我的收藏" />
     <template v-if="!loading">
       <template v-if="myFavoriteData?.total_count">
@@ -48,7 +48,7 @@
     <nut-dialog title="提示" content="是否删除收藏" v-model:visible="delDialogShow" @ok="delFavorite" />
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -58,10 +58,11 @@ import { GetMyFavorite, MyFavoriteResponse, ThreadFavorite } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import { formatTime } from '@/utils/format';
 import { Del } from "@nutui/icons-vue-taro";
-import { usePromptStore } from '@/stores';
+import { usePromptStore, useConfigStore } from '@/stores';
 import NavH5 from '@/widgets/navigation-h5.vue'
 
 const prompt = usePromptStore()
+const config = useConfigStore()
 const delDialogShow = ref(false)
 const delFavoriteId = ref(0)
 const init = ref(true)
@@ -127,7 +128,7 @@ const delFavorite = () => {
 
         .time {
           margin-left: 10rpx;
-          color: #97a3b4;
+          color: var(--text-desc-color);
         }
       }
     }

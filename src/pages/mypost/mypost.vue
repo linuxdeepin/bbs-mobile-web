@@ -1,5 +1,5 @@
 <template>
-  <view class="mypost-page">
+  <nut-config-provider :theme="config.theme" class="mypost-page">
     <NavH5 title="我的帖子" />
     <nut-tabs v-model="currentTab" swipeable auto-height @change="tabChange">
       <template #titles>
@@ -93,7 +93,7 @@
       v-model="pagination.page" mode="multi"
       :total-items="currentTab === 'mythread' ? myThreadData?.total_count : myPostData?.total_count"
       :items-per-page="pagination.limit" @change="pageChange" />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -104,10 +104,12 @@ import { formatTime } from '@/utils/format';
 import { Comment, Eye } from "@nutui/icons-vue-taro";
 import Taro from '@tarojs/taro';
 import NavH5 from '@/widgets/navigation-h5.vue'
+import { useConfigStore } from '@/stores';
 
 type Tab = 'mythread' | 'mypost'
 
 const instance = getCurrentInstance();
+const config = useConfigStore()
 const init = ref(true)
 const loading = ref(true)
 const currentTab = ref<Tab>('mythread')
@@ -212,7 +214,7 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
     justify-content: space-around;
     width: 100%;
     padding: 10px 5px;
-    background-color: #fff;
+    background-color: var(--page-bg-color);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 
     .tab-item {
@@ -221,7 +223,7 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
       justify-content: center;
       align-items: center;
       padding: 10px 10px 20px 10px;
-      color: black;
+      color: var(--text-color);
       cursor: pointer;
       font-size: 16Px;
     }
@@ -251,7 +253,7 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
 
         .time {
           margin-left: 10rpx;
-          color: #97a3b4;
+          color: var(--text-desc-color);
         }
       }
 
@@ -263,7 +265,7 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
 
         .stat {
           display: inline;
-          color: #97a3b4;
+          color: var(--text-desc-color);
 
           view {
             margin-left: 5rpx;
@@ -283,17 +285,17 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
         justify-content: space-between;
 
         .nickname {
-          color: #494949;
+          color: var(--text-desc-color);
         }
 
         .time {
-          color: #97a3b4;
+          color: var(--text-desc-color);
         }
       }
 
       .content {
         margin: 12rpx 0;
-        color: #000;
+        color: var(--text-color);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -302,8 +304,8 @@ const goToPost = async (post: MyPostResponse["data"][0]) => {
 
       .quote {
         margin: 10rpx 0;
-        color: #333;
-        background-color: #f8f8f8;
+        color: var(--text-desc-color);
+        background-color: var(--reply-bg-color);
         border-radius: var(--nut-cell-border-radius, 12rpx);
         padding: 12rpx;
         overflow: hidden;

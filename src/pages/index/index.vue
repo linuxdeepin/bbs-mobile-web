@@ -1,77 +1,78 @@
 <template>
-  <NavComponent show-search></NavComponent>
-  <view class="index-page">
-    <!-- 轮播图 -->
-    <view class="carousel" v-if="!config.carouselState.isLoading">
-      <nut-swiper :init-page="0" :pagination-visible="true" pagination-color="#426543" auto-play="3000">
-        <nut-swiper-item v-for="item in config.carouselState.state?.cards" @click="goLike(item.link)">
-          <img :src="apiServer + item.img.url" :alt="item.title" />
-        </nut-swiper-item>
-      </nut-swiper>
-    </view>
-    <!-- 轮播图的骨架图 -->
-    <nut-skeleton v-else width="100vw" height="200px" :title="false" animated row="1">
-    </nut-skeleton>
-    <!-- 帖子列表 -->
-    <view class="thread-list" v-if="!isLoading">
-      <template v-for="item in threadIndexResponse.ThreadIndex">
-        <template v-if="item.user.id">
-          <nut-cell-group>
-            <!-- 帖子标题 -->
-            <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item)">
-              <template #desc>
-                <span class="module">【{{ item.type.name }}】</span>
-                <span class="title">
-                  {{ item.subject }}
-                </span>
-                <nut-tag class="resolved" color="green" plain
-                  v-if="item.attrs.some(attr => attr.name === 'Resolved')">已解决</nut-tag>
-              </template>
-              <template #icon>
-                <img v-if="item.top" style="width:20px;height: 20px;" :src="TopIcon" />
-              </template>
-            </nut-cell>
-            <!-- 帖子信息 -->
-            <nut-cell class="info" desc-text-align="left">
-              <template #icon>
-                <nut-avatar size="16" shape="round">
-                  <img :src="item.user.avatar" />
-                </nut-avatar>
-              </template>
-              <template #desc>
-                <div class="info-desc">
-                  <span class="nickname"> {{ item.user.nickname }}</span>
-                  <span class="stat">
-                    <span>
-                      <Eye size="10"></Eye> {{ item.views_cnt }}
-                    </span>
-                    <span>
-                      <Comment size="10"></Comment> {{ item.posts_cnt }}
-                    </span>
-                  </span>
-                </div>
-              </template>
-            </nut-cell>
-          </nut-cell-group>
+  <nut-config-provider :theme='config.theme'>
+    <NavComponent show-search></NavComponent>
+    <view class="index-page">
+      <!-- 轮播图 -->
+      <view class="carousel" v-if="!config.carouselState.isLoading">
+        <nut-swiper :init-page="0" :pagination-visible="true" pagination-color="#426543" auto-play="3000">
+          <nut-swiper-item v-for="item in config.carouselState.state?.cards" @click="goLike(item.link)">
+            <img :src="apiServer + item.img.url" :alt="item.title" />
+          </nut-swiper-item>
+        </nut-swiper>
+      </view>
+      <!-- 轮播图的骨架图 -->
+      <nut-skeleton v-else width="100vw" height="200px" :title="false" animated row="1">
+      </nut-skeleton>
+      <!-- 帖子列表 -->
+      <view class="thread-list" v-if="!isLoading">
+        <template v-for="item in threadIndexResponse.ThreadIndex">
+          <template v-if="item.user.id">
+            <nut-cell-group>
+              <!-- 帖子标题 -->
+              <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item)">
+                <template #title>
+                  <view>
+                    【{{ item.type.name }}】{{ item.subject }}
+                    <nut-tag class="resolved" color="green" plain
+                      v-if="item.attrs.some(attr => attr.name === 'Resolved')">已解决</nut-tag>
+                  </view>
+                </template>
+                <template #icon>
+                  <img v-if="item.top" style="width:20px;height: 20px;" :src="TopIcon" />
+                </template>
+              </nut-cell>
+              <!-- 帖子信息 -->
+              <nut-cell class="info" desc-text-align="left">
+                <template #icon>
+                  <nut-avatar size="16" shape="round">
+                    <img :src="item.user.avatar" />
+                  </nut-avatar>
+                </template>
+                <template #desc>
+                  <view class="info-desc">
+                    <view class="nickname"> {{ item.user.nickname }}</view>
+                    <view class="stat">
+                      <view>
+                        <Eye size="10"></Eye> {{ item.views_cnt }}
+                      </view>
+                      <view>
+                        <Comment size="10"></Comment> {{ item.posts_cnt }}
+                      </view>
+                    </view>
+                  </view>
+                </template>
+              </nut-cell>
+            </nut-cell-group>
+          </template>
         </template>
-      </template>
 
-      <view class="pagination" v-if="threadIndexResponse">
-        <nut-pagination v-model="pagination.page" mode="multi" :total-items="threadIndexResponse.total_count"
-          :items-per-page="pagination.limit" />
+        <view class="pagination" v-if="threadIndexResponse">
+          <nut-pagination v-model="pagination.page" mode="multi" :total-items="threadIndexResponse.total_count"
+            :items-per-page="pagination.limit" />
+        </view>
       </view>
-    </view>
-    <!-- 帖子列表的骨架图 -->
-    <view v-else>
-      <view class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7]">
-        <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
-        </nut-skeleton>
+      <!-- 帖子列表的骨架图 -->
+      <view v-else>
+        <view class="skeleton-container" v-for=" in [1, 2, 3, 4, 5, 6, 7]">
+          <nut-skeleton width="90vw" height="20px" title animated avatarSize="40px" row="2">
+          </nut-skeleton>
+        </view>
       </view>
+      <!-- 分页组件 -->
+      <!-- 底部标签切换 -->
+      <Tabbar @tabChange="tabChange"></Tabbar>
     </view>
-    <!-- 分页组件 -->
-    <!-- 底部标签切换 -->
-    <Tabbar @tabChange="tabChange"></Tabbar>
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -167,9 +168,7 @@ useShareTimeline(() => {
 
   .thread-list {
     .thread-title {
-      .h5-span {
-        display: inline;
-      }
+      font-size: 16Px;
 
       .resolved {
         margin-left: 15rpx;
@@ -189,12 +188,13 @@ useShareTimeline(() => {
     .info-desc {
       display: flex;
       justify-content: space-between;
-      font-size: 0.8rem;
+      font-size: 14Px;
+      color: var(--text-desc-color);
 
       .stat {
         display: inline;
 
-        span {
+        view {
           display: inline;
           margin-left: 1rem;
         }

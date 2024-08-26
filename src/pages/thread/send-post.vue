@@ -255,7 +255,7 @@ const tabEmojiValue = ref(0)
     width: 92vw;
     left: 4vw;
 
-    background-color: white;
+    background: var(--page-bg-color);
 
     form {
         margin-top: 0;
@@ -271,8 +271,10 @@ const tabEmojiValue = ref(0)
         .msg-input {
             flex: 1;
 
-            textarea {
+            textarea,
+            .taro-textarea {
                 width: 100%;
+                background: var(--send-post-textarea-bg-color);
             }
         }
 
@@ -299,7 +301,7 @@ const tabEmojiValue = ref(0)
         margin-bottom: 10rpx;
 
         .title {
-            color: #333;
+            color: var(--text-desc-color);
         }
 
         .nickname {
@@ -316,7 +318,7 @@ const tabEmojiValue = ref(0)
         margin: 10rpx 0;
 
         .title {
-            color: #333;
+            color: var(--text-desc-color);
         }
 
         .image-list {
@@ -354,6 +356,10 @@ const tabEmojiValue = ref(0)
                 }
             }
         }
+    }
+
+    .nut-tab-pane {
+        background: var(--emoji-pane-bg-color);
     }
 
     .emoji-list,
