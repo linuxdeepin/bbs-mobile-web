@@ -1,5 +1,5 @@
 <template>
-  <view class="user-page">
+  <nut-config-provider :theme="config.theme" class="user-page">
     <NavH5 title="个人主页" />
     <nut-row>
       <nut-col span="22" offset="1">
@@ -156,7 +156,7 @@
     </nut-dialog>
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -175,13 +175,14 @@ import {
 import { computedAsync } from "@vueuse/core";
 import { formatTime } from '@/utils/format';
 import { Comment, Eye } from "@nutui/icons-vue-taro";
-import { useAccountStore, usePromptStore } from "@/stores";
+import { useAccountStore, usePromptStore, useConfigStore } from "@/stores";
 import Tags from "@/widgets/tags.vue";
 import NavH5 from "@/widgets/navigation-h5.vue";
 
 const instance = Taro.getCurrentInstance()
 const account = useAccountStore()
 const prompt = usePromptStore()
+const config = useConfigStore()
 const userId = ref(0)
 if (instance.router) {
   userId.value = Number(instance.router.params["id"] || 0)
@@ -311,6 +312,7 @@ const goToDialog = () => {
         .nickname {
           font-size: 5vw;
           font-weight: bold;
+          color: var(--text-color);
         }
 
         .level {
@@ -322,7 +324,7 @@ const goToDialog = () => {
 
       .desc {
         font-size: 4vw;
-        color: #999;
+        color: var(--text-desc-color);
       }
     }
 
@@ -343,7 +345,7 @@ const goToDialog = () => {
 
           .item-label {
             font-size: 4vw;
-            color: #999;
+            color: var(--text-desc-color);
           }
 
           .item-value {
@@ -370,7 +372,7 @@ const goToDialog = () => {
     justify-content: space-around;
     width: 100%;
     padding: 10px 5px;
-    background-color: #fff;
+    background-color: var(--page-bg-color);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 
     .tab-item {
@@ -379,7 +381,7 @@ const goToDialog = () => {
       justify-content: center;
       align-items: center;
       padding: 10px 10px 20px 10px;
-      color: black;
+      color: var(--text-color);
       cursor: pointer;
       font-size: 16Px;
     }
@@ -421,7 +423,7 @@ const goToDialog = () => {
 
         .stat {
           display: inline;
-          color: #97a3b4;
+          color: var(--text-desc-color);
 
           view {
             margin-left: 5rpx;
@@ -441,17 +443,17 @@ const goToDialog = () => {
         justify-content: space-between;
 
         .nickname {
-          color: #494949;
+          color: var(--text-color);
         }
 
         .time {
-          color: #97a3b4;
+          color: var(--text-desc-color);
         }
       }
 
       .content {
         margin: 12rpx 0;
-        color: #000;
+        color: var(--text-color);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -460,8 +462,8 @@ const goToDialog = () => {
 
       .quote {
         margin: 10rpx 0;
-        color: #333;
-        background-color: #f8f8f8;
+        color: var(--text-color);
+        background-color: var(--reply-bg-color);
         border-radius: var(--nut-cell-border-radius, 12rpx);
         padding: 12rpx;
         overflow: hidden;

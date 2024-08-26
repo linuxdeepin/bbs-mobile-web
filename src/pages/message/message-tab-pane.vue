@@ -143,11 +143,11 @@ const delBtnClicked = (id: number) => {
     justify-content: space-between;
     align-items: center;
     padding: 20px 5vw;
-    background: rgb(245, 246, 248);
+    background: var(--msg-pane-topbar-bg-color);
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
 
     .title {
-      color: #333;
+      color: var(--text-desc-color);
       font-size: 16Px;
     }
   }
@@ -165,7 +165,11 @@ const delBtnClicked = (id: number) => {
       }
 
       .nickname {
-        color: #333;
+        color: var(--text-desc-color);
+      }
+
+      .time {
+        color: var(--text-desc-color);
       }
     }
 
@@ -179,11 +183,11 @@ const delBtnClicked = (id: number) => {
         align-items: center;
 
         .nickname {
-          color: #333;
+          color: var(--text-desc-color);
         }
 
         .time {
-          color: #999;
+          color: var(--text-desc-color);
         }
       }
 
@@ -195,7 +199,7 @@ const delBtnClicked = (id: number) => {
 
         .content {
           flex: 1;
-          color: #999;
+          color: var(--text-desc-color);
           overflow: hidden;
           text-overflow: ellipsis;
           display: -webkit-box;
@@ -211,7 +215,7 @@ const delBtnClicked = (id: number) => {
 
       .content {
         padding: 5px 0;
-        color: #333;
+        color: var(--text-desc-color);
         /** 最多显示两行，超出显示省略号 **/
         overflow: hidden;
         text-overflow: ellipsis;
@@ -224,7 +228,7 @@ const delBtnClicked = (id: number) => {
         display: flex;
 
         .title {
-          color: #999;
+          color: var(--text-desc-color);
           white-space: nowrap;
           padding: 5px 0;
         }
@@ -236,15 +240,15 @@ const delBtnClicked = (id: number) => {
 
         .nickname {
           padding: 5px 0;
-          color: #333;
+          color: var(--text-desc-color);
           white-space: nowrap;
         }
       }
 
       .thread-title {
         display: block;
-        background-color: #f8f8f8;
-        color: #333;
+        background-color: var(--reply-bg-color);
+        color: var(--text-desc-color);
         border-radius: 4px;
         padding: 10px 10px;
         margin-top: 10px;

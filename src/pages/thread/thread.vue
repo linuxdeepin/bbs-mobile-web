@@ -1,5 +1,5 @@
 <template>
-    <view class="thread-page">
+    <nut-config-provider :theme="config.theme" class="thread-page">
         <NavH5 title="帖子详情" />
         <nut-row v-if="!infoLoading && threadInfo">
             <!-- 标题 -->
@@ -7,12 +7,10 @@
                 <view>
                     <nut-cell-group>
                         <nut-cell class="thread" desc-text-align="left">
-                            <template #desc>
-                                <span class="module">【{{ threadInfo.type.name }}】</span>
-                                <span class="title">
-                                    {{ !banUser ? threadInfo.subject : '用户被禁言，该内容已隐藏' }}
-                                </span>
-                                <nut-tag class="resolved" v-if="threadResolved" plain color="green">已解决</nut-tag>
+                            <template #title>
+                                <view>【{{ threadInfo.type.name }}】{{ !banUser ? threadInfo.subject : '用户被禁言，该内容已隐藏' }}
+                                    <nut-tag class="resolved" v-if="threadResolved" plain color="green">已解决</nut-tag>
+                                </view>
                             </template>
                             <template #icon>
                                 <img v-if="threadInfo.top && !banUser" style="width:20px;height: 20px;"
@@ -261,7 +259,7 @@
 
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
-    </view>
+    </nut-config-provider>
 </template>
 <script lang="ts" setup>
 import { watch, ref, watchEffect } from 'vue';
@@ -636,6 +634,7 @@ watchEffect(() => {
         flex-direction: column;
         justify-content: space-between;
         height: 100%;
+        color: var(--text-desc-color);
 
         .info {
             display: flex;
@@ -657,6 +656,14 @@ watchEffect(() => {
                 margin-right: 10rpx;
             }
         }
+    }
+
+    .thread-message {
+        color: var(--text-color);
+    }
+
+    .post-message {
+        color: var(--text-desc-color);
     }
 
     .html-message {
@@ -684,6 +691,7 @@ watchEffect(() => {
 
     .post-title {
         font-size: 18Px;
+        color: var(--text-color);
     }
 
     .del-message {
@@ -715,7 +723,7 @@ watchEffect(() => {
     // 回贴引用
     .son-post {
         border-radius: var(--nut-cell-border-radius, 12rpx);
-        background-color: #eee;
+        background-color: var(--reply-bg-color);
         padding: 12rpx;
     }
 

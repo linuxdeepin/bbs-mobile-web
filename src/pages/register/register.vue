@@ -1,53 +1,56 @@
 <template>
-    <view class="register-page">
-        <NavH5 title="注册" />
-        <nut-skeleton width="60vw" height="20px" title avatar row="3">
-        </nut-skeleton>
-        <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
-        </nut-skeleton>
-        <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
-            :duration="prompt.toast.duration" />
-        <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '40%' }"
-            v-model:visible="showRegister">
-            <view class="register">
+    <nut-config-provider :theme="config.theme">
+        <view class="register-page">
+            <NavH5 title="注册" />
+            <nut-skeleton width="60vw" height="20px" title avatar row="3">
+            </nut-skeleton>
+            <nut-skeleton class="menu-skeleton" width="90vw" height="40px" title animated row="5">
+            </nut-skeleton>
+            <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
+                :duration="prompt.toast.duration" />
+            <nut-popup position="bottom" :close-on-click-overlay="false" :style="{ height: '40%' }"
+                v-model:visible="showRegister">
+                <view class="register">
 
-                <nut-input v-model="phone" placeholder="手机号" clearable>
-                    <template #right>
-                        <nut-button type="info" size="small" :disabled="!phoneValid || codeSent"
-                            @click="captcha.tryVerify(registerCode)">获取验证码</nut-button>
-                    </template>
-                </nut-input>
-                <nut-input v-model="phoneCode" placeholder="手机验证码" />
+                    <nut-input v-model="phone" placeholder="手机号" clearable>
+                        <template #right>
+                            <nut-button type="info" size="small" :disabled="!phoneValid || codeSent"
+                                @click="captcha.tryVerify(registerCode)">获取验证码</nut-button>
+                        </template>
+                    </nut-input>
+                    <nut-input v-model="phoneCode" placeholder="手机验证码" />
 
-                <nut-checkbox v-for="(item, index) in registerAgreementList" v-model="agreeList[index]">
-                    我已阅读并同意
-                    <span class="link" @tap="showAgree(item.id)">{{ item.name }}</span>
-                </nut-checkbox>
+                    <nut-checkbox v-for="(item, index) in registerAgreementList" v-model="agreeList[index]">
+                        我已阅读并同意
+                        <span class="link" @tap="showAgree(item.id)">{{ item.name }}</span>
+                    </nut-checkbox>
 
-                <!-- 网易易盾验证码，小程序插件引入 -->
-                <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx"
-                    @verify="captcha.verify">
-                </ne-captcha>
-                <nut-button :type="btnDisable ? 'default' : 'primary'" @click="captcha.tryVerify(register)"
-                    :disabled="btnDisable">
-                    注册
-                </nut-button>
-            </view>
-        </nut-popup>
-        <nut-popup :style="{ height: '80vh', width: '90vw', padding: '10px' }" v-model:visible="showAgreement">
-            <rich-text :nodes="agreementContent"></rich-text>
-        </nut-popup>
-    </view>
+                    <!-- 网易易盾验证码，小程序插件引入 -->
+                    <ne-captcha :id="captcha.elementID" :captcha-id="captcha.captchaID" width="640rpx"
+                        @verify="captcha.verify">
+                    </ne-captcha>
+                    <nut-button :type="btnDisable ? 'default' : 'primary'" @click="captcha.tryVerify(register)"
+                        :disabled="btnDisable">
+                        注册
+                    </nut-button>
+                </view>
+            </nut-popup>
+            <nut-popup :style="{ height: '80vh', width: '90vw', padding: '10px' }" v-model:visible="showAgreement">
+                <rich-text :nodes="agreementContent"></rich-text>
+            </nut-popup>
+        </view>
+    </nut-config-provider>
 </template>
 <script lang="ts" setup>
 import Taro from '@tarojs/taro'
 import { ref, computed } from 'vue';
-import { useAccountStore, usePromptStore } from '@/stores'
+import { useAccountStore, usePromptStore, useConfigStore } from '@/stores'
 import { GetAgreement } from '@/api';
 import NavH5 from "@/widgets/navigation-h5.vue";
 
 const account = useAccountStore()
 const prompt = usePromptStore()
+const config = useConfigStore()
 
 // 注册验证码
 const captcha = account.useForceCaptcha()
@@ -139,7 +142,7 @@ const showAgree = (id: string) => {
 .register-page {
     padding: 1rem;
     min-height: 90vh;
-    background: linear-gradient(to bottom, #1890ff 10rem, whitesmoke 10rem);
+    background: var(--account-bg-color);
 
     .menu-skeleton {
         margin-top: 10vh;
@@ -158,7 +161,7 @@ const showAgree = (id: string) => {
         }
 
         button[disabled] {
-            color: grey;
+            color: var(--text-desc-color);
         }
 
         .link {

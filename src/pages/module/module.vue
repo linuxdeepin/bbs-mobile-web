@@ -1,5 +1,5 @@
 <template>
-  <view class="module-page">
+  <nut-config-provider :theme="config.theme" class="module-page">
     <template v-if="account.is_login && favoriteForumList && favoriteForumList.length">
       <nut-cell-group>
         <template #title>
@@ -42,7 +42,7 @@
       </nut-cell-group>
     </template>
     <Tabbar />
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -51,10 +51,11 @@ import { GetForum, UserForumFavoriteList } from '@/api'
 import { computedAsync } from '@vueuse/core';
 import Tabbar from '@/widgets/tabbar.vue';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useAccountStore, useTabsStore } from "@/stores";
+import { useAccountStore, useTabsStore, useConfigStore } from "@/stores";
 
 const account = useAccountStore()
 const tab = useTabsStore()
+const config = useConfigStore()
 
 const forumList = computedAsync(async () => {
   const { data } = await GetForum()
@@ -87,13 +88,13 @@ const toModuleDetail = (forumId: number) => {
 
 <style lang="scss">
 .module-page {
-  padding: 0 20rpx 4rem;
-
+  padding: 0 10Px 4rem;
 
   .forum-title {
     padding: 20rpx 20rpx 10rpx 20rpx;
     font-weight: 700;
     font-size: 5vw;
+    color: var(--text-color)
   }
 
   .forum-item {

@@ -1,5 +1,5 @@
 <template>
-    <view class="search-page">
+    <nut-config-provider :theme="config.theme" class="search-page">
         <NavH5 title="搜索" />
         <!-- TODO autofocus 属性在h5环境会导致页面有卡顿的情况 -->
         <nut-searchbar v-model="keyword" autofocus @search="searchSubmit" @clear="showHistory = true">
@@ -32,18 +32,14 @@
                     <nut-cell-group>
                         <!-- 帖子标题 -->
                         <nut-cell class="thread-title" desc-text-align="left" is-link @click="goThread(item.id)">
-                            <template #desc>
-                                <span class="title">
-                                    <view v-html="item.subject"></view>
-                                </span>
+                            <template #title>
+                                <view v-html="item.subject"></view>
                             </template>
                         </nut-cell>
                         <!-- 帖子信息 -->
                         <nut-cell class="thread-content" desc-text-align="left">
                             <template #desc>
-                                <span class="content">
-                                    <view v-html="item.content"></view>
-                                </span>
+                                <view v-html="item.content"></view>
                             </template>
                         </nut-cell>
                     </nut-cell-group>
@@ -64,19 +60,20 @@
                 </nut-skeleton>
             </view>
         </view>
-    </view>
+    </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
 import { SearchThread } from '@/api'
 import Taro from '@tarojs/taro'
 import { Search2 } from "@nutui/icons-vue-taro";
-import { useSearchStore } from '@/stores'
+import { useSearchStore, useConfigStore } from '@/stores'
 import { ref } from 'vue';
 import { computedAsync } from '@vueuse/core';
 import NavH5 from "@/widgets/navigation-h5.vue";
 
-let searchStore = useSearchStore()
+const searchStore = useSearchStore()
+const config = useConfigStore()
 
 // 显示搜索历史
 const showHistory = ref(true)
@@ -122,6 +119,12 @@ const goThread = (id: number) => {
 
 <style lang="scss">
 .search-page {
+    .nut-searchbar {
+        .nut-searchbar__search-input {
+            color: var(--page-bg-color);
+        }
+    }
+
     .search-keyword {
         display: inline;
         color: red;

@@ -1,3 +1,75 @@
 .nut-avatar {
   overflow: hidden;
 }
+
+:root,
+page {
+  --page-bg-color: #fff;
+  --text-color: var(--nut-cell-color, var(--nut-title-color2, #555));
+  --text-desc-color: #666;
+  --placeholder-color: #aaa;
+  --account-bg-color: linear-gradient(
+    to bottom,
+    #1890ff 10rem,
+    whitesmoke 10rem
+  );
+  --msg-pane-topbar-bg-color: rgb(245, 246, 248);
+  --reply-bg-color: #f8f8f8;
+  --btn-clicked-bg-color: #f5f5f5;
+  --send-post-textarea-bg-color: #fff;
+  --textarea-bg-color: #eee;
+  --uploader-bg-color: #f5f5f5;
+  --border-dark-color: #444;
+  --emoji-pane-bg-color: #fff;
+  --nut-tab-title-bg-color: #f5f5f5;
+  --nut-tab-title-active-bg-color: #efefef;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root,
+  page {
+    --page-bg-color: #000;
+    --text-color: var(--nut-dark-color, var(--nut-white, #fff));
+    --text-desc-color: #ccc;
+    --account-bg-color: linear-gradient(to bottom, #1890ff 10rem, #000 10rem);
+    --msg-pane-topbar-bg-color: rgb(30, 30, 30);
+    --reply-bg-color: #2b2a2a;
+    --btn-clicked-bg-color: #444040;
+    --send-post-textarea-bg-color: #1b1b1b;
+    --textarea-bg-color: #333;
+    --uploader-bg-color: #333;
+    --nut-tab-title-bg-color: #444;
+    --nut-tab-title-active-bg-color: #333;
+  }
+
+  .nut-cell-group__wrap {
+    box-shadow: none !important;
+  }
+
+  .nut-empty {
+    background: #000 !important;
+  }
+  .nut-grid--border,
+  .nut-grid-item__content {
+    border-color: var(--border-dark-color) !important;
+  }
+  .nut-grid-item__content {
+    border-top-width: 0.05rem !important;
+  }
+  .nut-grid--border {
+    border-top-width: 0 !important;
+  }
+  .nut-tabbar {
+    border-color: var(--border-dark-color) !important;
+  }
+}
+
+:root,
+page,
+.taro_page {
+  background-color: var(--page-bg-color) !important;
+}
+
+.nut-cell-group__wrap {
+  background-color: var(--page-bg-color) !important;
+}

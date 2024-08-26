@@ -1,5 +1,5 @@
 <template>
-  <view class="posting-page">
+  <nut-config-provider :theme="config.theme" class="posting-page">
     <!-- 网易易盾验证码，小程序插件引入 -->
     <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
       @verify="postCaptcha.verify">
@@ -14,7 +14,8 @@
     <nut-cell-group>
       <!-- 主题标题 -->
       <nut-cell>
-        <nut-input v-model="postingTitle" show-word-limit :max-length="30" placeholder="请输入帖子标题，不超过30字" />
+        <nut-input v-model="postingTitle" show-word-limit :border="false" :max-length="30"
+          placeholder="请输入帖子标题，不超过30字" />
       </nut-cell>
 
       <!-- 主题内容 -->
@@ -34,7 +35,7 @@
     </nut-cell-group>
     <!-- 选择版块弹窗 -->
     <nut-popup v-model:visible="showForumSelection" round position="bottom" :style="{ height: '50%' }"
-      safe-area-inset-bottom>
+      safe-area-inset-bottom pop-class="forum-popup">
       <nut-tabs v-model="activeForumTab" title-scroll style="height: 100%" direction="vertical"
         @change="console.log(activeForumTab)">
         <!-- 渲染全部版块 -->
@@ -104,7 +105,7 @@
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
     <Tabbar></Tabbar>
-  </view>
+  </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
@@ -112,11 +113,12 @@ import { ref, watch } from 'vue'
 import Taro, { useDidShow } from '@tarojs/taro';
 import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
 import { computedAsync } from '@vueuse/core';
-import { usePromptStore, useAccountStore, useTabsStore } from '@/stores';
+import { usePromptStore, useAccountStore, useTabsStore, useConfigStore } from '@/stores';
 import Tabbar from '@/widgets/tabbar.vue';
 
 const prompt = usePromptStore()
 const account = useAccountStore()
+const config = useConfigStore()
 const postCaptcha = account.useSmartCaptcha()
 const tab = useTabsStore()
 
@@ -275,10 +277,36 @@ interface FileItem {
     font-weight: 700;
   }
 
+  .forum-popup {
+
+    .nut-tabs__titles,
+    .nut-tabs__titles-item {
+      background: var(--nut-tab-title-bg-color);
+      color: var(--text-color)
+    }
+
+    .nut-tabs__titles-item.active {
+      background: var(--nut-tab-title-active-bg-color) !important;
+      color: var(--text-color) !important;
+    }
+
+    .cell-group-title {
+      color: var(--text-color);
+    }
+  }
+
   .theme-popup {
     .nut-popup {
       padding: 10rpx;
     }
+
+    .cell-group-title {
+      color: var(--text-color);
+    }
+  }
+
+  .nut-input {
+    background: transparent;
   }
 
   .nut-textarea {
@@ -287,7 +315,7 @@ interface FileItem {
 
     .nut-textarea__textarea {
       padding: 10Px;
-      background: #eee;
+      background: var(--textarea-bg-color);
       border-radius: 12rpx;
       height: 100%;
     }
@@ -298,8 +326,21 @@ interface FileItem {
 
   }
 
+  .nut-uploader {
+
+    .nut-uploader__upload,
+    .nut-uploader__preview {
+      border-radius: 12rpx;
+      background: var(--uploader-bg-color);
+    }
+
+    .nut-button--default {
+      background: none;
+    }
+  }
+
   .submit-btn {
-    margin: 20rpx 30rpx 0 30rpx;
+    margin: 20rpx 30rpx 20rpx 30rpx;
   }
 
   .skeleton-container {

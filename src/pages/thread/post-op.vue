@@ -361,7 +361,7 @@ const likeBtnClicked = async () => {
     align-items: center;
 
     .btn-clicked {
-      background-color: #f5f5f5;
+      background-color: var(--btn-clicked-bg-color);
     }
 
     .op-item {
