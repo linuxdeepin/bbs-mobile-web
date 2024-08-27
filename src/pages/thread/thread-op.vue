@@ -108,8 +108,8 @@
       <nut-tabs v-model="activeForumTab" title-scroll style="height: 100%" direction="vertical"
         @change="console.log(activeForumTab)">
         <!-- 按分类渲染版块 -->
-        <template v-for="forum in forumList" :key="forum.name">
-          <nut-tab-pane :title="forum.name" :paneKey="forum.name">
+        <template v-for="(forum, index) in forumList" :key="index">
+          <nut-tab-pane :title="forum.name" :paneKey="index">
             <nut-cell-group>
               <template #title>
                 <view class="cell-group-title">{{ forum.name }}</view>
@@ -408,7 +408,7 @@ const moderatorClosedDialogClosed = async (action: string) => {
 }
 
 // 版主移动帖子对话框
-const activeForumTab = ref('全部')
+const activeForumTab = ref(0)
 const showForumSelection = ref(false)
 const showThemeTypeSelection = ref(false)
 const themeTypeList = ref<ThemeResponse[]>()
