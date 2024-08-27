@@ -10,34 +10,29 @@
         </view>
       </template>
       <nut-tab-pane :pane-key="1">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="1"
-          @showDelDialog="showDelDialog" :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning"
-          @refresh="refreshData" />
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
+          :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="2">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="2"
-          @showDelDialog="showDelDialog" :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning"
-          @refresh="refreshData" />
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
+          :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="3">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="3"
-          @showDelDialog="showDelDialog" :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning"
-          @refresh="refreshData" />
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
+          :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="5">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="5"
-          @showDelDialog="showDelDialog" :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning"
-          @refresh="refreshData" />
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
+          :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="6">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count" :category="6"
-          @showDelDialog="showDelDialog" :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning"
-          @refresh="refreshData" />
+        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
+          :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
       </nut-tab-pane>
     </nut-tabs>
     <view class="pagination">
-      <nut-pagination v-if="!isLoading && message?.total_count > pagination.limit" v-model="pagination.page" mode="multi"
-        :total-items="message?.total_count" :items-per-page="pagination.limit" />
+      <nut-pagination v-if="!isLoading && message?.total_count > pagination.limit" v-model="pagination.page"
+        mode="multi" :total-items="message?.total_count" :items-per-page="pagination.limit" />
     </view>
     <Tabbar @tab-change="tabChange"></Tabbar>
     <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
@@ -111,11 +106,11 @@ const onPageTurning = (page: number) => {
 const tabChange = () => {
   pagination.value.page = 1
 }
-
-const showDelDialog = (msgId: number) => {
-  delMsgId.value = msgId
+// 监听消息删除按钮点击
+Taro.eventCenter.on('msgDelBtnClicked', (id: number) => {
+  delMsgId.value = id
   delDialogShow.value = true
-}
+})
 
 const deleteMessage = async () => {
   delDialogShow.value = false

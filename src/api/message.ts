@@ -40,13 +40,13 @@ export async function PostOffset(params: { id: number, thread_id: number, page_s
 }
 
 interface MessageResponse {
-  data: Datum[];
+  data: MessageDatum[];
   total_count: number;
   total_limit: number;
   total_offset: number;
 }
 
-export interface Datum {
+export interface MessageDatum {
   id: number;
   type: string;
   type_id: number;
