@@ -1,11 +1,12 @@
 <template>
   <nut-config-provider :theme="config.theme" class="mypost-page">
     <NavH5 title="我的帖子" />
-    <nut-tabs v-model="currentTab" swipeable auto-height @change="tabChange">
+    <nut-tabs v-model="currentTab" swipeable auto-height @change="switchTab">
       <template #titles>
         <view class="tab-list">
-          <view v-for="item in tabList" :key="item.paneKey" class="tab-item" @click="switchTab(item.paneKey)"
-            :class="{ active: currentTab === item.paneKey }"> {{ item.title }}{{
+          <view v-for="item in tabList" :key="item.paneKey" class="tab-item"
+            @click="switchTab({ paneKey: item.paneKey })" :class="{ active: currentTab === item.paneKey }"> {{
+              item.title }}{{
               init ? '' : `(${item.paneKey === 'mythread' ? myThreadData?.total_count : myPostData?.total_count} )`
             }}
           </view>
@@ -124,72 +125,55 @@ if (instance.router) {
 // 页面数据
 const myThreadData = ref<MyThreadResonse>()
 const myPostData = ref<MyPostResponse>()
-// 切换tab
-const switchTab = (tab: Tab) => {
-  currentTab.value = tab
-  tabChange()
-}
-// 切换tab时获取对应数据
-const tabChange = async () => {
-  loading.value = true
-  pagination.value.page = 1
-  switch (currentTab.value) {
-    case 'mythread':
-      const myThreadRes = await GetMyThread({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-      myThreadData.value = myThreadRes.data
-      break
-    case 'mypost':
-      const myPostRes = await GetMyPost({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-      myPostData.value = myPostRes.data
-      break
-  }
-  console.log(myPostData.value)
-  loading.value = false
-}
-// 页面加载时获取一次数据
-(async () => {
-  loading.value = true
-  const myThreadRes = await GetMyThread({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-  myThreadData.value = myThreadRes.data
-  const myPostRes = await GetMyPost({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-  myPostData.value = myPostRes.data
-  loading.value = false
-  init.value = false
-})()
 
-useDidShow(async () => {
-  switch (currentTab.value) {
-    case 'mythread':
-      const myThreadRes = await GetMyThread({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-      myThreadData.value = myThreadRes.data
-      break
-    case 'mypost':
-      const myPostRes = await GetMyPost({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-      myPostData.value = myPostRes.data
-      break
+const fetchData = async () => {
+  loading.value = true
+  const offset = pagination.value.page - 1
+  const limit = pagination.value.limit
+
+  if (init.value) {
+    const myThreadRes = await GetMyThread({ offset, limit })
+    myThreadData.value = myThreadRes.data
+    const myPostRes = await GetMyPost({ offset, limit })
+    myPostData.value = myPostRes.data
+    loading.value = false
+    init.value = false
+    return
   }
-})
+
+  if (currentTab.value === 'mythread') {
+    const myThreadRes = await GetMyThread({ offset, limit })
+    myThreadData.value = myThreadRes.data
+  } else {
+    const myPostRes = await GetMyPost({ offset, limit })
+    myPostData.value = myPostRes.data
+  }
+
+  loading.value = false
+}
+
+// 切换tab
+const switchTab = (opt: { paneKey: Tab }) => {
+  console.log(opt.paneKey)
+  currentTab.value = opt.paneKey
+  pagination.value.page = 1
+  fetchData()
+}
+
+// 页面显示时获取数据
+useDidShow(fetchData)
+
 // 翻页
 const pageChange = async (page: number) => {
   pagination.value.page = page
-  loading.value = true
-  switch (currentTab.value) {
-    case 'mythread':
-      const myThreadRes = await GetMyThread({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-      myThreadData.value = myThreadRes.data
-      break
-    case 'mypost':
-      const myPostRes = await GetMyPost({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-      myPostData.value = myPostRes.data
-      break
-  }
+  await fetchData()
   // 翻页后跳转到顶部
   Taro.pageScrollTo({
     scrollTop: 0,
     duration: 300
   })
-  loading.value = false
 }
+
 // 跳转到帖子详情
 const goToThread = (thread: MyThreadResonse["data"][0]) => {
   // 帖子浏览量+1
@@ -198,6 +182,7 @@ const goToThread = (thread: MyThreadResonse["data"][0]) => {
     url: `/pages/thread/thread?id=${thread.id}`
   })
 }
+
 // 跳转到回复详情
 const goToPost = async (post: MyPostResponse["data"][0]) => {
   const { data } = await PostOffset({ id: post.id, thread_id: post.thread_id, page_size: 10 })
