@@ -121,7 +121,7 @@ const goThread = (id: number) => {
 .search-page {
     .nut-searchbar {
         .nut-searchbar__search-input {
-            color: var(--page-bg-color);
+            color: #000;
         }
     }
 
