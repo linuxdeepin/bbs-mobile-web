@@ -48,12 +48,8 @@
                 <view v-else>用户被禁言，该内容已隐藏</view>
             </nut-col>
             <!-- 投票 -->
-            <Vote v-if="threadInfo.is_poll" :thread-id="threadInfo.id"
-                :is-poll-expired="threadInfo.poll_list.poll_expire" :is-multiple="threadInfo.poll_list.multiple"
-                :max-choices="threadInfo.poll_list.maxchoices" :voter-number="threadInfo.poll_list.voters_number"
-                :poll-option-ids="threadInfo.poll_list.polloptionids"
-                :forum-polloption="threadInfo.poll_list.forum_polloption" @login="showLoginDialog = true"
-                @voting="threadRefresh++" />
+            <Vote v-if="threadInfo.is_poll" :thread-id="threadInfo.id" :poll-list="threadInfo.poll_list"
+                @login="showLoginDialog = true" @voting="threadRefresh++" />
             <!-- 帖子操作栏 -->
             <ThreadOp v-model:thread-info="threadInfo" v-model:show-login-dialog="showLoginDialog"
                 v-model:thread-refresh="threadRefresh" v-model:thread-resolved="threadResolved"
