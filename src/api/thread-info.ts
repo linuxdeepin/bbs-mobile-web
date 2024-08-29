@@ -134,7 +134,7 @@ export interface ThreadInfoData {
   attrs: any[];
 }
 
-interface Polllist {
+export interface Polllist {
   tid: number;
   overt: number;
   multiple: number;
