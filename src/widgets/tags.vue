@@ -2,16 +2,14 @@
   <view class="level-container">
     <nut-tag class="tag" v-if="groupName !== ''" color="#1979ff" plain>{{ groupName }}</nut-tag>
     <!-- tags -->
-    <template v-if="userTags">
-      <nut-tag v-for="tag in userTags" class="tag" :color="tag.color" plain>{{ tag.text }}</nut-tag>
-    </template>
+    <nut-tag v-for="tag in userTags" class="tag" :color="tag.color" plain>{{ tag.text }}</nut-tag>
   </view>
 </template>
 
 <script lang="ts" setup>
 import { UserTags } from '@/api';
 
-defineProps<{
+const { groupName = '', userTags = [] } = defineProps<{
   groupName: string,
   userTags: UserTags[],
 }>()
