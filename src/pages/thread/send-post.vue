@@ -34,7 +34,8 @@
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                             @click="showEmojiList = !showEmojiList" />
                         <img class="picture-btn" :src="Picture" @click="chooseImage" />
-                        <nut-button class="send-btn" type="primary" size="normal" :disabled="msg.length == 0"
+                        <nut-button class="send-btn" type="primary" size="normal"
+                            :disabled="!msg.length && !chooseImgList.length"
                             @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
                         <!-- 未登陆时，点击回复提示前往登陆 -->
                         <view class="click-mask" v-if="!account.is_login" @click="emit('login')"></view>
@@ -146,14 +147,17 @@ const submitPost = async (captchaCode: string) => {
     // 发布评论
     try {
         let val = msg.value
-        if (val.includes(":")) {
-            for (const name of Object.keys(customEmoji)) {
-                const reg = new RegExp(`:${name}:`, "g")
-                const img = `<img class="emoji" title="${name}" src="${customEmoji[name]}" alt="${name}">`
-                val = val.replace(reg, img)
+        let message = "<div data-weapp_version='v1'>"
+        if (val.length) {
+            if (val.includes(":")) {
+                for (const name of Object.keys(customEmoji)) {
+                    const reg = new RegExp(`:${name}:`, "g")
+                    const img = `<img class="emoji" title="${name}" src="${customEmoji[name]}" alt="${name}">`
+                    val = val.replace(reg, img)
+                }
             }
+            message += `<p>${val}</p>`
         }
-        let message = `<div data-weapp_version="v1"><p>${val}</p>`
         // 如果有选择图片,则上传图片,并追加到评论后面
         if (chooseImgList.value.length) {
             // 上传图片
