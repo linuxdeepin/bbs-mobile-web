@@ -7,9 +7,9 @@
                     @verify="postCaptcha.verify">
                 </ne-captcha>
                 <nut-form-item>
-                    <view class="reply-info" v-if="isReply">
+                    <view class="reply-info" v-if="replyInfo.isReply">
                         <text class="title">回复:</text>
-                        <text class="nickname">{{ replyNickName }}</text>
+                        <text class="nickname">{{ replyInfo.replyNickName }}</text>
                         <CircleClose class="cancel-btn" size="18" @click="cancelReply" />
                     </view>
                     <view v-if="chooseImgList.length" class="choose-img">
@@ -28,7 +28,7 @@
                             <textarea :value="msg" :style="{ marginTop: '0.5rem', height: inputHeight + 'rem' }"
                                 placeholder="说点什么吧..." maxlength="1000" :show-confirm-bar="false" :hold-keyboard="true"
                                 :cursorSpacing="20" :disabled="!account.is_login" @linechange="lineChange"
-                                @input="msg = ($event as any).detail.value" :focus="isReply"
+                                @input="msg = ($event as any).detail.value" :focus="replyInfo.isReply"
                                 @blur="showEmojiList = false" />
                         </view>
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
@@ -95,10 +95,7 @@ const emit = defineEmits<{
 }>()
 const props = defineProps<{
     info: { id: number, forum_id: number, user_id: number },
-    isReply: boolean,
-    replyId: number,
-    replyUserId: number,
-    replyNickName: string
+    replyInfo: { isReply: boolean, replyId: number, replyUserId: number, replyNickName: string }
 }>()
 
 const isChooseImage = defineModel()
@@ -186,7 +183,7 @@ const submitPost = async (captchaCode: string) => {
             message += imgUrls.map(url => `<p><img src='${url}' style='max-width: 100%' /></p>`).join('')
         }
         message += "</div>"
-        if (!props.isReply) {
+        if (!props.replyInfo.isReply) {
             await CreateThreadPost({
                 message,
                 validate: captchaCode,
@@ -202,8 +199,8 @@ const submitPost = async (captchaCode: string) => {
                 captcha_id: postCaptcha.captchaID,
                 thread_id: props.info.id,
                 forum_id: props.info.forum_id,
-                quote_user_id: props.replyUserId,
-                quote_post_id: props.replyId,
+                quote_user_id: props.replyInfo.replyUserId,
+                quote_post_id: props.replyInfo.replyId,
             })
         }
 
