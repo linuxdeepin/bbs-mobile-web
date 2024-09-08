@@ -180,14 +180,14 @@ import Taro from "@tarojs/taro";
 import { computedAsync } from "@vueuse/core";
 
 const threadInfo = defineModel<ThreadInfoData>("threadInfo", { required: true })
-const showLoginDialog = defineModel<boolean>("showLoginDialog", { required: true })
-const threadRefresh = defineModel<number>("threadRefresh", { required: true })
 const threadResolved = defineModel<boolean>("threadResolved", { required: true })
 const threadClosed = defineModel<boolean>("threadClosed", { required: true })
 
 defineProps<{
   isModerator: boolean
 }>()
+
+const emit = defineEmits(['login', 'threadRefresh'])
 
 const account = useAccountStore()
 const prompt = usePromptStore()
@@ -230,7 +230,7 @@ const resolved = async () => {
   const { data } = await action(threadInfo.value.id);
   if (!data.code) {
     threadResolved.value = !threadResolved.value;
-    threadRefresh.value++;
+    emit("threadRefresh")
   } else {
     prompt.showToast('warn', '操作失败');
   }
@@ -260,7 +260,7 @@ const userAction = ref({
     {
       name: "举报", callback: async () => {
         if (!account.is_login) {
-          showLoginDialog.value = true
+          emit("login")
           return
         }
         const { data } = await ReportType()
@@ -440,7 +440,7 @@ const moderatorMoveDialogClosed = async (action: string) => {
       selectedForum.value = { id: 0, name: '' }
       selectedThemeType.value = { id: 0, name: '' }
       prompt.showToast('success', '移动成功')
-      threadRefresh.value++
+      emit("threadRefresh")
       return true
     }
   }
@@ -484,7 +484,7 @@ watch(() => selectedForum.value, async (value) => {
 // 点赞和取消点赞帖子
 const upThread = async () => {
   if (!account.is_login) {
-    showLoginDialog.value = true
+    emit("login")
     return
   }
   if (!threadInfo.value)
@@ -499,7 +499,7 @@ const upThread = async () => {
 // 收藏和取消收藏帖子
 const favoriteThread = async () => {
   if (!account.is_login) {
-    showLoginDialog.value = true
+    emit("login")
     return
   }
   if (!threadInfo.value)
