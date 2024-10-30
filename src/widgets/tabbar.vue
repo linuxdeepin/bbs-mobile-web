@@ -1,5 +1,5 @@
 <template>
-  <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabSwitch">
+  <nut-tabbar v-model="tabs.active" bottom @tab-switch="tabSwitch" safe-area-inset-bottom>
     <nut-tabbar-item tab-title="首页" name="index">
       <template #icon>
         <Home></Home>
