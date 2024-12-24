@@ -14,8 +14,7 @@
     <nut-cell-group>
       <!-- 主题标题 -->
       <nut-cell>
-        <nut-input v-model="postingTitle" show-word-limit :border="false" :max-length="30"
-          placeholder="请输入帖子标题，不超过30字" />
+        <nut-input v-model="postingTitle" :border="false" :max-length="30" placeholder="请输入帖子标题，2~30字" />
       </nut-cell>
 
       <!-- 主题内容 -->
@@ -29,8 +28,7 @@
 
       <!-- 发布按钮 -->
       <view class="submit-btn">
-        <nut-button :disabled="postingTitle === '' || postingContent === ''" type="primary" block
-          @click="submitPosting">发布帖子</nut-button>
+        <nut-button type="primary" block @click="submitPosting">发布帖子</nut-button>
       </view>
     </nut-cell-group>
     <!-- 选择版块弹窗 -->
@@ -161,6 +159,15 @@ const submitPosting = async () => {
   }
   if (!selectedThemeType.value.id) {
     prompt.showToast('warn', '请选择主题类型')
+    return
+  }
+  const titleLength = Array.from(postingTitle.value).length
+  if (titleLength < 2 || titleLength > 30) {
+    prompt.showToast('warn', '标题为2～30字')
+    return
+  }
+  if (postingContent.value.length) {
+    prompt.showToast('warn', '内容不能为空')
     return
   }
 
