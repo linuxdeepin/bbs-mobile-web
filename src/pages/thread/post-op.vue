@@ -118,20 +118,21 @@ const prompt = usePromptStore()
 
 const threadInfo = defineModel<ThreadInfoData>("threadInfo", { required: true })
 const post = defineModel<PostListResponse["data"][0]>("post", { required: true })
-const showLoginDialog = defineModel<boolean>("showLoginDialog", { required: true })
-const threadClosed = defineModel<boolean>("threadClosed", { required: true })
-const isReply = defineModel<boolean>("isReply", { required: true })
-const replyId = defineModel<number>("replyId", { required: true })
-const replyUserId = defineModel<number>("replyUserId", { required: true })
-const replyNickName = defineModel<string>("replyNickName", { required: true })
-const refreshScroll = defineModel<boolean>("refreshScroll", { required: true })
-const postRefresh = defineModel<number>("postRefresh", { required: true })
+const replyInfo = defineModel<{
+  isReply: boolean,
+  replyId: number,
+  replyUserId: number,
+  replyNickName: string
+}>("replyInfo", { required: true })
+const scrollToPostDivider = defineModel<boolean>("scrollToPostDivider", { required: true })
 const winnowPosts = defineModel<WinnowThreadPostList>("winnowPosts", { required: true })
-const winnowPostsRefresh = defineModel<number>("winnowPostsRefresh", { required: true })
 
-defineProps<{
-  isModerator: boolean
+const props = defineProps<{
+  isModerator: boolean,
+  threadClosed: boolean
 }>()
+
+const emit = defineEmits(['login', 'postRefresh', 'winnowPostsRefresh'])
 
 // 版主操作
 // 版主删除评论对话框
@@ -197,9 +198,9 @@ const moderatorDelDialogClosed = async (action: string) => {
       })
       if (!data.code) {
         prompt.showToast("success", "删除成功")
-        refreshScroll.value = false
-        postRefresh.value++
-        winnowPostsRefresh.value++
+        scrollToPostDivider.value = false
+        emit("postRefresh")
+        emit("winnowPostsRefresh")
       }
       return true
     }
@@ -234,7 +235,7 @@ const moderatorWinnowDialogClosed = async (action: string) => {
         } else {
           prompt.showToast("success", "精选成功")
         }
-        winnowPostsRefresh.value++
+        emit("winnowPostsRefresh")
         Taro.pageScrollTo({
           selector: ".post-divider",
           offsetTop: -100
@@ -270,8 +271,8 @@ const authorDelPost = async () => {
   const { data } = await DeleteThreadPost(post.value.id)
   if (!data.code) {
     prompt.showToast("success", "删除成功")
-    refreshScroll.value = false
-    postRefresh.value++
+    scrollToPostDivider.value = false
+    emit("postRefresh")
   }
 }
 
@@ -289,7 +290,7 @@ const userPostAction = ref({
     {
       name: "举报", callback: async () => {
         if (!account.is_login) {
-          showLoginDialog.value = true
+          emit("login")
           return
         }
         const { data } = await ReportType()
@@ -323,23 +324,25 @@ const reportPost = async () => {
 
 const replyBtnClicked = () => {
   if (!account.is_login) {
-    showLoginDialog.value = true
+    emit("login")
     return
   }
-  if (threadClosed.value) {
+  if (props.threadClosed) {
     prompt.showToast("warn", "帖子已关闭")
     return
   }
-  isReply.value = true
-  replyId.value = post.value.id
-  replyUserId.value = post.value.post_user_id
-  replyNickName.value = post.value.user.nickname
+  replyInfo.value = {
+    isReply: true,
+    replyId: post.value.id,
+    replyUserId: post.value.post_user_id,
+    replyNickName: post.value.user.nickname
+  }
 }
 
 // 点赞评论
 const likeBtnClicked = async () => {
   if (!account.is_login) {
-    showLoginDialog.value = true
+    emit("login")
     return
   }
   const { data } = await ThreadUP(post.value.id, "pid")
