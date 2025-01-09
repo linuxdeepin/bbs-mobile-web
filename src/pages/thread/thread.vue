@@ -88,24 +88,6 @@
                             </nut-cell>
                             <nut-cell class="content" desc-text-align="left">
                                 <template #desc>
-                                    <view class="son-post" v-if="post.son_post?.id">
-                                        <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
-                                        <template v-if="post.user.state === 0 || post.user.state === 1">
-                                            <view v-if="post.son_post.deleted_at === null"
-                                                class="post-message html-message taro_html vditor-reset"
-                                                @click="htmlClick($event)" v-html="post.son_post.message">
-                                            </view>
-                                            <view v-else
-                                                class="post-message html-message taro_html vditor-reset del-message">
-                                                该评论已删除!
-                                            </view>
-                                        </template>
-
-                                        <view v-else-if="post.user.state === 2"
-                                            class="post-message html-message taro_html vditor-reset del-message">
-                                            用户被禁言，该内容已隐藏
-                                        </view>
-                                    </view>
                                     <template v-if="post.user.state === 0 || post.user.state === 1">
                                         <view v-if="post.deleted_at === null"
                                             class="post-message html-message taro_html vditor-reset"
@@ -160,11 +142,13 @@
                                         </view>
                                     </template>
                                 </nut-cell>
+                                <!-- 回帖内容 -->
                                 <nut-cell class="content" desc-text-align="left">
                                     <template #desc>
+                                        <!-- 引用的回复 -->
                                         <view class="son-post" v-if="post.son_post?.id">
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
-                                            <template v-if="post.user.state === 0 || post.user.state === 1">
+                                            <template v-if="post.son_post.user.state !== 2">
                                                 <view v-if="post.son_post.deleted_at === null"
                                                     class="post-message html-message taro_html vditor-reset"
                                                     @click="htmlClick($event)" v-html="post.son_post.message">
@@ -175,7 +159,7 @@
                                                 </view>
                                             </template>
 
-                                            <view v-else-if="post.user.state === 2"
+                                            <view v-else
                                                 class="post-message html-message taro_html vditor-reset del-message">
                                                 用户被禁言，该内容已隐藏
                                             </view>
@@ -613,7 +597,7 @@ Taro.eventCenter.on("sendPost", sendPost)
 
 // 定时刷新评论
 // 如果当前位于评论的最后一页,每三秒刷新一次
-const interval = ref<NodeJS.Timeout>()
+const interval = ref<ReturnType<typeof setTimeout>>()
 const intervalRefreshPost = ref(false)
 watchEffect(() => {
     if (!threadPosts.value)
