@@ -22,7 +22,7 @@
     </template>
     <!-- 按分类渲染版块 -->
     <template v-for="forum in forumList" :key="forum.name">
-      <nut-cell-group>
+      <nut-cell-group v-if="forum.forum.length">
         <template #title>
           <view class="forum-title">{{ forum.name }}</view>
         </template>
