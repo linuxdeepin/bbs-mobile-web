@@ -102,7 +102,6 @@
     </nut-popup>
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
-    <Tabbar></Tabbar>
   </nut-config-provider>
 </template>
 
@@ -111,16 +110,15 @@ import { ref, watch } from 'vue'
 import Taro, { useDidShow } from '@tarojs/taro';
 import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
 import { computedAsync } from '@vueuse/core';
-import { usePromptStore, useAccountStore, useTabsStore, useConfigStore } from '@/stores';
-import Tabbar from '@/widgets/tabbar.vue';
+import { usePromptStore, useAccountStore, useConfigStore } from '@/stores';
+import { setMessageCount } from '@/utils/message';
 
 const prompt = usePromptStore()
 const account = useAccountStore()
 const config = useConfigStore()
 const postCaptcha = account.useSmartCaptcha()
-const tab = useTabsStore()
 
-useDidShow(() => tab.change({ name: 'posting' }))
+useDidShow(() => setMessageCount())
 
 // 选择版块
 const selectedForum = ref({ id: 0, name: '' })
@@ -267,7 +265,7 @@ interface FileItem {
 
 <style lang="scss">
 .posting-page {
-  padding: 5rpx 10rpx 4rem;
+  padding: 5rpx 10rpx 0 10rpx;
 
   .nut-input {
     padding: 20rpx 0;

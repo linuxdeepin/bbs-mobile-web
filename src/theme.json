@@ -2,11 +2,25 @@
     "light": {
         "bgTextStyleColor": "dark",
         "navBarBgColor": "#fff",
-        "navBarTextStyle": "black"
+        "navBarTextStyle": "black",
+        "tabBarTextColor": "#000",
+        "tabBarBgColor": "#fff",
+        "indexIcon": "assets/index.png",
+        "moduleIcon": "assets/module.png",
+        "postingIcon": "assets/posting.png",
+        "messageIcon": "assets/message.png",
+        "accountIcon": "assets/account.png"
     },
     "dark": {
         "bgTextStyleColor": "light",
         "navBarBgColor": "#000",
-        "navBarTextStyle": "white"
+        "navBarTextStyle": "white",
+        "tabBarTextColor": "#fff",
+        "tabBarBgColor": "#000",
+        "indexIcon": "assets/index-dark.png",
+        "moduleIcon": "assets/module-dark.png",
+        "postingIcon": "assets/posting-dark.png",
+        "messageIcon": "assets/message-dark.png",
+        "accountIcon": "assets/account-dark.png"
     }
 }

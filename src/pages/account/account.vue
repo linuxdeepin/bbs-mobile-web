@@ -52,7 +52,6 @@
                         <!-- <nut-cell title="注册账户" is-link @click="account.gotoRegister()"></nut-cell> -->
                     </template>
                 </view>
-                <Tabbar />
             </view>
             <view v-else>
                 <nut-skeleton width="60vw" height="20px" title avatar row="3">
@@ -97,10 +96,9 @@
 
 import { ref } from 'vue';
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useTabsStore, useAccountStore, usePromptStore, useConfigStore } from '@/stores'
-import Tabbar from '@/widgets/tabbar.vue'
+import { useAccountStore, usePromptStore, useConfigStore } from '@/stores'
+import { setMessageCount } from '@/utils/message';
 
-const tabs = useTabsStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
 const config = useConfigStore()
@@ -109,7 +107,7 @@ const instance = Taro.getCurrentInstance()
 const isH5 = process.env.TARO_ENV === "h5";
 
 useDidShow(() => {
-    tabs.change({ name: 'account' })
+    setMessageCount()
 })
 
 if (account.is_login) {
@@ -236,7 +234,7 @@ const toFavorite = () => {
 <style lang="scss">
 .account-page {
     padding: 1rem;
-    min-height: 90vh;
+    min-height: calc(100vh - 2rem);
     background: var(--account-bg-color);
 
     .info {

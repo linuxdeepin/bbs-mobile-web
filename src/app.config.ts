@@ -23,6 +23,43 @@ export default defineAppConfig({
     navigationBarTitleText: "WeChat",
     navigationBarTextStyle: "@navBarTextStyle",
   },
+  tabBar: {
+    color: process.env.TARO_ENV === "h5" ? "#000" : "@tabBarTextColor",
+    selectedColor: "#FA2C19",
+    backgroundColor: "@tabBarBgColor",
+    list: [
+      {
+        pagePath: "pages/index/index",
+        text: "首页",
+        iconPath: process.env.TARO_ENV === "h5" ? "assets/index.png" : "@indexIcon",
+        selectedIconPath: "assets/index-selected.png",
+      },
+      {
+        pagePath: "pages/module/module",
+        text: "版块",
+        iconPath: process.env.TARO_ENV === "h5" ? "assets/module.png" : "@moduleIcon",
+        selectedIconPath: "assets/module-selected.png",
+      },
+      {
+        pagePath: "pages/posting/posting",
+        text: "发帖",
+        iconPath: process.env.TARO_ENV === "h5" ? "assets/posting.png" : "@postingIcon",
+        selectedIconPath: "assets/posting-selected.png",
+      },
+      {
+        pagePath: "pages/message/message",
+        text: "消息",
+        iconPath: process.env.TARO_ENV === "h5" ? "assets/message.png" : "@messageIcon",
+        selectedIconPath: "assets/message-selected.png",
+      },
+      {
+        pagePath: "pages/account/account",
+        text: "我的",
+        iconPath: process.env.TARO_ENV === "h5" ? "assets/account.png" : "@accountIcon",
+        selectedIconPath: "assets/account-selected.png",
+      }
+    ]
+  },
   plugins: {
     // 网易易盾验证码
     captcha: {
