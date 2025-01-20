@@ -41,7 +41,6 @@
         </nut-grid>
       </nut-cell-group>
     </template>
-    <Tabbar />
   </nut-config-provider>
 </template>
 
@@ -49,12 +48,11 @@
 import { ref } from 'vue'
 import { GetForum, UserForumFavoriteList } from '@/api'
 import { computedAsync } from '@vueuse/core';
-import Tabbar from '@/widgets/tabbar.vue';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useAccountStore, useTabsStore, useConfigStore } from "@/stores";
+import { useAccountStore, useConfigStore } from "@/stores";
+import { setMessageCount } from '@/utils/message';
 
 const account = useAccountStore()
-const tab = useTabsStore()
 const config = useConfigStore()
 
 const forumList = computedAsync(async () => {
@@ -74,8 +72,8 @@ const favoriteForumList = computedAsync(async () => {
 
 // 返回到当前页面时刷新已收藏版块
 useDidShow(() => {
-  tab.change({ name: 'module' })
   favoriteForumRefresh.value++
+  setMessageCount()
 })
 
 const toModuleDetail = (forumId: number) => {
@@ -88,7 +86,7 @@ const toModuleDetail = (forumId: number) => {
 
 <style lang="scss">
 .module-page {
-  padding: 0 10Px 4rem;
+  padding: 0 10Px 0.5rem;
 
   .forum-title {
     padding: 20rpx 20rpx 10rpx 20rpx;

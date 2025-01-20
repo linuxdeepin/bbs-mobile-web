@@ -34,7 +34,6 @@
       <nut-pagination v-if="!isLoading && message?.total_count > pagination.limit" v-model="pagination.page"
         mode="multi" :total-items="message?.total_count" :items-per-page="pagination.limit" />
     </view>
-    <Tabbar @tab-change="tabChange"></Tabbar>
     <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
@@ -47,10 +46,8 @@ import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import MessageTabPane from './message-tab-pane.vue'
-import { useTabsStore, usePromptStore, useConfigStore } from '@/stores';
-import Tabbar from '@/widgets/tabbar.vue'
+import { usePromptStore, useConfigStore } from '@/stores';
 
-const tabStore = useTabsStore()
 const config = useConfigStore()
 const prompt = usePromptStore()
 const tabs = ref(1)
@@ -78,7 +75,6 @@ const msgCount = ref({
 })
 
 useDidShow(async () => {
-  tabStore.change({ name: 'message' })
   refreshData()
 })
 
@@ -86,9 +82,19 @@ useDidShow(async () => {
 const refreshData = async () => {
   const msgCountRes = await MessageCount()
   msgCount.value = msgCountRes.data.data
+  const messageCount = msgCount.value.at_msg_count + msgCount.value.letter_msg_count + msgCount.value.post_msg_count + msgCount.value.sys_msg_count + msgCount.value.thread_msg_count
+  if (messageCount > 0) {
+    Taro.setTabBarBadge({
+      index: 3,
+      text: messageCount.toString()
+    })
+  } else {
+    Taro.removeTabBarBadge({
+      index: 3
+    })
+  }
   const msgRes = await Message({ page: pagination.value.page, pageSize: pagination.value.limit, category: tabs.value })
   message.value = msgRes.data
-  tabStore.messageCount = msgCount.value.at_msg_count + msgCount.value.letter_msg_count + msgCount.value.post_msg_count + msgCount.value.sys_msg_count + msgCount.value.thread_msg_count
 }
 
 // 翻页后跳转到顶部
@@ -103,9 +109,6 @@ const onPageTurning = (page: number) => {
   pagination.value.page = page
 }
 
-const tabChange = () => {
-  pagination.value.page = 1
-}
 // 监听消息删除按钮点击
 Taro.eventCenter.on('msgDelBtnClicked', (id: number) => {
   delMsgId.value = id
@@ -168,7 +171,7 @@ const deleteMessage = async () => {
   .pagination {
     display: flex;
     justify-content: center;
-    padding-bottom: 4rem;
+    padding-bottom: 0.5rem;
   }
 }
 </style>

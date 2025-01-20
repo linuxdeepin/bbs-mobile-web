@@ -68,9 +68,6 @@
           </nut-skeleton>
         </view>
       </view>
-      <!-- 分页组件 -->
-      <!-- 底部标签切换 -->
-      <Tabbar @tabChange="tabChange"></Tabbar>
     </view>
   </nut-config-provider>
 </template>
@@ -80,20 +77,15 @@
 import TopIcon from '@/assets/top.svg'
 
 import { computedAsync } from "@vueuse/core";
-import { apiServer, IndexThread, ThreadIndexResponse, MessageCount } from '@/api'
-import Taro, { useDidShow, useShareTimeline, usePullDownRefresh } from '@tarojs/taro'
+import { apiServer, IndexThread, ThreadIndexResponse } from '@/api'
+import Taro, { useDidShow, useShareTimeline, usePullDownRefresh, useTabItemTap } from '@tarojs/taro'
 import { Comment, Eye } from "@nutui/icons-vue-taro";
-import { useConfigStore, useTabsStore } from '@/stores'
+import { useConfigStore } from '@/stores'
 import { watch, ref } from 'vue';
 import NavComponent from "@/widgets/navigation.vue";
-import Tabbar from "@/widgets/tabbar.vue";
+import { setMessageCount } from '@/utils/message';
 
-const tabs = useTabsStore()
 const config = useConfigStore()
-// 恢复tab
-useDidShow(() => {
-  tabs.change({ name: 'index' })
-})
 // 加载帖子数据
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
@@ -111,9 +103,7 @@ useDidShow(async () => {
     threadIndexRefresh.value++
     config.indexNeedRefresh = false
   }
-  const res = await MessageCount()
-  const { at_msg_count, letter_msg_count, post_msg_count, sys_msg_count, thread_msg_count } = res.data.data
-  tabs.messageCount = at_msg_count + letter_msg_count + post_msg_count + sys_msg_count + thread_msg_count
+  setMessageCount()
 })
 // 首页下拉刷新
 usePullDownRefresh(async () => {
@@ -126,10 +116,36 @@ watch(isLoading, () => {
     duration: 300
   })
 })
-// 如果点击了首页导航，跳转返回到第一页
-const tabChange = () => {
-  pagination.value.page = 1
-}
+// 双击tab刷新
+const tabClick = ref(false)
+let lastClickTime = 0
+
+// 点击首页 tab 的处理函数
+useTabItemTap(() => {
+  const currentTime = Date.now()
+
+  // 判断是否为双击（两次点击间隔小于 200ms）
+  if (currentTime - lastClickTime < 200) {
+    // 双击逻辑
+    pagination.value.page = 1 // 重置页码为 1
+    // 强制刷新帖子列表
+    threadIndexRefresh.value++
+    tabClick.value = false // 重置标记
+    lastClickTime = 0 // 重置上一次点击时间
+    return // 双击逻辑执行后直接返回
+  }
+
+  // 单击逻辑
+  tabClick.value = true
+  lastClickTime = currentTime // 更新上一次点击时间
+
+  setTimeout(() => {
+    if (tabClick.value) {
+      // 200ms 内没有第二次点击，当作单击
+      tabClick.value = false
+    }
+  }, 200)
+})
 // 跳转到帖子详情
 const goThread = (item: ThreadIndexResponse["ThreadIndex"][0]) => {
   // 预览数量增加
@@ -205,7 +221,7 @@ useShareTimeline(() => {
   .pagination {
     display: flex;
     justify-content: center;
-    padding-bottom: 4rem;
+    padding-bottom: 0.5rem;
   }
 
   .skeleton-container {
