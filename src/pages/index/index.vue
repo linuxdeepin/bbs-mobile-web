@@ -78,14 +78,16 @@ import TopIcon from '@/assets/top.svg'
 
 import { computedAsync } from "@vueuse/core";
 import { apiServer, IndexThread, ThreadIndexResponse } from '@/api'
-import Taro, { useDidShow, useShareTimeline, usePullDownRefresh, useTabItemTap } from '@tarojs/taro'
+import Taro, { useLoad, useShareTimeline, usePullDownRefresh, useTabItemTap, useDidShow } from '@tarojs/taro'
 import { Comment, Eye } from "@nutui/icons-vue-taro";
-import { useConfigStore } from '@/stores'
+import { useAccountStore, useConfigStore, useSubscriptionStore } from '@/stores'
 import { watch, ref } from 'vue';
 import NavComponent from "@/widgets/navigation.vue";
 import { setMessageCount } from '@/utils/message';
 
 const config = useConfigStore()
+const account = useAccountStore()
+const subscribe = useSubscriptionStore()
 // 加载帖子数据
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
@@ -103,8 +105,21 @@ useDidShow(async () => {
     threadIndexRefresh.value++
     config.indexNeedRefresh = false
   }
-  setMessageCount()
+
+  subscribe.getSeverSubscribe()
 })
+
+useLoad(async () => {
+  setMessageCount()
+  // 前端强制退出登录一次
+  const isForceLogout = Taro.getStorageSync('forceLogoutFlag')
+  if (isForceLogout !== false) {
+    await account.logout()
+    Taro.setStorageSync('forceLogoutFlag', false)
+    return
+  }
+})
+
 // 首页下拉刷新
 usePullDownRefresh(async () => {
   threadIndexRefresh.value++
@@ -145,6 +160,7 @@ useTabItemTap(() => {
       tabClick.value = false
     }
   }, 200)
+
 })
 // 跳转到帖子详情
 const goThread = (item: ThreadIndexResponse["ThreadIndex"][0]) => {

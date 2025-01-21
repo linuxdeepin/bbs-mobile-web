@@ -107,7 +107,7 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import Taro, { useDidShow } from '@tarojs/taro';
+import Taro, { useLoad } from '@tarojs/taro';
 import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
 import { computedAsync } from '@vueuse/core';
 import { usePromptStore, useAccountStore, useConfigStore } from '@/stores';
@@ -118,7 +118,14 @@ const account = useAccountStore()
 const config = useConfigStore()
 const postCaptcha = account.useSmartCaptcha()
 
-useDidShow(() => setMessageCount())
+useLoad(() => {
+  // 如果用户未登录，跳转到登录页
+  if (!account.is_login) {
+    account.gotoLogin()
+    return
+  }
+  setMessageCount()
+})
 
 // 选择版块
 const selectedForum = ref({ id: 0, name: '' })

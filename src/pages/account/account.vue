@@ -89,6 +89,8 @@
 
             <nut-dialog no-cancel-btn :title="bindDialog.title" :content="bindDialog.content"
                 v-model:visible="bindDialog.visible" />
+            <nut-dialog title="订阅消息通知" content="是否允许向您发送论坛消息通知？您可随时取消订阅。"
+                v-model:visible="subscribe.loginSubscribeDialogVisible" @ok="subscribe.subscribeMessage" />
         </view>
     </nut-config-provider>
 </template>
@@ -96,12 +98,13 @@
 
 import { ref } from 'vue';
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useAccountStore, usePromptStore, useConfigStore } from '@/stores'
+import { useAccountStore, usePromptStore, useConfigStore, useSubscriptionStore } from '@/stores'
 import { setMessageCount } from '@/utils/message';
 
 const account = useAccountStore()
 const prompt = usePromptStore()
 const config = useConfigStore()
+const subscribe = useSubscriptionStore()
 const captcha = account.useForceCaptcha()
 const instance = Taro.getCurrentInstance()
 const isH5 = process.env.TARO_ENV === "h5";
