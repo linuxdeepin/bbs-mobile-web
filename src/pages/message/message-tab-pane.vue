@@ -3,7 +3,13 @@
     <!-- 顶部标题和全部已读按钮 -->
     <view class="topbar">
       <view class="title">消息列表</view>
-      <nut-button plain size="small" :disabled="newMsgCount === 0" @click="readAllMsg">全部已读</nut-button>
+      <view class="right">
+        <nut-button v-if="!isH5 && !subscribe.isSubscribe" size="small" style="margin-right: 5px;" type="primary"
+          @click="subscribe.subscribeMessage()"> 订阅 </nut-button>
+        <nut-button v-if="!isH5 && subscribe.isSubscribe" size="small" style="margin-right: 5px;" type="danger"
+          @click="subscribe.cancelSubscribe()"> 取消订阅 </nut-button>
+        <nut-button plain size="small" :disabled="newMsgCount === 0" @click="readAllMsg">全部已读</nut-button>
+      </view>
     </view>
     <!-- 主题列表 -->
     <view v-if="!props.isLoading" class="message-list">
@@ -26,7 +32,10 @@
 
 <script lang="ts" setup>
 import { MessageDatum, MessageReadAll } from '@/api';
-import MessageItem from "./message-item.vue"
+import MessageItem from "./message-item.vue";
+import { useSubscriptionStore } from '@/stores';
+
+const isH5 = process.env.TARO_ENV === 'h5';
 
 const emit = defineEmits<{
   pageTurning: [number],
@@ -39,6 +48,8 @@ const props = defineProps<{
   totalCount: number,
   newMsgCount: number,
 }>()
+
+const subscribe = useSubscriptionStore()
 
 const readAllMsg = async () => {
   const res = await MessageReadAll({ category: props.data[0].category })

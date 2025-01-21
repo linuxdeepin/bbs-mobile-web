@@ -10,24 +10,29 @@
         </view>
       </template>
       <nut-tab-pane :pane-key="1">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
-          :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+        <MessageTabPane :is-subscribed="subscribe.isSubscribe" :data="message?.data" :is-loading="isLoading"
+          :total-count="message?.total_count" :new-msg-count="msgCount.thread_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="2">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
-          :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+        <MessageTabPane :is-subscribed="subscribe.isSubscribe" :data="message?.data" :is-loading="isLoading"
+          :total-count="message?.total_count" :new-msg-count="msgCount.post_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="3">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
-          :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+        <MessageTabPane :is-subscribed="subscribe.isSubscribe" :data="message?.data" :is-loading="isLoading"
+          :total-count="message?.total_count" :new-msg-count="msgCount.sys_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="5">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
-          :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+        <MessageTabPane :is-subscribed="subscribe.isSubscribe" :data="message?.data" :is-loading="isLoading"
+          :total-count="message?.total_count" :new-msg-count="msgCount.letter_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
       <nut-tab-pane :pane-key="6">
-        <MessageTabPane :data="message?.data" :is-loading="isLoading" :total-count="message?.total_count"
-          :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning" @refresh="refreshData" />
+        <MessageTabPane :is-subscribed="subscribe.isSubscribe" :data="message?.data" :is-loading="isLoading"
+          :total-count="message?.total_count" :new-msg-count="msgCount.at_msg_count" @page-turning="onPageTurning"
+          @refresh="refreshData" />
       </nut-tab-pane>
     </nut-tabs>
     <view class="pagination">
@@ -35,21 +40,28 @@
         mode="multi" :total-items="message?.total_count" :items-per-page="pagination.limit" />
     </view>
     <nut-dialog title="提示" content="是否确认删除该条消息" v-model:visible="delDialogShow" @ok="deleteMessage" />
+    <nut-dialog no-cancel-btn title="提示" content='您没有勾选“总是保持以上选择，不再询问”，仅能接收一条消息提醒'
+      v-model:visible="subscribe.subscribeDialogVisible" />
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
       :duration="prompt.toast.duration" />
+    <nut-notify v-model:visible="subscribe.autoSubscribeNotify.visible" :type="subscribe.autoSubscribeNotify.type"
+      :msg="subscribe.autoSubscribeNotify.text" />
   </nut-config-provider>
 </template>
 
 <script lang="ts" setup>
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useLoad, useTabItemTap } from '@tarojs/taro'
 import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import MessageTabPane from './message-tab-pane.vue'
-import { usePromptStore, useConfigStore } from '@/stores';
+import { usePromptStore, useConfigStore, useAccountStore } from '@/stores';
+import { useSubscriptionStore } from '@/stores/subscription';
 
 const config = useConfigStore()
 const prompt = usePromptStore()
+const account = useAccountStore()
+const subscribe = useSubscriptionStore()
 const tabs = ref(1)
 const tabList = ref([
   { title: '主题', paneKey: 1, msgCategory: "thread_msg_count" },
@@ -73,8 +85,16 @@ const msgCount = ref({
   sys_msg_count: 0,
   thread_msg_count: 0
 })
+useLoad(async () => {
+  // 如果用户未登录，跳转到登录页
+  if (!account.is_login) {
+    account.gotoLogin()
+    return
+  }
+  refreshData()
+})
 
-useDidShow(async () => {
+useDidShow(() => {
   refreshData()
 })
 
@@ -113,6 +133,10 @@ const onPageTurning = (page: number) => {
 Taro.eventCenter.on('msgDelBtnClicked', (id: number) => {
   delMsgId.value = id
   delDialogShow.value = true
+})
+
+useTabItemTap(async () => {
+  subscribe.autoRenew()
 })
 
 const deleteMessage = async () => {

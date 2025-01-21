@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-
+import { useSubscriptionStore } from "./subscription";
 import Taro from "@tarojs/taro";
 import {
   GetAccountInfo,
@@ -29,6 +29,7 @@ export const useAccountStore = defineStore("account", () => {
   const loaded = ref(false);
   const user_info = ref({ ...EmptyUserInfo });
   const isH5 = process.env.TARO_ENV === "h5";
+  const subscriptionStore = useSubscriptionStore();
 
   const useCaptcha = (captcha_id: string, type: "popup" | "verify") => {
     // 验证码组件的元素ID
@@ -140,18 +141,21 @@ export const useAccountStore = defineStore("account", () => {
       });
     });
   };
+  // 跳转到登录页面
   const gotoLogin = () => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: "/pages/account/account?show-action=true",
     });
   };
+  // 跳转到密码登录页面
   const gotoPasswordLogin = (username: string) => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: "/pages/account/account?username=" + username,
     });
   };
+  // 跳转到注册页面
   const gotoRegister = () => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: "/pages/register/register",
     });
   };
@@ -167,7 +171,14 @@ export const useAccountStore = defineStore("account", () => {
     }
     const loginCode = await getLoginCode();
     await LoginByCode(loginCode);
+    Taro.setStorageSync("forceLogoutFlag", false);
     await refreshInfo();
+    await subscriptionStore.getSeverSubscribe();
+    // 判断是否弹窗提醒用户订阅消息
+    const firstSubscribe = Taro.getStorageSync("firstSubscribe");
+    if (!firstSubscribe) {
+      subscriptionStore.loginSubscribeDialogVisible = true;
+    }
   };
   const loginByPassword = async (
     captchaID: string,

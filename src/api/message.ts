@@ -39,6 +39,18 @@ export async function PostOffset(params: { id: number, thread_id: number, page_s
   return http.get<PostOffsetResponse>("/api/v1/user/post/offset", { params })
 }
 
+export function MessageSubscriptionList() {
+  return http.get<MessageSubscriptionListResponse[]>("/api/v2/user/weixin/weapp/subscription")
+}
+
+export function MessageSubscription(tmplIds: string[]) {
+  return http.post("/api/v2/user/weixin/weapp/subscription", { template_list: tmplIds })
+}
+
+export function MessageUnSubscription(tmplIds: string[]) {
+  return http.delete("/api/v2/user/weixin/weapp/subscription", { data: { template_list: tmplIds } });
+}
+
 interface MessageResponse {
   data: MessageDatum[];
   total_count: number;
@@ -93,4 +105,10 @@ interface PostOffsetResponse {
   code: number;
   msg: string;
   offset: number;
+}
+
+export interface MessageSubscriptionListResponse {
+  MessageSent: boolean;
+  Status: string;
+  TemplateID: string;
 }
