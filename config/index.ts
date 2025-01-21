@@ -25,7 +25,9 @@ const config = {
   ],
   defineConstants: {},
   copy: {
-    patterns: [],
+    patterns: [
+      { from: 'src/assets', to: `dist/${process.env.TARO_ENV}/assets` },
+    ],
     options: {},
   },
   framework: "vue3",

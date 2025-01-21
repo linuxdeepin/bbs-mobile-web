@@ -48,12 +48,13 @@
 import { ref } from 'vue'
 import { GetForum, UserForumFavoriteList } from '@/api'
 import { computedAsync } from '@vueuse/core';
-import Taro, { useDidShow } from '@tarojs/taro';
-import { useAccountStore, useConfigStore } from "@/stores";
+import Taro, { useDidShow, useTabItemTap } from '@tarojs/taro';
+import { useAccountStore, useConfigStore, useSubscriptionStore } from "@/stores";
 import { setMessageCount } from '@/utils/message';
 
 const account = useAccountStore()
 const config = useConfigStore()
+const subscribe = useSubscriptionStore()
 
 const forumList = computedAsync(async () => {
   const { data } = await GetForum()
@@ -74,6 +75,10 @@ const favoriteForumList = computedAsync(async () => {
 useDidShow(() => {
   favoriteForumRefresh.value++
   setMessageCount()
+})
+
+useTabItemTap(() => {
+  subscribe.checkSubscriptionOnTabTap()
 })
 
 const toModuleDetail = (forumId: number) => {

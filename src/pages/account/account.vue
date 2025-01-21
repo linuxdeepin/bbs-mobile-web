@@ -95,13 +95,14 @@
 <script lang="ts" setup>
 
 import { ref } from 'vue';
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useAccountStore, usePromptStore, useConfigStore } from '@/stores'
+import Taro, { useDidShow, useTabItemTap } from '@tarojs/taro'
+import { useAccountStore, usePromptStore, useConfigStore, useSubscriptionStore } from '@/stores'
 import { setMessageCount } from '@/utils/message';
 
 const account = useAccountStore()
 const prompt = usePromptStore()
 const config = useConfigStore()
+const subscribe = useSubscriptionStore()
 const captcha = account.useForceCaptcha()
 const instance = Taro.getCurrentInstance()
 const isH5 = process.env.TARO_ENV === "h5";
@@ -113,6 +114,10 @@ useDidShow(() => {
 if (account.is_login) {
     account.refreshInfo()
 }
+
+useTabItemTap(() => {
+    subscribe.checkSubscriptionOnTabTap()
+})
 
 const bindDialog = ref({ visible: false, title: '', content: '' })
 
