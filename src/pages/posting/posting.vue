@@ -107,18 +107,30 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import Taro, { useDidShow } from '@tarojs/taro';
+import Taro, { useLoad, useTabItemTap } from '@tarojs/taro';
 import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
 import { computedAsync } from '@vueuse/core';
-import { usePromptStore, useAccountStore, useConfigStore } from '@/stores';
+import { usePromptStore, useAccountStore, useConfigStore, useSubscriptionStore } from '@/stores';
 import { setMessageCount } from '@/utils/message';
 
 const prompt = usePromptStore()
 const account = useAccountStore()
+const subscribe = useSubscriptionStore()
 const config = useConfigStore()
 const postCaptcha = account.useSmartCaptcha()
 
-useDidShow(() => setMessageCount())
+useLoad(() => {
+  // 如果用户未登录，跳转到登录页
+  if (!account.is_login) {
+    account.gotoLogin()
+    return
+  }
+  setMessageCount()
+})
+
+useTabItemTap(async () => {
+  subscribe.checkSubscriptionOnTabTap()
+})
 
 // 选择版块
 const selectedForum = ref({ id: 0, name: '' })

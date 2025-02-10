@@ -140,18 +140,21 @@ export const useAccountStore = defineStore("account", () => {
       });
     });
   };
+  // 跳转到登录页面
   const gotoLogin = () => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: "/pages/account/account?show-action=true",
     });
   };
+  // 跳转到密码登录页面
   const gotoPasswordLogin = (username: string) => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: "/pages/account/account?username=" + username,
     });
   };
+  // 跳转到注册页面
   const gotoRegister = () => {
-    Taro.navigateTo({
+    Taro.switchTab({
       url: "/pages/register/register",
     });
   };
@@ -167,6 +170,7 @@ export const useAccountStore = defineStore("account", () => {
     }
     const loginCode = await getLoginCode();
     await LoginByCode(loginCode);
+    Taro.setStorageSync("forceLogoutFlag", false);
     await refreshInfo();
   };
   const loginByPassword = async (
