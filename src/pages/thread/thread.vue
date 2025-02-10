@@ -51,9 +51,9 @@
             <Vote v-if="threadInfo.is_poll" :thread-id="threadInfo.id" :poll-list="threadInfo.poll_list"
                 @login="showLoginDialog = true" @voting="threadRefresh++" />
             <!-- 帖子操作栏 -->
-            <ThreadOp v-model:thread-info="threadInfo" v-model:show-login-dialog="showLoginDialog"
-                v-model:thread-refresh="threadRefresh" v-model:thread-resolved="threadResolved"
-                v-model:thread-closed="threadClosed" :is-moderator="isModerator" />
+            <ThreadOp v-model:thread-info="threadInfo" v-model:thread-resolved="threadResolved"
+                v-model:thread-closed="threadClosed" :is-moderator="isModerator" @login="showLoginDialog = true"
+                @threadRefresh="threadRefresh++" />
             <!-- 分割线 -->
             <nut-col span="22" offset="1">
                 <nut-divider class="post-divider" content-position="left">
@@ -182,12 +182,10 @@
                                     </template>
                                 </nut-cell>
                                 <PostOp v-model:thread-info="threadInfo" v-model:post="threadPosts.data[index]"
-                                    v-model:show-login-dialog="showLoginDialog" v-model:thread-closed="threadClosed"
-                                    v-model:is-reply="isReply" v-model:reply-id="replyId"
-                                    v-model:reply-user-id="replyUserId" v-model:reply-nick-name="replyNickName"
-                                    v-model:refresh-scroll="refreshScroll" v-model:post-refresh="postRefresh"
-                                    v-model:winnow-posts="winnowPosts" v-model:winnow-posts-refresh="winnowPostsRefresh"
-                                    :is-moderator="isModerator" />
+                                    v-model:reply-info="replyInfo" v-model:scrollToPostDivider="scrollToPostDivider"
+                                    v-model:winnow-posts="winnowPosts" :is-moderator="isModerator"
+                                    :thread-closed="threadClosed" @login="showLoginDialog = true"
+                                    @postRefresh="postRefresh++" @winnowPostRefresh="winnowPostsRefresh++" />
                             </nut-cell-group>
                         </view>
                     </nut-col>
@@ -220,8 +218,7 @@
                 </view>
             </template>
             <!-- 自己回帖 -->
-            <SendPost v-if="!threadClosed" v-model="isChooseImage" :info="threadInfo" :is-reply="isReply"
-                :reply-id="replyId" :reply-user-id="replyUserId" :reply-nick-name="replyNickName"
+            <SendPost v-if="!threadClosed" v-model="isChooseImage" :info="threadInfo" :reply-info="replyInfo"
                 @login="showLoginDialog = true" @cancel-reply="cancelReply">
             </SendPost>
         </nut-row>
@@ -369,10 +366,10 @@ useUnload(() => {
 })
 
 useDidShow(() => {
-    if (!isChooseImage) {
+    if (!isChooseImage.value) {
         // 登录成功后返回到帖子页面,刷新点赞和收藏状态
         threadRefresh.value++
-        refreshScroll.value = false
+        scrollToPostDivider.value = false
         postRefresh.value++
     }
     isChooseImage.value = false
@@ -434,23 +431,27 @@ computedAsync(async () => {
 })
 
 // 当前是否是在回复别人的评论
-const isReply = ref(false)
-const replyId = ref(0)
-const replyUserId = ref(0)
-const replyNickName = ref("")
+const replyInfo = ref({
+    isReply: false,
+    replyId: 0,
+    replyUserId: 0,
+    replyNickName: ""
+})
 
 // 取消回复
 const cancelReply = () => {
-    isReply.value = false
-    replyId.value = 0
-    replyUserId.value = 0
-    replyNickName.value = ""
+    replyInfo.value = {
+        isReply: false,
+        replyId: 0,
+        replyUserId: 0,
+        replyNickName: ""
+    }
 }
 
 // 获取回复数据
 const threadPosts = ref<PostListResponse>()
-// 刷新时是否滚动到回帖分割线
-const refreshScroll = ref(true)
+// 评论刷新时是否滚动到回帖分割线（在删除评论时不需要滚动）
+const scrollToPostDivider = ref(true)
 // 回复中的所有用户id以及标签
 const replyUserTags = ref<{ id: number, tags: UserTags[] }[]>([])
 computedAsync(async () => {
@@ -508,13 +509,13 @@ watch(threadPosts, (_, oldVal) => {
                 })
                 sendPostScroll.value = false
             })
-        } else if (refreshScroll.value) {
+        } else if (scrollToPostDivider.value) {
             Taro.pageScrollTo({
                 selector: ".post-divider",
                 offsetTop: -100
             })
         }
-        refreshScroll.value = true
+        scrollToPostDivider.value = true
     })
 })
 
