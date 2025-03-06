@@ -164,7 +164,7 @@ const submitPosting = async () => {
     prompt.showToast('warn', '标题为2～30字')
     return
   }
-  if (postingContent.value.length) {
+  if (postingContent.value.length == 0) {
     prompt.showToast('warn', '内容不能为空')
     return
   }
