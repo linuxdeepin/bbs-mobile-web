@@ -3,7 +3,12 @@
     <!-- 顶部标题和全部已读按钮 -->
     <view class="topbar">
       <view class="title">消息列表</view>
-      <nut-button plain size="small" :disabled="newMsgCount === 0" @click="readAllMsg">全部已读</nut-button>
+      <view class="right">
+        <nut-button size="small" style="margin-right: 5px;" type="primary" @click="subscribeMessage">{{
+          subscribe.isSubscribed ?
+            '取消订阅' : '订阅' }}</nut-button>
+        <nut-button plain size="small" :disabled="newMsgCount === 0" @click="readAllMsg">全部已读</nut-button>
+      </view>
     </view>
     <!-- 主题列表 -->
     <view v-if="!props.isLoading" class="message-list">
@@ -26,7 +31,8 @@
 
 <script lang="ts" setup>
 import { MessageDatum, MessageReadAll } from '@/api';
-import MessageItem from "./message-item.vue"
+import MessageItem from "./message-item.vue";
+import { useSubscriptionStore } from '@/stores';
 
 const emit = defineEmits<{
   pageTurning: [number],
@@ -39,6 +45,13 @@ const props = defineProps<{
   totalCount: number,
   newMsgCount: number,
 }>()
+
+const subscribe = useSubscriptionStore()
+
+// 订阅
+const subscribeMessage = () => {
+  subscribe.subscribeMessage()
+}
 
 const readAllMsg = async () => {
   const res = await MessageReadAll({ category: props.data[0].category })
