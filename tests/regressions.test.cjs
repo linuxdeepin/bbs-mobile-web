@@ -72,6 +72,51 @@ test('a cold-start composer waits for account loading before deciding to redirec
   assert.equal(badgeLoads, 1);
 });
 
+test('H5 image uploads use a relative URL and browser credentials without reading mini program storage', async () => {
+  const calls = [];
+  const document = {};
+  Object.defineProperty(document, '$$cookie', { get() { throw new Error('must not read mini cookies'); } });
+  const { uploadImage } = loadTS('src/utils/upload.ts', {
+    '@tarojs/runtime': { document }, '@tarojs/taro': {
+      getStorageSync() { throw new Error('must not read storage'); },
+      uploadFile: async options => { calls.push(options); return { statusCode: 200, data: '{"code":0,"data":["/a.png"]}' }; },
+    },
+  });
+  assert.equal(await uploadImage('blob:test'), '/a.png');
+  assert.equal(calls[0].url, '/api/v1/thread/file');
+  assert.equal(calls[0].header.Cookie, undefined);
+});
+
+test('mini image uploads use the live HTTP-plugin cookie jar, and reject missing sessions', async () => {
+  const calls = [];
+  const document = { $$cookie: 'bbs=session; other=value' };
+  const { uploadImage } = loadTS('src/utils/upload.ts', {
+    '@tarojs/runtime': { document }, '@tarojs/taro': {
+      uploadFile: async options => { calls.push(options); return { statusCode: 200, data: '{"data":["/a.png"]}' }; },
+    },
+  }, { TARO_ENV: 'weapp' });
+  await uploadImage('/tmp/a.png');
+  assert.equal(calls[0].header.Cookie, 'bbs=session; other=value');
+  assert.equal(calls[0].url, 'https://bbs.example.test/api/v1/thread/file');
+  document.$$cookie = '';
+  await assert.rejects(uploadImage('/tmp/b.png'), /登录已失效/);
+  assert.equal(calls.length, 1);
+});
+
+test('upload HTTP failures, invalid JSON and business failures do not become successful image messages', async () => {
+  for (const response of [
+    { statusCode: 403, data: '' }, { statusCode: 200, data: 'invalid' },
+    { statusCode: 200, data: '{"code":1,"msg":"禁止上传"}' }, { statusCode: 200, data: '{"data":[]}' },
+    { statusCode: 200, data: 'null' }, { statusCode: 200, data: 'false' },
+    { statusCode: 200, data: '[]' },
+  ]) {
+    const { uploadImage } = loadTS('src/utils/upload.ts', {
+      '@tarojs/runtime': { document: {} }, '@tarojs/taro': { uploadFile: async () => response },
+    });
+    await assert.rejects(uploadImage('blob:test'), error => !/Cannot read|TypeError/.test(error.message));
+  }
+});
+
 test('late page response cannot replace the latest page or clear its loading state', async () => {
   const requests = [], pagination = ref({ page: 1, limit: 10 }), loading = ref(false);
   const scope = effectScope();

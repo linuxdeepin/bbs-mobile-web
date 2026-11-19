@@ -6,6 +6,7 @@ export const apiServer = process.env.SERVER;
 
 export const http = axios.create({
   baseURL: isH5 ? "" : process.env.SERVER,
+  timeout: 20000,
 });
 
 console.log({ document, window });
