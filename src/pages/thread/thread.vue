@@ -43,8 +43,8 @@
             </nut-col>
             <!-- 主题 -->
             <nut-col span="22" offset="1">
-                <view v-if="!banUser" class="thread-message html-message taro_html vditor-reset"
-                    @click="htmlClick($event)" v-html="threadInfo.post.message"></view>
+                <MarkdownContent v-if="!banUser" class="thread-message" :content="threadInfo.post.message"
+                    @preview="isChooseImage = true" />
                 <view v-else>用户被禁言，该内容已隐藏</view>
             </nut-col>
             <!-- 投票 -->
@@ -89,10 +89,8 @@
                             <nut-cell class="content" desc-text-align="left">
                                 <template #desc>
                                     <template v-if="post.user.state === 0 || post.user.state === 1">
-                                        <view v-if="post.deleted_at === null"
-                                            class="post-message html-message taro_html vditor-reset"
-                                            @click="htmlClick($event)" v-html="post.message">
-                                        </view>
+                                        <MarkdownContent v-if="post.deleted_at === null" class="post-message"
+                                            :content="post.message" @preview="isChooseImage = true" />
                                         <view v-else
                                             class="post-message html-message taro_html vditor-reset del-message">
                                             该评论已删除!
@@ -149,10 +147,8 @@
                                         <view class="son-post" v-if="post.son_post?.id">
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
                                             <template v-if="post.son_post.user.state !== 2">
-                                                <view v-if="post.son_post.deleted_at === null"
-                                                    class="post-message html-message taro_html vditor-reset"
-                                                    @click="htmlClick($event)" v-html="post.son_post.message">
-                                                </view>
+                                                <MarkdownContent v-if="post.son_post.deleted_at === null" class="post-message"
+                                                    :content="post.son_post.message" @preview="isChooseImage = true" />
                                                 <view v-else
                                                     class="post-message html-message taro_html vditor-reset del-message">
                                                     该评论已删除!
@@ -165,10 +161,8 @@
                                             </view>
                                         </view>
                                         <template v-if="post.user.state === 0 || post.user.state === 1">
-                                            <view v-if="post.deleted_at === null"
-                                                class="post-message html-message taro_html vditor-reset"
-                                                @click="htmlClick($event)" v-html="post.message">
-                                            </view>
+                                            <MarkdownContent v-if="post.deleted_at === null" class="post-message"
+                                                :content="post.message" @preview="isChooseImage = true" />
                                             <view v-else
                                                 class="post-message html-message taro_html vditor-reset del-message">
                                                 该评论已删除!
@@ -185,7 +179,7 @@
                                     v-model:reply-info="replyInfo" v-model:scrollToPostDivider="scrollToPostDivider"
                                     v-model:winnow-posts="winnowPosts" :is-moderator="isModerator"
                                     :thread-closed="threadClosed" @login="showLoginDialog = true"
-                                    @postRefresh="postRefresh++" @winnowPostRefresh="winnowPostsRefresh++" />
+                                    @postRefresh="postRefresh++" @winnowPostsRefresh="winnowPostsRefresh++" />
                             </nut-cell-group>
                         </view>
                     </nut-col>
@@ -219,7 +213,7 @@
             </template>
             <!-- 自己回帖 -->
             <SendPost v-if="!threadClosed" v-model="isChooseImage" :info="threadInfo" :reply-info="replyInfo"
-                @login="showLoginDialog = true" @cancel-reply="cancelReply">
+                @login="showLoginDialog = true" @cancel-reply="cancelReply" @sent="sendPost">
             </SendPost>
         </nut-row>
         <view v-else>
@@ -244,18 +238,13 @@ import { watch, ref, watchEffect } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow, useDidHide } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
 import { useConfigStore, useAccountStore, usePromptStore } from '@/stores'
-import { TaroEvent } from '@tarojs/components';
-import { TaroElement } from '@tarojs/runtime';
 import { formatTime } from '@/utils/format';
-import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
 import Vote from './vote.vue'
 import {
-    apiServer,
     ThreadInfo,
     ThreadPostList,
     ThreadInfoData,
-    PostListResponse,
     ThreadUserList,
     GetUserInfo,
     WinnowThreadPostList,
@@ -267,70 +256,15 @@ import Tags from '@/widgets/tags.vue';
 import ThreadOp from "./thread-op.vue"
 import PostOp from "./post-op.vue"
 import NavH5 from "@/widgets/navigation-h5.vue";
+import MarkdownContent from '@/widgets/markdown-content.vue';
 
-if (process.env.TARO_ENV === 'h5') {
-    // 加载vditor样式
-    require('vditor/dist/index.css')
-} else {
-    // 加载html5样式
-    require('@tarojs/taro/html.css')
-}
 const config = useConfigStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
 
-const imageUrls = [] as string[]
-
-const option = (Taro as any).options
-
 // 提示需要进行登陆
 const showLoginDialog = ref(false)
 
-// 处理html渲染，仅在小程序中生效
-option.html.transformElement = (el: TaroElement, h5el: Element) => {
-    el.setAttribute('data-tag', h5el.tagName)
-    switch (el.nodeName) {
-        case "text":
-            if (h5el.tagName === "a") {
-                // attributes 格式有些奇怪，像这样["href=\"https://xxxx"\"]，所以要进行预处理 
-                h5el.attributes.forEach(attr => {
-                    const arr = attr.split("=")
-                    const key = arr[0]
-                    const value = arr.slice(1).join("=").slice(1, -1)
-                    el.setAttribute('data-' + key, value)
-                })
-            }
-        case "image":
-            // 图片高度自动缩放
-            el.setAttribute('mode', 'widthFix')
-
-            const src = el.getAttribute("src")
-            if (!src) {
-                break
-            }
-            // 表情图片拼接服务器地址
-            if (src.startsWith("assets")) {
-                el.setAttribute('src', apiServer + "/" + src)
-                break
-            }
-            // 小程序图片不会自动显示宽度，在图片加载后设置图片显示真实宽度，超出屏幕的图片有样式中的 max-width 限制
-            el.addEventListener("load", (event: TaroEvent<HTMLImageElement>) => {
-                el.style.setProperty('width', event.detail.width + "px")
-                imageUrls.push(src)
-            }, null)
-            // 图片点击预览
-            el.addEventListener("tap", () => {
-                console.log("preview image", imageUrls)
-                isChooseImage.value = true
-                Taro.previewImage({
-                    current: src,
-                    urls: imageUrls
-                })
-            }, null)
-            break
-    }
-    return el
-}
 // 页面是否隐藏
 const hidden = ref(false)
 // 选择图片后不刷新页面
@@ -359,9 +293,8 @@ useUnload(() => {
     clearInterval(interval.value)
     if (Number(instance.router.params['posting'] || 0)) {
         // 携带这个参数说明是从发帖页面跳转过来
-        // 返回时需要多返回一步
+        // 发帖页是 tabBar 页面，返回时只刷新列表。
         config.indexNeedRefresh = true
-        Taro.navigateBack()
     }
 })
 
@@ -390,26 +323,24 @@ const threadClosed = ref(false)
 const userGroupName = ref("")
 // 楼主标签
 const userTags = ref<UserTags[]>([])
-computedAsync(async () => {
+computedAsync(async (onCancel) => {
+    let cancelled = false
+    onCancel(() => { cancelled = true })
     threadRefresh.value
     const { data } = await ThreadInfo(threadID.value)
+    const [{ data: userInfo }, { data: tags }] = await Promise.all([
+        GetUserInfo(data.data.user_id), GetUserTag(data.data.user_id),
+    ])
+    if (cancelled) return
     threadInfo.value = data.data
-    const { data: userInfo } = await GetUserInfo(threadInfo.value.user_id)
     banUser.value = !userInfo.allow_speak
     userGroupName.value = userInfo.group_name
-    const { data: _userTags } = await GetUserTag(threadInfo.value.user_id)
-    userTags.value = _userTags.filter(tag => tag.lang === 'zh_CN')
-    for (let i = 0; i < threadInfo.value.attrs.length; i++) {
-        if (threadInfo.value.attrs[i].name === "Resolved") {
-            threadResolved.value = true
-            break
-        }
-    }
-    threadClosed.value = threadInfo.value.isclosed ? true : false
+    userTags.value = tags.filter(tag => tag.lang === 'zh_CN')
+    threadResolved.value = threadInfo.value.attrs.some(attr => attr.name === 'Resolved')
+    threadClosed.value = !!threadInfo.value.isclosed
 }, undefined, { evaluating: infoLoading })
 
 // 当前登陆用户是否为当前帖子所属版块的版主
-const isModerator = ref(false)
 // 版主管理评论
 const winnowLoading = ref(false)
 const winnowPostsRefresh = ref(0)
@@ -421,14 +352,14 @@ const winnowPosts = computedAsync(() => {
 }, undefined, { evaluating: winnowLoading })
 
 // 判断当前用户是否为帖子所属版块的版主
-computedAsync(async () => {
+const isModerator = computedAsync(async () => {
     if (!account.is_login || !threadInfo.value) {
-        isModerator.value = false
-        return
+        return false
     }
+    const userId = account.user_info.id
     const { data } = await ThreadUserList(threadInfo.value.forum_id)
-    isModerator.value = data.data.some(user => user.id === account.user_info.id)
-})
+    return data.data.some(user => user.id === userId)
+}, false)
 
 // 当前是否是在回复别人的评论
 const replyInfo = ref({
@@ -449,29 +380,25 @@ const cancelReply = () => {
 }
 
 // 获取回复数据
-const threadPosts = ref<PostListResponse>()
 // 评论刷新时是否滚动到回帖分割线（在删除评论时不需要滚动）
 const scrollToPostDivider = ref(true)
-// 回复中的所有用户id以及标签
-const replyUserTags = ref<{ id: number, tags: UserTags[] }[]>([])
-computedAsync(async () => {
+const threadPosts = computedAsync(async () => {
     // 在回复时，需要手动刷新
     postRefresh.value
     const { data } = await ThreadPostList(threadID.value, {
         page: pagination.value.page,
         pageSize: pagination.value.limit,
     })
-    threadPosts.value = data
-    // 根据回复中的用户id获取用户Tag
-    for (var i = 0; i < threadPosts.value.data.length; i++) {
-        const post = threadPosts.value.data[i]
-        if (replyUserTags.value.some(user => user.id === post.user.id)) {
-            continue
-        }
-        const { data } = await GetUserTag(post.user.id)
-        replyUserTags.value.push({ id: post.user.id, tags: data.filter(tag => tag.lang === 'zh_CN') })
-    }
+    return data
 }, undefined, { evaluating: postLoading })
+
+const replyUserTags = computedAsync(async () => {
+    const ids = [...new Set((threadPosts.value?.data || []).map(post => post.user.id))]
+    return Promise.all(ids.map(async id => {
+        const { data } = await GetUserTag(id)
+        return { id, tags: data.filter(tag => tag.lang === 'zh_CN') }
+    }))
+}, [] as { id: number, tags: UserTags[] }[])
 
 const getTagsByPostUserId = ((postUserId) => {
     const tags = replyUserTags.value.find(user => user.id === postUserId)?.tags
@@ -487,6 +414,7 @@ watch(threadPosts, (_, oldVal) => {
             Taro.nextTick(() => {
                 setTimeout(() => {
                     Taro.createSelectorQuery().select(`.post-id-${postId.value}`).boundingClientRect().exec((res) => {
+                        if (!res[0]) return
                         Taro.pageScrollTo({
                             scrollTop: res[0].top
                         })
@@ -504,6 +432,7 @@ watch(threadPosts, (_, oldVal) => {
         }
         if (sendPostScroll.value) {
             Taro.createSelectorQuery().select('.thread-page').boundingClientRect().exec((res) => {
+                if (!res[0]) return
                 Taro.pageScrollTo({
                     scrollTop: res[0].height
                 })
@@ -519,27 +448,6 @@ watch(threadPosts, (_, oldVal) => {
     })
 })
 
-// 渲染内容点击，在小程序中处理超链接
-function htmlClick(event: MouseEvent) {
-    const target = event.target as HTMLElement
-    const dataset = target.dataset
-    console.log("html click", { event, dataset })
-    // 是html超链接被点击
-    if (dataset["tag"] === "a") {
-        const href = target.dataset["href"] || ''
-        // 如果是点击的帖子链接，在小程序跳转，否则就复制链接
-        if (href.includes("deepin.org")) {
-            const result = href.match(/\/post\/(\d+)$/)
-            if (result?.length == 2) {
-                Taro.navigateTo({
-                    url: `/pages/thread/thread?id=${result[1]}`,
-                })
-                return
-            }
-        }
-        Taro.setClipboardData({ data: href })
-    }
-}
 // 生成分享标题
 function genShareTitle(title: string) {
     if (!config.weixinShare.state) {
@@ -576,9 +484,9 @@ useShareAppMessage(() => {
 })
 
 // 在发帖后翻到最后一页
-const sendPost = () => {
+const sendPost = (replyId: number) => {
     // 清空回复状态
-    cancelReply()
+    if ((replyInfo.value.isReply ? replyInfo.value.replyId : 0) === replyId) cancelReply()
     if (!threadPosts.value)
         return
     let last = Math.ceil(threadPosts.value.total_count / pagination.value.limit)
@@ -594,32 +502,37 @@ const sendPost = () => {
     }
 }
 
-Taro.eventCenter.on("sendPost", sendPost)
 
 // 定时刷新评论
 // 如果当前位于评论的最后一页,每三秒刷新一次
 const interval = ref<ReturnType<typeof setTimeout>>()
 const intervalRefreshPost = ref(false)
-watchEffect(() => {
-    if (!threadPosts.value)
-        return
-    if (pagination.value.page === Math.ceil(threadPosts.value.total_count / pagination.value.limit) || threadPosts.value.total_count === 0) {
-        clearInterval(interval.value)
-        const oldTotalCount = threadPosts.value.total_count
-        interval.value = setInterval(async () => {
-            if (hidden.value || threadClosed.value) return
-            const { data } = await ThreadPostList(threadID.value, {
-                page: pagination.value.page,
-                pageSize: pagination.value.limit,
-            })
-            if (oldTotalCount !== data.total_count) {
+watchEffect((onCleanup) => {
+    const posts = threadPosts.value
+    const page = pagination.value.page
+    const limit = pagination.value.limit
+    postRefresh.value
+    if (!posts || hidden.value || threadClosed.value ||
+        (posts.total_count > 0 && page !== Math.ceil(posts.total_count / limit))) return
+    let cancelled = false
+    let inFlight = false
+    const timer = setInterval(async () => {
+        if (inFlight) return
+        inFlight = true
+        try {
+            const { data } = await ThreadPostList(threadID.value, { page, pageSize: limit })
+            if (!cancelled && posts.total_count !== data.total_count) {
                 intervalRefreshPost.value = true
                 threadPosts.value = data
             }
+        } catch (error) {
+            console.warn('refresh replies', error)
+        } finally {
+            inFlight = false
+        }
         }, 3000)
-    } else {
-        clearInterval(interval.value)
-    }
+    interval.value = timer
+    onCleanup(() => { cancelled = true; clearInterval(timer); interval.value = undefined })
 })
 </script>
 
@@ -718,7 +631,7 @@ watchEffect(() => {
     .pagination {
         display: flex;
         justify-content: center;
-        padding-bottom: 180px;
+        padding-bottom: 20Px;
     }
 
     .skeleton-container {
