@@ -53,7 +53,7 @@
 import Taro, { useDidShow, useLoad, useTabItemTap } from '@tarojs/taro'
 import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
-import { computedAsync } from '@vueuse/core';
+import { computedAsync, until } from '@vueuse/core';
 import MessageTabPane from './message-tab-pane.vue'
 import { usePromptStore, useConfigStore, useAccountStore } from '@/stores';
 import { useSubscriptionStore } from '@/stores/subscription';
@@ -92,6 +92,7 @@ const msgCount = computedAsync(async () => {
   thread_msg_count: 0
 })
 useLoad(async () => {
+  await until(() => account.loaded).toBe(true)
   // 如果用户未登录，跳转到登录页
   if (!account.is_login) {
     account.gotoLogin()

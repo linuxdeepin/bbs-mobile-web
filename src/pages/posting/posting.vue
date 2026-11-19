@@ -109,7 +109,7 @@
 import { ref, watch } from 'vue'
 import Taro, { useLoad } from '@tarojs/taro';
 import { GetForum, GetTheme, ThemeResponse, PostingThread, apiServer } from '@/api'
-import { computedAsync } from '@vueuse/core';
+import { computedAsync, until } from '@vueuse/core';
 import { usePromptStore, useAccountStore, useConfigStore } from '@/stores';
 import { setMessageCount } from '@/utils/message';
 
@@ -118,7 +118,8 @@ const account = useAccountStore()
 const config = useConfigStore()
 const postCaptcha = account.useSmartCaptcha()
 
-useLoad(() => {
+useLoad(async () => {
+  await until(() => account.loaded).toBe(true)
   // 如果用户未登录，跳转到登录页
   if (!account.is_login) {
     account.gotoLogin()

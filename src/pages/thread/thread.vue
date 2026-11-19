@@ -293,9 +293,8 @@ useUnload(() => {
     clearInterval(interval.value)
     if (Number(instance.router.params['posting'] || 0)) {
         // 携带这个参数说明是从发帖页面跳转过来
-        // 返回时需要多返回一步
+        // 发帖页是 tabBar 页面，返回时只刷新列表。
         config.indexNeedRefresh = true
-        Taro.navigateBack()
     }
 })
 

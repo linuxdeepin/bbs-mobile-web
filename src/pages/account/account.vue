@@ -111,6 +111,19 @@ const isH5 = process.env.TARO_ENV === "h5";
 
 useDidShow(() => {
     setMessageCount()
+    const request = account.loginRequest
+    if (!request || isH5) return
+    account.loginRequest = null
+    if (request.type === 'password') {
+        loginAction.value.show = false
+        loginByPassword.value.username = request.username || ''
+        loginByPassword.value.password = ''
+        loginByPassword.value.usernameReadonly = !!request.username
+        loginByPassword.value.show = true
+    } else {
+        loginByPassword.value.show = false
+        loginAction.value.show = true
+    }
 })
 
 if (account.is_login) {
@@ -162,7 +175,7 @@ const loginAction = ref({
 
                 console.log("weapp login", { err });
                 // 如果登录失败，并且账户未注册过deepinid，跳转到账户注册页面
-                if (err?.response.status === 403) {
+                if (err?.response?.status === 403) {
                     console.log("go to register");
                     prompt.showToast('loading', "微信未绑定深度账号，正前往注册页面", 3000)
                     setTimeout(() => {
@@ -181,6 +194,7 @@ const loginAction = ref({
         callback: () => {
             loginByPassword.value.username = ''
             loginByPassword.value.password = ''
+            loginByPassword.value.usernameReadonly = false
             loginByPassword.value.show = true
             console.log("login by password")
         }
