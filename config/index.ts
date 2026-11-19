@@ -2,6 +2,9 @@ import Components from "unplugin-vue-components/webpack";
 import NutUIResolver from "@nutui/nutui-taro/dist/resolver";
 import path from "path";
 
+// Match direct installs and pnpm's nested node_modules on Windows and Unix.
+const markdownDependencies = /[\\/]node_modules[\\/](?:htmlparser2|domhandler|domutils|dom-serializer|domelementtype|entities|markdown-it|linkify-it|mdurl|uc\.micro|punycode\.js|js-base64|xss|cssfilter)[\\/]/;
+
 const config = {
   projectName: "deepin-bbs",
   date: "2023-9-20",
@@ -39,6 +42,10 @@ const config = {
     data: `@import "@nutui/nutui-taro/dist/styles/variables.scss";`,
   },
   mini: {
+    compile: {
+      // These packages ship class fields, optional chaining and logical assignments.
+      include: [(filename: string) => markdownDependencies.test(filename)],
+    },
     miniCssExtractPluginOption: {
       ignoreOrder: true,
     },
