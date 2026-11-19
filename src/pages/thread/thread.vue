@@ -245,7 +245,6 @@ import {
     ThreadInfo,
     ThreadPostList,
     ThreadInfoData,
-    PostListResponse,
     ThreadUserList,
     GetUserInfo,
     WinnowThreadPostList,
@@ -325,26 +324,24 @@ const threadClosed = ref(false)
 const userGroupName = ref("")
 // 楼主标签
 const userTags = ref<UserTags[]>([])
-computedAsync(async () => {
+computedAsync(async (onCancel) => {
+    let cancelled = false
+    onCancel(() => { cancelled = true })
     threadRefresh.value
     const { data } = await ThreadInfo(threadID.value)
+    const [{ data: userInfo }, { data: tags }] = await Promise.all([
+        GetUserInfo(data.data.user_id), GetUserTag(data.data.user_id),
+    ])
+    if (cancelled) return
     threadInfo.value = data.data
-    const { data: userInfo } = await GetUserInfo(threadInfo.value.user_id)
     banUser.value = !userInfo.allow_speak
     userGroupName.value = userInfo.group_name
-    const { data: _userTags } = await GetUserTag(threadInfo.value.user_id)
-    userTags.value = _userTags.filter(tag => tag.lang === 'zh_CN')
-    for (let i = 0; i < threadInfo.value.attrs.length; i++) {
-        if (threadInfo.value.attrs[i].name === "Resolved") {
-            threadResolved.value = true
-            break
-        }
-    }
-    threadClosed.value = threadInfo.value.isclosed ? true : false
+    userTags.value = tags.filter(tag => tag.lang === 'zh_CN')
+    threadResolved.value = threadInfo.value.attrs.some(attr => attr.name === 'Resolved')
+    threadClosed.value = !!threadInfo.value.isclosed
 }, undefined, { evaluating: infoLoading })
 
 // 当前登陆用户是否为当前帖子所属版块的版主
-const isModerator = ref(false)
 // 版主管理评论
 const winnowLoading = ref(false)
 const winnowPostsRefresh = ref(0)
@@ -356,14 +353,14 @@ const winnowPosts = computedAsync(() => {
 }, undefined, { evaluating: winnowLoading })
 
 // 判断当前用户是否为帖子所属版块的版主
-computedAsync(async () => {
+const isModerator = computedAsync(async () => {
     if (!account.is_login || !threadInfo.value) {
-        isModerator.value = false
-        return
+        return false
     }
+    const userId = account.user_info.id
     const { data } = await ThreadUserList(threadInfo.value.forum_id)
-    isModerator.value = data.data.some(user => user.id === account.user_info.id)
-})
+    return data.data.some(user => user.id === userId)
+}, false)
 
 // 当前是否是在回复别人的评论
 const replyInfo = ref({
@@ -384,29 +381,25 @@ const cancelReply = () => {
 }
 
 // 获取回复数据
-const threadPosts = ref<PostListResponse>()
 // 评论刷新时是否滚动到回帖分割线（在删除评论时不需要滚动）
 const scrollToPostDivider = ref(true)
-// 回复中的所有用户id以及标签
-const replyUserTags = ref<{ id: number, tags: UserTags[] }[]>([])
-computedAsync(async () => {
+const threadPosts = computedAsync(async () => {
     // 在回复时，需要手动刷新
     postRefresh.value
     const { data } = await ThreadPostList(threadID.value, {
         page: pagination.value.page,
         pageSize: pagination.value.limit,
     })
-    threadPosts.value = data
-    // 根据回复中的用户id获取用户Tag
-    for (var i = 0; i < threadPosts.value.data.length; i++) {
-        const post = threadPosts.value.data[i]
-        if (replyUserTags.value.some(user => user.id === post.user.id)) {
-            continue
-        }
-        const { data } = await GetUserTag(post.user.id)
-        replyUserTags.value.push({ id: post.user.id, tags: data.filter(tag => tag.lang === 'zh_CN') })
-    }
+    return data
 }, undefined, { evaluating: postLoading })
+
+const replyUserTags = computedAsync(async () => {
+    const ids = [...new Set((threadPosts.value?.data || []).map(post => post.user.id))]
+    return Promise.all(ids.map(async id => {
+        const { data } = await GetUserTag(id)
+        return { id, tags: data.filter(tag => tag.lang === 'zh_CN') }
+    }))
+}, [] as { id: number, tags: UserTags[] }[])
 
 const getTagsByPostUserId = ((postUserId) => {
     const tags = replyUserTags.value.find(user => user.id === postUserId)?.tags
@@ -422,6 +415,7 @@ watch(threadPosts, (_, oldVal) => {
             Taro.nextTick(() => {
                 setTimeout(() => {
                     Taro.createSelectorQuery().select(`.post-id-${postId.value}`).boundingClientRect().exec((res) => {
+                        if (!res[0]) return
                         Taro.pageScrollTo({
                             scrollTop: res[0].top
                         })
@@ -439,6 +433,7 @@ watch(threadPosts, (_, oldVal) => {
         }
         if (sendPostScroll.value) {
             Taro.createSelectorQuery().select('.thread-page').boundingClientRect().exec((res) => {
+                if (!res[0]) return
                 Taro.pageScrollTo({
                     scrollTop: res[0].height
                 })
@@ -514,26 +509,32 @@ Taro.eventCenter.on("sendPost", sendPost)
 // 如果当前位于评论的最后一页,每三秒刷新一次
 const interval = ref<ReturnType<typeof setTimeout>>()
 const intervalRefreshPost = ref(false)
-watchEffect(() => {
-    if (!threadPosts.value)
-        return
-    if (pagination.value.page === Math.ceil(threadPosts.value.total_count / pagination.value.limit) || threadPosts.value.total_count === 0) {
-        clearInterval(interval.value)
-        const oldTotalCount = threadPosts.value.total_count
-        interval.value = setInterval(async () => {
-            if (hidden.value || threadClosed.value) return
-            const { data } = await ThreadPostList(threadID.value, {
-                page: pagination.value.page,
-                pageSize: pagination.value.limit,
-            })
-            if (oldTotalCount !== data.total_count) {
+watchEffect((onCleanup) => {
+    const posts = threadPosts.value
+    const page = pagination.value.page
+    const limit = pagination.value.limit
+    postRefresh.value
+    if (!posts || hidden.value || threadClosed.value ||
+        (posts.total_count > 0 && page !== Math.ceil(posts.total_count / limit))) return
+    let cancelled = false
+    let inFlight = false
+    const timer = setInterval(async () => {
+        if (inFlight) return
+        inFlight = true
+        try {
+            const { data } = await ThreadPostList(threadID.value, { page, pageSize: limit })
+            if (!cancelled && posts.total_count !== data.total_count) {
                 intervalRefreshPost.value = true
                 threadPosts.value = data
             }
+        } catch (error) {
+            console.warn('refresh replies', error)
+        } finally {
+            inFlight = false
+        }
         }, 3000)
-    } else {
-        clearInterval(interval.value)
-    }
+    interval.value = timer
+    onCleanup(() => { cancelled = true; clearInterval(timer); interval.value = undefined })
 })
 </script>
 

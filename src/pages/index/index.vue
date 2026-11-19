@@ -92,13 +92,12 @@ const subscribe = useSubscriptionStore()
 const isLoading = ref(true)
 const pagination = ref({ page: 1, limit: 20 })
 const threadIndexRefresh = ref(0)
-const threadIndexResponse = ref<ThreadIndexResponse>({ ThreadIndex: [], total_count: 0 })
-computedAsync(async () => {
+const threadIndexResponse = computedAsync(async () => {
   threadIndexRefresh.value
   const resp = await IndexThread({ page: pagination.value.page, pageSize: pagination.value.limit });
-  threadIndexResponse.value = resp.data || [];
   Taro.stopPullDownRefresh()
-}, undefined, { evaluating: isLoading })
+  return resp.data;
+}, { ThreadIndex: [], total_count: 0 } as ThreadIndexResponse, { evaluating: isLoading })
 // 加载消息数量
 useDidShow(async () => {
   if (config.indexNeedRefresh) {
