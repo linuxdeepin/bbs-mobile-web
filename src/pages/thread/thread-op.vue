@@ -432,17 +432,19 @@ const moderatorMoveDialogClosed = async (action: string) => {
       return false
     }
     try {
-      await ModeratorMoveThread(threadInfo.value.id, selectedForum.value.id, selectedThemeType.value.id)
+      const { data } = await ModeratorMoveThread(threadInfo.value.id, selectedForum.value.id, selectedThemeType.value.id)
+      if (data.code !== 0) {
+        throw new Error(data.msg || '移动失败')
+      }
     } catch (e) {
       prompt.showToast('warn', '移动失败')
       return false
-    } finally {
+    }
       selectedForum.value = { id: 0, name: '' }
       selectedThemeType.value = { id: 0, name: '' }
       prompt.showToast('success', '移动成功')
       emit("threadRefresh")
       return true
-    }
   }
   return true
 }
@@ -475,10 +477,17 @@ const themeTypeClicked = (id: number, name: string) => {
 }
 
 // 监听selectedForum的变化，获取主题类型
-watch(() => selectedForum.value, async (value) => {
-  if (!value.id) return;
-  const res = await GetTheme({ forum_id: value.id })
-  themeTypeList.value = res.data
+watch(() => selectedForum.value.id, async (id, _, onCleanup) => {
+  let cancelled = false
+  onCleanup(() => { cancelled = true })
+  themeTypeList.value = []
+  if (!id) return
+  try {
+    const res = await GetTheme({ forum_id: id })
+    if (!cancelled) themeTypeList.value = res.data
+  } catch {
+    if (!cancelled) prompt.showToast('fail', '主题类型加载失败，请重新选择版块')
+  }
 })
 
 // 点赞和取消点赞帖子

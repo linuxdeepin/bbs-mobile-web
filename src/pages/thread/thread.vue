@@ -179,7 +179,7 @@
                                     v-model:reply-info="replyInfo" v-model:scrollToPostDivider="scrollToPostDivider"
                                     v-model:winnow-posts="winnowPosts" :is-moderator="isModerator"
                                     :thread-closed="threadClosed" @login="showLoginDialog = true"
-                                    @postRefresh="postRefresh++" @winnowPostRefresh="winnowPostsRefresh++" />
+                                    @postRefresh="postRefresh++" @winnowPostsRefresh="winnowPostsRefresh++" />
                             </nut-cell-group>
                         </view>
                     </nut-col>

@@ -89,6 +89,23 @@ test('late page response cannot replace the latest page or clear its loading sta
   scope.stop();
 });
 
+test('thread move errors retain selection and return false; only business success closes the dialog', async () => {
+  for (const mode of ['network', 'business', 'success']) {
+    const prompt = promptSpy();
+    const selectedForum = ref({ id: 1, name: 'forum' }), selectedThemeType = ref({ id: 2, name: 'theme' });
+    const { moderatorMoveDialogClosed } = bindings('src/pages/thread/thread-op.vue', ['moderatorMoveDialogClosed'], {
+      selectedForum, selectedThemeType, threadInfo: ref({ id: 3 }), prompt, emit() {},
+      ModeratorMoveThread: async () => {
+        if (mode === 'network') throw new Error('network');
+        return { data: { code: mode === 'success' ? 0 : 1 } };
+      },
+    });
+    assert.equal(await moderatorMoveDialogClosed('ok'), mode === 'success');
+    assert.equal(selectedForum.value.id, mode === 'success' ? 0 : 1);
+    assert.equal(prompt.messages.at(-1)[0], mode === 'success' ? 'success' : 'warn');
+  }
+});
+
 test('subscriptions post only accepted templates; rejection and API errors never report success', async () => {
   for (const result of ['accept', 'reject', 'error']) {
     const prompt = promptSpy(), subscriptions = [];
@@ -134,4 +151,18 @@ test('unsubscribe handles request failures and keeps confirmed cancellation when
     assert.equal(serverSubscribed.Status, result === 'cancel-error' ? 'accept' : 'reject');
     assert.equal(prompt.messages.at(-1)[0], result === 'cancel-error' ? 'fail' : 'success');
   }
+});
+
+test('winnow success emits the event handled by the parent reply list', async () => {
+  const events = [];
+  const { moderatorWinnowDialogClosed } = bindings('src/pages/thread/post-op.vue', ['moderatorWinnowDialogClosed'], {
+    threadInfo: ref({ forum_id: 1 }), winnowFormRef: ref({ validate: async () => ({ valid: true }) }),
+    post: ref({ id: 2, post_user_id: 3 }), winnowForm: ref({ reason: 'test', notify: true }), postIsWinnow: ref(false),
+    WinnowThreadPostByModerator: async () => ({ data: { code: 0 } }), prompt: promptSpy(),
+    emit: event => events.push(event), Taro: { pageScrollTo() {} },
+  });
+  await moderatorWinnowDialogClosed('ok');
+  const parent = fs.readFileSync(path.join(root, 'src/pages/thread/thread.vue'), 'utf8');
+  assert.ok(events.includes('winnowPostsRefresh'));
+  assert.match(parent, /@winnowPostsRefresh="winnowPostsRefresh\+\+"/);
 });
