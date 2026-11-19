@@ -126,30 +126,32 @@ if (instance.router) {
 const myThreadData = ref<MyThreadResonse>()
 const myPostData = ref<MyPostResponse>()
 
+let requestVersion = 0
 const fetchData = async () => {
+  const version = ++requestVersion
+  const tab = currentTab.value
   loading.value = true
   const offset = pagination.value.page - 1
   const limit = pagination.value.limit
-
-  if (init.value) {
-    const myThreadRes = await GetMyThread({ offset, limit })
-    myThreadData.value = myThreadRes.data
-    const myPostRes = await GetMyPost({ offset, limit })
-    myPostData.value = myPostRes.data
-    loading.value = false
-    init.value = false
-    return
+  try {
+    if (init.value) {
+      const [threads, posts] = await Promise.all([GetMyThread({ offset, limit }), GetMyPost({ offset, limit })])
+      if (version !== requestVersion) return
+      myThreadData.value = threads.data
+      myPostData.value = posts.data
+      init.value = false
+    } else if (tab === 'mythread') {
+      const { data } = await GetMyThread({ offset, limit })
+      if (version === requestVersion) myThreadData.value = data
+    } else {
+      const { data } = await GetMyPost({ offset, limit })
+      if (version === requestVersion) myPostData.value = data
+    }
+  } catch (error) {
+    console.warn('load my posts', error)
+  } finally {
+    if (version === requestVersion) loading.value = false
   }
-
-  if (currentTab.value === 'mythread') {
-    const myThreadRes = await GetMyThread({ offset, limit })
-    myThreadData.value = myThreadRes.data
-  } else {
-    const myPostRes = await GetMyPost({ offset, limit })
-    myPostData.value = myPostRes.data
-  }
-
-  loading.value = false
 }
 
 // 切换tab

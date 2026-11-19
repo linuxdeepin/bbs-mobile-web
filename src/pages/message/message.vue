@@ -53,7 +53,7 @@
 import Taro, { useDidShow, useLoad, useTabItemTap } from '@tarojs/taro'
 import { ref, watch } from 'vue'
 import { Message, MessageCount, MessageDelete } from '@/api';
-import { computedAsync } from '@vueuse/core';
+import { computedAsync, until } from '@vueuse/core';
 import MessageTabPane from './message-tab-pane.vue'
 import { usePromptStore, useConfigStore, useAccountStore } from '@/stores';
 import { useSubscriptionStore } from '@/stores/subscription';
@@ -74,11 +74,17 @@ const isLoading = ref(true)
 const delDialogShow = ref(false)
 const delMsgId = ref(0)
 const pagination = ref({ page: 1, limit: 20 })
+const messageRefresh = ref(0)
 const message = computedAsync(async () => {
+  messageRefresh.value
   const res = await Message({ page: pagination.value.page, pageSize: pagination.value.limit, category: tabs.value })
   return res.data || []
 }, undefined, { evaluating: isLoading })
-const msgCount = ref({
+const msgCount = computedAsync(async () => {
+  messageRefresh.value
+  const { data } = await MessageCount()
+  return data.data
+}, {
   at_msg_count: 0,
   letter_msg_count: 0,
   post_msg_count: 0,
@@ -86,6 +92,7 @@ const msgCount = ref({
   thread_msg_count: 0
 })
 useLoad(async () => {
+  await until(() => account.loaded).toBe(true)
   // 如果用户未登录，跳转到登录页
   if (!account.is_login) {
     account.gotoLogin()
@@ -99,10 +106,9 @@ useDidShow(() => {
 })
 
 // 已读全部消息后刷新页面
-const refreshData = async () => {
-  const msgCountRes = await MessageCount()
-  msgCount.value = msgCountRes.data.data
-  const messageCount = msgCount.value.at_msg_count + msgCount.value.letter_msg_count + msgCount.value.post_msg_count + msgCount.value.sys_msg_count + msgCount.value.thread_msg_count
+const refreshData = () => { messageRefresh.value++ }
+watch(msgCount, counts => {
+  const messageCount = counts.at_msg_count + counts.letter_msg_count + counts.post_msg_count + counts.sys_msg_count + counts.thread_msg_count
   if (messageCount > 0) {
     Taro.setTabBarBadge({
       index: 3,
@@ -113,9 +119,7 @@ const refreshData = async () => {
       index: 3
     })
   }
-  const msgRes = await Message({ page: pagination.value.page, pageSize: pagination.value.limit, category: tabs.value })
-  message.value = msgRes.data
-}
+})
 
 // 翻页后跳转到顶部
 watch(isLoading, () => {

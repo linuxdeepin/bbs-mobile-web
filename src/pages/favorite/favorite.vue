@@ -54,7 +54,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import Taro from '@tarojs/taro';
-import { GetMyFavorite, MyFavoriteResponse, ThreadFavorite } from '@/api';
+import { GetMyFavorite, ThreadFavorite } from '@/api';
 import { computedAsync } from '@vueuse/core';
 import { formatTime } from '@/utils/format';
 import { Del } from "@nutui/icons-vue-taro";
@@ -65,18 +65,13 @@ const prompt = usePromptStore()
 const config = useConfigStore()
 const delDialogShow = ref(false)
 const delFavoriteId = ref(0)
-const init = ref(true)
 const loading = ref(true)
 const favoriteRefresh = ref(0)
 const pagination = ref({ page: 1, limit: 10 })
-const myFavoriteData = ref<MyFavoriteResponse>()
-computedAsync(async () => {
-  loading.value = true
+const myFavoriteData = computedAsync(async () => {
   favoriteRefresh.value
   const myFavoriteRes = await GetMyFavorite({ offset: pagination.value.page - 1, limit: pagination.value.limit })
-  myFavoriteData.value = myFavoriteRes.data
-  loading.value = false
-  init.value = false
+  return myFavoriteRes.data
 }, undefined, { evaluating: loading })
 
 const goToThread = (threadId: number) => {

@@ -215,25 +215,27 @@ const switchTab = (tab: Tab) => {
   pagination.value.page = 1
 }
 const pagination = ref({ page: 1, limit: 10 })
-computedAsync(async () => {
+computedAsync(async (onCancel) => {
+  let cancelled = false
+  onCancel(() => { cancelled = true })
   refresh.value
-  const { data } = await GetUserInfo(userId.value)
+  const [{ data }, { data: tags }] = await Promise.all([GetUserInfo(userId.value), GetUserTag(userId.value)])
+  if (cancelled) return
   userInfo.value = data
-  const { data: tags } = await GetUserTag(userId.value)
   userTags.value = tags.filter(tag => tag.lang === 'zh_CN')
 }, undefined, { evaluating: userInfoLoading })
 
-computedAsync(async () => {
+computedAsync(async (onCancel) => {
+  let cancelled = false
+  onCancel(() => { cancelled = true })
   currentTab.value
   refresh.value
   if (currentTab.value === 'thread') {
     const { data: threadData } = await GetUserThread(userId.value, pagination.value.limit, pagination.value.page - 1)
-    userThread.value = threadData
-    console.log(userThread.value)
+    if (!cancelled) userThread.value = threadData
   } else {
     const { data: postData } = await GetUserPost(userId.value, pagination.value.limit, pagination.value.page - 1)
-    userPost.value = postData
-    console.log(userPost.value)
+    if (!cancelled) userPost.value = postData
   }
 }, undefined, { evaluating: loading })
 

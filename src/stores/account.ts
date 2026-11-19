@@ -28,6 +28,7 @@ export const useAccountStore = defineStore("account", () => {
   const is_login = ref(false);
   const loaded = ref(false);
   const user_info = ref({ ...EmptyUserInfo });
+  const loginRequest = ref<{ type: "choose" | "password"; username?: string } | null>(null);
   const isH5 = process.env.TARO_ENV === "h5";
   const subscriptionStore = useSubscriptionStore();
 
@@ -60,7 +61,6 @@ export const useAccountStore = defineStore("account", () => {
     };
     // 小程序中通过元素触发验证
     let tryVerify = async (callbackFunc: typeof callback) => {
-      console.error("captcha try verify");
       callback = callbackFunc;
       const c = getElement();
       if (type === "popup") {
@@ -132,30 +132,30 @@ export const useAccountStore = defineStore("account", () => {
     });
   };
   // 获取微信登录的code
-  const getLoginCode = () => {
-    return new Promise<string>((resolve) => {
-      Taro.login({
-        success: (res: { code: string }) => {
-          resolve(res.code);
-        },
-      });
-    });
+  const getLoginCode = async () => {
+    const { code } = await Taro.login({ timeout: 10000 });
+    if (!code) {
+      throw new Error("微信登录失败，请重试");
+    }
+    return code;
   };
   // 跳转到登录页面
   const gotoLogin = () => {
-    Taro.switchTab({
-      url: "/pages/account/account?show-action=true",
+    loginRequest.value = { type: "choose" };
+    return Taro.switchTab({
+      url: "/pages/account/account",
     });
   };
   // 跳转到密码登录页面
   const gotoPasswordLogin = (username: string) => {
-    Taro.switchTab({
-      url: "/pages/account/account?username=" + username,
+    loginRequest.value = { type: "password", username };
+    return Taro.switchTab({
+      url: "/pages/account/account",
     });
   };
   // 跳转到注册页面
   const gotoRegister = () => {
-    Taro.switchTab({
+    return Taro.navigateTo({
       url: "/pages/register/register",
     });
   };
@@ -227,7 +227,10 @@ export const useAccountStore = defineStore("account", () => {
     await RegisterCode(captchaID, captchaCode, phone, loginCode);
   };
 
-  refreshInfo().finally(() => {
+  refreshInfo().catch(() => {
+    is_login.value = false;
+    user_info.value = { ...EmptyUserInfo };
+  }).finally(() => {
     loaded.value = true;
   });
 
@@ -235,6 +238,7 @@ export const useAccountStore = defineStore("account", () => {
     loaded,
     is_login,
     user_info,
+    loginRequest,
     refreshInfo,
     login,
     loginByPassword,

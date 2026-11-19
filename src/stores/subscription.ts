@@ -29,8 +29,9 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   const loginSubscribeDialogVisible = ref(false);
 
   const isSubscribe = computed(() => {
-    return settings.value?.subscriptionsSetting.itemSettings &&
-      settings.value?.subscriptionsSetting.itemSettings[templIds[0]] === 'accept' &&
+    const state = settings.value?.subscriptionsSetting?.itemSettings?.[templIds[0]];
+    return settings.value?.subscriptionsSetting?.mainSwitch !== false &&
+      state !== 'reject' && state !== 'ban' &&
       serverSubscribed.Status === 'accept' && !serverSubscribed.MessageSent;
   })
 
@@ -40,47 +41,53 @@ export const useSubscriptionStore = defineStore('subscription', () => {
       return;
     }
 
-    if (!settings.value?.subscriptionsSetting.mainSwitch) {
-      prompt.showToast("fail", "请在设置中打开消息通知");
-      return;
-    }
     try {
-      await Taro.requestSubscribeMessage({
+      if (!settings.value) await getSetting();
+      if (!settings.value?.subscriptionsSetting?.mainSwitch) {
+        prompt.showToast("fail", "请在设置中打开消息通知");
+        return;
+      }
+      const result = await Taro.requestSubscribeMessage({
         tmplIds: templIds,
         entityIds: templIds,
       });
+      await getSetting();
+      const accepted = templIds.filter(id => result[id] === 'accept');
+      if (!accepted.length) {
+        prompt.showToast("text", "未开启消息订阅");
+        return;
+      }
+      if (!settings.value?.subscriptionsSetting?.itemSettings?.[templIds[0]]) {
+        subscribeDialogVisible.value = true;
+      }
+      await MessageSubscription(accepted);
+      await getSeverSubscribe();
+      Taro.setStorageSync("firstSubscribe", true);
+      prompt.showToast("success", "订阅成功");
     } catch (error) {
       prompt.showToast("fail", "订阅失败,请稍后再试");
       return;
     }
-    console.log("wx requestSubscribeMessage success");
-
-    await getSetting();
-
-    if (!settings.value?.subscriptionsSetting.itemSettings) {
-      subscribeDialogVisible.value = true;
-    }
-
-    // 服务器订阅
-    await MessageSubscription(templIds);
-    console.log("server MessageSubscription success");
-    getSeverSubscribe();
-    Taro.setStorageSync("firstSubscribe", true);
-    prompt.showToast("success", "订阅成功");
   };
 
   // 用户取消订阅
   const cancelSubscribe = async () => {
-    await MessageUnSubscription(templIds);
-    getSeverSubscribe();
-    prompt.showToast("success", "取消订阅成功");
+    try {
+      await MessageUnSubscription(templIds);
+      serverSubscribed.Status = "reject";
+      serverSubscribed.MessageSent = true;
+      prompt.showToast("success", "取消订阅成功");
+      void getSeverSubscribe().catch(console.warn);
+    } catch {
+      prompt.showToast("fail", "取消订阅失败，请稍后重试");
+    }
   };
 
   // 获取系统设置
   const getSetting = async () => {
+    if (isH5) return;
     const res = await Taro.getSetting({ withSubscriptions: true })
     settings.value = res;
-    console.log("系统设置", res);
   }
 
   // 自动续订
@@ -113,20 +120,19 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     }
 
     // 自动订阅
-    await Taro.requestSubscribeMessage({
-      tmplIds: templIds,
-      entityIds: templIds
-    });
-
-    await MessageSubscription(templIds);
-
-    const result = await MessageSubscriptionList();
-    if (result.data.length <= 0) {
-      return;
+    try {
+      const result = await Taro.requestSubscribeMessage({
+        tmplIds: templIds,
+        entityIds: templIds
+      });
+      const accepted = templIds.filter(id => result[id] === 'accept');
+      if (!accepted.length) return;
+      await MessageSubscription(accepted);
+      await getSeverSubscribe();
+      autoSubscribeNotify.visible = isSubscribe.value;
+    } catch (error) {
+      prompt.showToast("fail", "自动订阅失败，请稍后重试");
     }
-    autoSubscribeNotify.visible = true;
-    getSeverSubscribe();
-    console.log("autoRenew success");
   }
 
   // 获取服务器订阅状态
@@ -136,6 +142,8 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     }
     const res = await MessageSubscriptionList();
     if (res.data.length <= 0) {
+      serverSubscribed.Status = "reject";
+      serverSubscribed.MessageSent = true;
       return;
     }
     serverSubscribed.Status = res.data[0].Status;

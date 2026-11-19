@@ -96,7 +96,7 @@ const registerCode = async (captchaCode: string) => {
         prompt.showToast('success', "验证码已发送", 3000)
         codeSent.value = true
     } catch (err) {
-        if (err?.response.status === 403) {
+        if (err?.response?.status === 403) {
             phoneExists.value = true
             prompt.showToast('text', "手机号已注册，正前往登陆页面", 3000)
             setTimeout(() => account.gotoPasswordLogin(phone.value), 3000)
@@ -115,13 +115,13 @@ const register = async (captchaCode: string) => {
         setTimeout(() => Taro.navigateBack(), 3000)
     } catch (err) {
         // 如果返回http code是403，提示手机号已存在
-        if (err?.response.status === 403) {
+        if (err?.response?.status === 403) {
             phoneExists.value = true
             prompt.showToast('fail', "手机号已注册，请使用密码登录或选择其他手机号注册", 5000)
             return
         }
         // 如果返回http code是400，提示验证码错误
-        if (err?.response.status === 400) {
+        if (err?.response?.status === 400) {
             prompt.showToast('fail', "验证码错误", 2000)
             return
         }

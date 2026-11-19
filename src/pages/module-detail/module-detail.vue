@@ -137,14 +137,13 @@ useDidShow(() => {
   }
 })
 
-const forumInfo = ref<ForumByIdResponse>()
 const forumInfoRefresh = ref(0)
-computedAsync(async () => {
+const forumInfo = computedAsync(async () => {
   forumInfoRefresh.value
   const { data } = await ForumById({ id: forumId.value, order: "last_date", offset: pagination.value.page - 1, languages: "zh_CN" })
   // 过滤掉超级管理员版主
   data.data.user_list = data.data.user_list.filter(user => user.group_type !== 10000)
-  forumInfo.value = data
+  return data
 }, undefined, { evaluating: loading })
 
 const forumIsFavorite = computedAsync(async () => {

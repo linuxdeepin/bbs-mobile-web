@@ -1,69 +1,70 @@
 <template>
     <nut-col span="20" offset="2">
-        <view class="send-post">
-            <nut-form>
-                <!-- 网易易盾验证码，小程序插件引入 -->
-                <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
-                    @verify="postCaptcha.verify">
-                </ne-captcha>
-                <nut-form-item>
-                    <view class="reply-info" v-if="replyInfo.isReply">
-                        <text class="title">回复:</text>
-                        <text class="nickname">{{ replyInfo.replyNickName }}</text>
-                        <CircleClose class="cancel-btn" size="18" @click="cancelReply" />
-                    </view>
-                    <view v-if="chooseImgList.length" class="choose-img">
-                        <text class="title">图片:</text>
-                        <view class="image-list">
-                            <view class="image-item" v-for="(img, index) in chooseImgList" :key="index">
-                                <img :src="img" alt="" />
-                                <view class="del-btn">
-                                    <img :src="DeleteIcon" alt="" @click="chooseImgList.splice(index, 1)" />
+        <view class="markdown-composer-entry" @click="openEditor">
+            <text class="markdown-composer-entry-text">{{ msg.trim() || (chooseImgList.length ? '已添加图片，点击继续编辑' : '说点什么吧…') }}</text>
+            <nut-button size="small" type="primary" :disabled="submitting" @click.stop="openEditor">写回复</nut-button>
+        </view>
+        <MarkdownComposer v-model:visible="editorVisible" title="写回复" :busy="submitting">
+            <view class="send-post">
+                <nut-form>
+                    <!-- 网易易盾验证码，小程序插件引入 -->
+                    <ne-captcha :id="postCaptcha.elementID" :captcha-id="postCaptcha.captchaID" width="640rpx"
+                        @verify="postCaptcha.verify">
+                    </ne-captcha>
+                    <nut-form-item class="markdown-editor-form">
+                        <view class="reply-info" v-if="replyInfo.isReply">
+                            <text class="title">回复:</text>
+                            <text class="nickname">{{ replyInfo.replyNickName }}</text>
+                            <CircleClose class="cancel-btn" size="18" @click="cancelReply" />
+                        </view>
+                        <view v-if="chooseImgList.length" class="choose-img">
+                            <text class="title">图片:</text>
+                            <view class="image-list">
+                                <view class="image-item" v-for="(img, index) in chooseImgList" :key="index">
+                                    <img :src="img" alt="" />
+                                    <view class="del-btn">
+                                        <img :src="DeleteIcon" alt="" @click="!submitting && chooseImgList.splice(index, 1)" />
+                                    </view>
                                 </view>
                             </view>
                         </view>
-                    </view>
-                    <view class="form-item">
-                        <view class="msg-input" :style="{ height: inputHeight + 0.5 + 'rem' }">
-                            <textarea :value="msg" :style="{ marginTop: '0.5rem', height: inputHeight + 'rem' }"
-                                placeholder="说点什么吧..." maxlength="1000" :show-confirm-bar="false" :hold-keyboard="true"
-                                :cursorSpacing="20" :disabled="!account.is_login" @linechange="lineChange"
-                                @input="msg = ($event as any).detail.value" :focus="replyInfo.isReply"
-                                @blur="showEmojiList = false" />
+                        <MarkdownEditor ref="editor" v-model="msg" :max-length="REPLY_MAX_LENGTH"
+                            :disabled="!account.is_login || submitting" :focus="editorVisible" />
+                        <view class="form-item">
+                            <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
+                                @click="!submitting && (showEmojiList = !showEmojiList)" />
+                            <img class="picture-btn" :src="Picture" @click="chooseImage" />
+                            <nut-button class="send-btn" type="primary" size="normal"
+                                :loading="submitting" :disabled="submitting || cooldownSeconds > 0 || (!msg.trim() && !chooseImgList.length)"
+                                @click="requestPost">{{ cooldownSeconds ? `${cooldownSeconds}秒后发送` : '发送' }}</nut-button>
+                            <!-- 未登陆时，点击回复提示前往登陆 -->
+                            <view class="click-mask" v-if="!account.is_login" @click="emit('login')"></view>
                         </view>
-                        <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
-                            @click="showEmojiList = !showEmojiList" />
-                        <img class="picture-btn" :src="Picture" @click="chooseImage" />
-                        <nut-button class="send-btn" type="primary" size="normal"
-                            :disabled="!msg.length && !chooseImgList.length"
-                            @click="postCaptcha.tryVerify(submitPost)">发送</nut-button>
-                        <!-- 未登陆时，点击回复提示前往登陆 -->
-                        <view class="click-mask" v-if="!account.is_login" @click="emit('login')"></view>
-                    </view>
-                </nut-form-item>
-            </nut-form>
-            <view v-if="showEmojiList">
-                <nut-tabs v-model="tabEmojiValue" swipeable type="smile">
-                    <nut-tab-pane title="小浣熊" pane-key="0">
-                        <view class="image-list">
-                            <view class="image-item" v-for="( emoji, name ) of  customEmoji" @click="clickImage(name)">
-                                <img :alt="name" :src="apiServer + '/' + emoji">
+                    </nut-form-item>
+                </nut-form>
+                <view v-if="showEmojiList">
+                    <nut-tabs v-model="tabEmojiValue" swipeable type="smile">
+                        <nut-tab-pane title="小浣熊" pane-key="0">
+                            <view class="image-list">
+                                <view class="image-item" v-for="( emoji, name ) of  customEmoji" @click="clickImage(name)">
+                                    <img :alt="name" :src="apiServer + '/' + emoji">
+                                </view>
+                                <view class="image-item" v-for=" _ of Array(10).fill(0) "></view>
                             </view>
-                            <view class="image-item" v-for=" _ of Array(10).fill(0) "></view>
-                        </view>
-                    </nut-tab-pane>
-                    <nut-tab-pane title="Emoji" pane-key="1">
-                        <view class="emoji-list">
-                            <view class="emoji-item" v-for=" emoji of unicodeEmoji " @click="msg += emoji">
-                                {{ emoji }}
+                        </nut-tab-pane>
+                        <nut-tab-pane title="Emoji" pane-key="1">
+                            <view class="emoji-list">
+                                <view class="emoji-item" v-for=" emoji of unicodeEmoji " @click="!submitting && editor?.insertText(emoji)">
+                                    {{ emoji }}
+                                </view>
+                                <view class="emoji-item" v-for=" _ of Array(10).fill(0) "></view>
                             </view>
-                            <view class="emoji-item" v-for=" _ of Array(10).fill(0) "></view>
-                        </view>
-                    </nut-tab-pane>
-                </nut-tabs>
-                <view></view>
+                        </nut-tab-pane>
+                    </nut-tabs>
+                    <view></view>
+                </view>
             </view>
-        </view>
+        </MarkdownComposer>
 
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
@@ -74,7 +75,8 @@
 
 <script lang="ts" setup>
 
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { useTimestamp } from '@vueuse/core';
 import Taro from '@tarojs/taro';
 import SmileIcon from '@/assets/smile.svg'
 import KeyboardIcon from '@/assets/keyboard-26.svg'
@@ -85,13 +87,20 @@ import unicodeEmoji from './unicodeEmoji.json'
 import customEmoji from './customEmoji.json'
 import { apiServer, CreateThreadPost } from '@/api';
 import { CircleClose } from '@nutui/icons-vue-taro';
+import MarkdownEditor from '@/widgets/markdown-editor.vue';
+import MarkdownComposer from '@/widgets/markdown-composer.vue';
+import { createMessage } from '@/utils/markdown';
+import { uploadImage, MAX_IMAGE_SIZE } from '@/utils/upload';
+import { submissionGuard, submissionFingerprint, REPLY_MAX_LENGTH } from '@/utils/submission';
+import { requestErrorMessage } from '@/utils/errors';
 
 const prompt = usePromptStore()
 const account = useAccountStore()
 
 const emit = defineEmits<{
     login: [],
-    cancelReply: []
+    cancelReply: [],
+    sent: [replyId: number]
 }>()
 const props = defineProps<{
     info: { id: number, forum_id: number, user_id: number },
@@ -102,146 +111,115 @@ const isChooseImage = defineModel()
 
 // 回复内容
 const msg = ref("")
+const editorVisible = ref(false)
+const editorSession = ref(0)
+watch(editorVisible, visible => {
+    if (!visible) editorSession.value++
+}, { flush: 'sync' })
+const openEditor = () => {
+    if (!account.is_login) { emit('login'); return }
+    editorVisible.value = true
+}
+watch(() => props.replyInfo, value => {
+    if (value.isReply) openEditor()
+}, { immediate: true })
+onBeforeUnmount(() => { editorVisible.value = false })
 const chooseImgList = ref<string[]>([])
-const lineCount = ref(1)
-const lineChange = (event: { detail: { lineCount: number, lineHeight: number } }) => {
-    console.log(event.detail)
-    lineCount.value = event.detail.lineCount
-}
-const inputHeight = computed(() => {
-    const lineNumber = lineCount.value
-    if (lineNumber <= 1) {
-        return 1.5
-    }
-    if (lineNumber > 10) {
-        return 12
-    }
-    return lineNumber * 1.2
-    // 初始化1.5rem高度
-    if (lineNumber <= 1) {
-        return 1
-    }
-    // 限制input最大高度，和下面的1.2保持一直
-    if (lineNumber > 10) {
-        return 12
-    }
-    // 多行使用(行数*1.2)rem
-    // TODO(wurongjie) 如果写了很长的内容，并不使用换行，input高度不会自动调整
-    return lineNumber * 1
-})
-// 发帖验证码
+const editor = ref<{ insertText(text: string): void }>()
+const submitting = ref(false)
+const clock = useTimestamp({ interval: 1000 })
+const cooldownSeconds = computed(() => submissionGuard.remainingSeconds(account.user_info.id, clock.value))
 const postCaptcha = account.useSmartCaptcha()
-// 点击图片表情
 const clickImage = (imgName: string) => {
-    msg.value += ` :${imgName}: `
+    if (!submitting.value) editor.value?.insertText(` :${imgName}: `)
 }
-// 人机校验后发布回复
-const submitPost = async (captchaCode: string) => {
-    if (!account.is_login) {
-        account.gotoLogin()
-        return
-    }
-    // 发布评论
+
+const snapshot = () => ({
+    session: editorSession.value,
+    text: msg.value,
+    images: [...chooseImgList.value],
+    threadId: props.info.id,
+    forumId: props.info.forum_id,
+    authorId: props.info.user_id,
+    userId: account.user_info.id,
+    reply: { ...props.replyInfo },
+})
+type Draft = ReturnType<typeof snapshot>
+const fingerprint = (draft: Draft) => submissionFingerprint(`reply:${draft.threadId}`, draft.text, draft.images)
+const validate = (draft: Draft) => {
+    if (!draft.text.trim() && !draft.images.length) throw new Error('回复内容不能为空')
+    if (Array.from(draft.text).length > REPLY_MAX_LENGTH) throw new Error(`回复不能超过${REPLY_MAX_LENGTH}字`)
+    if (draft.images.length > 5) throw new Error('最多添加5张图片')
+}
+const requestPost = async () => {
+    if (!account.is_login) { emit('login'); return }
+    if (submitting.value) return
+    const draft = snapshot()
     try {
-        let val = msg.value
-        let message = "<div data-weapp_version='v1'>"
-        if (val.length) {
-            if (val.includes(":")) {
-                for (const name of Object.keys(customEmoji)) {
-                    const reg = new RegExp(`:${name}:`, "g")
-                    const img = `<img class="emoji" title="${name}" src="${customEmoji[name]}" alt="${name}">`
-                    val = val.replace(reg, img)
-                }
-            }
-            message += `<p>${val}</p>`
-        }
-        // 如果有选择图片,则上传图片,并追加到评论后面
-        if (chooseImgList.value.length) {
-            // 上传图片
-            let imgUrls: string[] = []
-            prompt.showToast("loading", "图片上传中...", 10000)
-            for (let i = 0; i < chooseImgList.value.length; i++) {
-                const file = chooseImgList.value[i]
-                const uploadFileRes = await Taro.uploadFile({
-                    url: apiServer + '/api/v1/thread/file',
-                    filePath: file,
-                    name: 'image',
-                    header: {
-                        "Cookie": "bbs=" + JSON.parse(Taro.getStorageSync("PAGE_COOKIE"))["taro.com"]["/"]["bbs"]['value']
-                    },
-                    formData: {
-                        "image": file
-                    }
-                })
-                if (uploadFileRes.statusCode !== 200) {
-                    prompt.showToast("fail", "上传图片失败")
-                    return
-                }
-                imgUrls.push(JSON.parse(uploadFileRes.data).data[0])
-            }
-            prompt.hideToast()
-            message += imgUrls.map(url => `<p><img src='${url}' style='max-width: 100%' /></p>`).join('')
-        }
-        message += "</div>"
-        if (!props.replyInfo.isReply) {
-            await CreateThreadPost({
-                message,
-                validate: captchaCode,
-                captcha_id: postCaptcha.captchaID,
-                thread_id: props.info.id,
-                forum_id: props.info.forum_id,
-                quote_user_id: props.info.user_id,
-            })
-        } else {
-            await CreateThreadPost({
-                message,
-                validate: captchaCode,
-                captcha_id: postCaptcha.captchaID,
-                thread_id: props.info.id,
-                forum_id: props.info.forum_id,
-                quote_user_id: props.replyInfo.replyUserId,
-                quote_post_id: props.replyInfo.replyId,
-            })
-        }
-
-        prompt.showToast('success', "发送成功")
-        // 清空输入框内容
-        msg.value = ''
-        // 清空图片列表
-        chooseImgList.value = []
-        showEmojiList.value = false
-        Taro.eventCenter.trigger('sendPost')
-    } catch (err) {
-        console.log("create post", err)
-        prompt.showToast('fail', "发送失败，请稍后再试")
+        validate(draft)
+        submissionGuard.check(draft.userId, fingerprint(draft))
+        await postCaptcha.tryVerify(code => submitPost(code, draft))
+    } catch (error) {
+        prompt.showToast('warn', error instanceof Error ? error.message : '验证失败，请重试')
     }
 }
 
-// 选择图片
+// Snapshot the draft and recipient so editing during a captcha cannot change the submitted reply.
+const submitPost = async (captchaCode: string, draft: Draft) => {
+    if (submitting.value || !editorVisible.value || draft.session !== editorSession.value) return
+    let finish: ((success: boolean) => void) | undefined
+    try {
+        if (!account.is_login || draft.userId !== account.user_info.id) throw new Error('请重新登录后发送')
+        validate(draft)
+        finish = submissionGuard.begin(draft.userId, fingerprint(draft))
+        submitting.value = true
+        prompt.showToast('loading', draft.images.length ? '图片上传中…' : '发送中…', 0)
+        const urls: string[] = []
+        for (const file of draft.images) urls.push(await uploadImage(file))
+        await CreateThreadPost({
+            message: createMessage(draft.text, urls),
+            validate: captchaCode,
+            captcha_id: postCaptcha.captchaID,
+            thread_id: draft.threadId,
+            forum_id: draft.forumId,
+            quote_user_id: draft.reply.isReply ? draft.reply.replyUserId : draft.authorId,
+            ...(draft.reply.isReply ? { quote_post_id: draft.reply.replyId } : {}),
+        })
+        finish(true)
+        if (msg.value === draft.text) msg.value = ''
+        chooseImgList.value = chooseImgList.value.filter(file => !draft.images.includes(file))
+        if (!msg.value.trim() && !chooseImgList.value.length) editorVisible.value = false
+        showEmojiList.value = false
+        prompt.showToast('success', '发送成功')
+        emit('sent', draft.reply.isReply ? draft.reply.replyId : 0)
+    } catch (error) {
+        prompt.showToast('fail', requestErrorMessage(error, '发送失败，请稍后再试'))
+    } finally {
+        finish?.(false)
+        submitting.value = false
+    }
+}
+
 const chooseImage = async () => {
-    // 最多添加5张
-    if (chooseImgList.value.length >= 5) {
-        prompt.showToast("warn", "最多添加5张图片")
-        return
-    }
+    if (submitting.value) return
+    const remaining = 5 - chooseImgList.value.length
+    if (remaining <= 0) { prompt.showToast('warn', '最多添加5张图片'); return }
     isChooseImage.value = true
-    const chooseImgRes = await Taro.chooseImage({
-        count: 5,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-    })
-    // 图片大小不能超过2M
-    if (chooseImgRes.tempFiles[0].size > 2 * 1024 * 1024) {
-        prompt.showToast("fail", "图片大小不能超过2M")
-        return
+    try {
+        const result = await Taro.chooseImage({ count: remaining, sizeType: ['compressed'], sourceType: ['album', 'camera'] })
+        if (result.tempFiles.some(file => file.size > MAX_IMAGE_SIZE)) {
+            prompt.showToast('fail', '每张图片不能超过2M')
+            return
+        }
+        chooseImgList.value = [...new Set([...chooseImgList.value, ...result.tempFilePaths])].slice(0, 5)
+    } catch (error) {
+        if (!String(error?.errMsg || '').includes('cancel')) prompt.showToast('fail', '选择图片失败，请重试')
     }
-    // 添加图片到列表
-    chooseImgList.value = chooseImgList.value.concat(chooseImgRes.tempFilePaths)
 }
 
 const cancelReply = () => {
+    if (submitting.value) return
     emit("cancelReply")
-    chooseImgList.value = []
 }
 
 const showEmojiList = ref(false)
@@ -251,11 +229,6 @@ const tabEmojiValue = ref(0)
 <style lang="scss">
 // 发帖
 .send-post {
-    position: fixed;
-    bottom: 0;
-    width: 92vw;
-    left: 4vw;
-
     background: var(--page-bg-color);
 
     form {
@@ -268,16 +241,9 @@ const tabEmojiValue = ref(0)
         gap: 20rpx;
         color: black;
         align-items: flex-end;
+        padding-top: 6px;
 
-        .msg-input {
-            flex: 1;
-
-            textarea,
-            .taro-textarea {
-                width: 100%;
-                background: var(--send-post-textarea-bg-color);
-            }
-        }
+        .send-btn { margin-left: auto; }
 
         .emoji-btn,
         .image-btn {
