@@ -27,6 +27,7 @@ declare module 'vue' {
     NutGridItem: typeof import('@nutui/nutui-taro')['GridItem']
     NutInput: typeof import('@nutui/nutui-taro')['Input']
     NutNavbar: typeof import('@nutui/nutui-taro')['Navbar']
+    NutNotify: typeof import('@nutui/nutui-taro')['Notify']
     NutPagination: typeof import('@nutui/nutui-taro')['Pagination']
     NutPopup: typeof import('@nutui/nutui-taro')['Popup']
     NutProgress: typeof import('@nutui/nutui-taro')['Progress']
@@ -40,7 +41,6 @@ declare module 'vue' {
     NutTabPane: typeof import('@nutui/nutui-taro')['TabPane']
     NutTabs: typeof import('@nutui/nutui-taro')['Tabs']
     NutTag: typeof import('@nutui/nutui-taro')['Tag']
-    NutTextarea: typeof import('@nutui/nutui-taro')['Textarea']
     NutToast: typeof import('@nutui/nutui-taro')['Toast']
     NutUploader: typeof import('@nutui/nutui-taro')['Uploader']
   }

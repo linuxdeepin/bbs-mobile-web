@@ -31,10 +31,15 @@
     <!-- 私信回复框 -->
     <nut-row v-if="!loading">
       <nut-col span="20" offset="2">
+        <view class="markdown-composer-entry" @click="editorVisible = true">
+          <text class="markdown-composer-entry-text">{{ message.trim() || '写一条私信…' }}</text>
+          <nut-button size="small" type="primary" @click.stop="editorVisible = true">写私信</nut-button>
+        </view>
+        <MarkdownComposer v-model:visible="editorVisible" title="写私信" :busy="sending">
         <view class="reply-box">
           <nut-form>
             <nut-form-item class="markdown-editor-form">
-              <MarkdownEditor ref="editor" v-model="message" :disabled="sending"  />
+                <MarkdownEditor ref="editor" v-model="message" :disabled="sending" :focus="editorVisible" />
               <view class="form-item">
                 <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                   @click="!sending && (showEmojiList = !showEmojiList)" />
@@ -67,6 +72,7 @@
             <view></view>
           </view>
         </view>
+        </MarkdownComposer>
       </nut-col>
     </nut-row>
     <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
@@ -89,6 +95,7 @@ import customEmoji from '@/pages/thread/customEmoji.json'
 import NavH5 from '@/widgets/navigation-h5.vue'
 import MarkdownContent from '@/widgets/markdown-content.vue'
 import MarkdownEditor from '@/widgets/markdown-editor.vue'
+import MarkdownComposer from '@/widgets/markdown-composer.vue'
 import { createMessage } from '@/utils/markdown'
 import { uploadImage, MAX_IMAGE_SIZE } from '@/utils/upload'
 import { requestErrorMessage } from '@/utils/errors'
@@ -107,7 +114,7 @@ const letters = computedAsync(async () => {
   return data.data || []
 }, [], { evaluating: loading })
 const message = ref('')
-const editorVisible = ref(true)
+const editorVisible = ref(false)
 const sending = ref(false)
 const editor = ref<{ insertText(text: string): void }>()
 const showEmojiList = ref(false)
@@ -138,6 +145,7 @@ const sendMessage = async () => {
     await appendLetter(createMessage(draft))
     if (message.value === draft) {
       message.value = ''
+      editorVisible.value = false
     }
   } catch (error) {
     prompt.showToast('fail', requestErrorMessage(error, '发送失败，请稍后重试'))

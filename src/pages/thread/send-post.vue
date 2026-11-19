@@ -1,5 +1,10 @@
 <template>
     <nut-col span="20" offset="2">
+        <view class="markdown-composer-entry" @click="openEditor">
+            <text class="markdown-composer-entry-text">{{ msg.trim() || (chooseImgList.length ? '已添加图片，点击继续编辑' : '说点什么吧…') }}</text>
+            <nut-button size="small" type="primary" :disabled="submitting" @click.stop="openEditor">写回复</nut-button>
+        </view>
+        <MarkdownComposer v-model:visible="editorVisible" title="写回复" :busy="submitting">
         <view class="send-post">
             <nut-form>
                 <!-- 网易易盾验证码，小程序插件引入 -->
@@ -24,7 +29,7 @@
                         </view>
                     </view>
                     <MarkdownEditor ref="editor" v-model="msg" :max-length="REPLY_MAX_LENGTH"
-                        :disabled="!account.is_login || submitting" :focus="replyInfo.isReply" />
+                            :disabled="!account.is_login || submitting" :focus="editorVisible" />
                     <view class="form-item">
                         <img class="emoji-btn" :src="showEmojiList ? KeyboardIcon : SmileIcon"
                             @click="!submitting && (showEmojiList = !showEmojiList)" />
@@ -59,6 +64,7 @@
                 <view></view>
             </view>
         </view>
+        </MarkdownComposer>
 
         <nut-toast :msg="prompt.toast.msg" v-model:visible="prompt.toast.visible" :type="prompt.toast.type"
             :duration="prompt.toast.duration" />
@@ -82,6 +88,7 @@ import customEmoji from './customEmoji.json'
 import { apiServer, CreateThreadPost } from '@/api';
 import { CircleClose } from '@nutui/icons-vue-taro';
 import MarkdownEditor from '@/widgets/markdown-editor.vue';
+import MarkdownComposer from '@/widgets/markdown-composer.vue';
 import { createMessage } from '@/utils/markdown';
 import { uploadImage, MAX_IMAGE_SIZE } from '@/utils/upload';
 import { submissionGuard, submissionFingerprint, REPLY_MAX_LENGTH } from '@/utils/submission';
@@ -104,7 +111,7 @@ const isChooseImage = defineModel()
 
 // 回复内容
 const msg = ref("")
-const editorVisible = ref(true)
+const editorVisible = ref(false)
 const editorSession = ref(0)
 watch(editorVisible, visible => {
     if (!visible) editorSession.value++
@@ -181,6 +188,7 @@ const submitPost = async (captchaCode: string, draft: Draft) => {
         finish(true)
         if (msg.value === draft.text) msg.value = ''
         chooseImgList.value = chooseImgList.value.filter(file => !draft.images.includes(file))
+        if (!msg.value.trim() && !chooseImgList.value.length) editorVisible.value = false
         showEmojiList.value = false
         prompt.showToast('success', '发送成功')
         emit('sent', draft.reply.isReply ? draft.reply.replyId : 0)

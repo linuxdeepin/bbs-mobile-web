@@ -16,6 +16,7 @@ const thread = {
 };
 
 async function openReplyEditor(page) {
+  await page.getByRole('button', { name: '写回复', exact: true }).click();
   const editor = page.locator('.send-post .markdown-editor');
   await expect(editor).toBeVisible();
   return editor;
@@ -76,6 +77,49 @@ test('legacy body tables retain rows and scroll inside a mobile viewport', async
   expect(errors).toEqual([]);
 });
 
+test('reply and private-message editors open on demand and retain drafts when closed', async ({ page }) => {
+  await page.route(/\/api\/v1\/user\/letter(?:\?|$)/, route => route.fulfill({ json: {
+    code: 0, data: [{ id: 1, from_id: 8, note: '最后一条私信', created_at: thread.created_at, send_user_avatar: user.avatar }],
+  } }));
+  for (const [url, label] of [
+    ['/pages/thread/thread?id=1', '写回复'], ['/pages/dialog/dialog?uid=8', '写私信'],
+  ]) {
+    await page.goto(url);
+    const editor = page.locator('.markdown-composer-panel .markdown-editor');
+    await expect(editor).not.toBeVisible();
+    const entry = page.locator('.markdown-composer-entry');
+    await expect(entry).toBeVisible();
+    expect(await entry.evaluate(element => getComputedStyle(element).position)).toBe('static');
+    await page.getByRole('button', { name: label, exact: true }).click();
+    await expect(editor).toBeVisible();
+    const draft = `## 保留${label}草稿\n\n**内容**`;
+    await editor.locator('textarea').fill(draft);
+    await expect(editor.locator('.markdown-live-preview h2')).toHaveText(`保留${label}草稿`);
+    await page.getByRole('button', { name: '收起编辑器', exact: true }).click();
+    await expect(editor).not.toBeVisible();
+    await expect(entry).toContainText(`保留${label}草稿`);
+    await page.getByRole('button', { name: label, exact: true }).click();
+    await expect(editor.locator('textarea')).toHaveValue(draft);
+    await page.getByRole('button', { name: '收起编辑器', exact: true }).click();
+  }
+});
+
+test('replying to the same user reopens the editor after it has been closed', async ({ page }) => {
+  const reply = { id: 101, post_user_id: 8, user: { ...user, id: 8, nickname: '回帖用户' },
+    message: '<p>原回帖</p>', created_at: thread.created_at, deleted_at: null, like_cnt: 0, is_up: false };
+  await page.route(/\/api\/v1\/thread\/post\/list(?:\?|$)/, route => route.fulfill({
+    json: { code: 0, data: [reply], total_count: 1, total_limit: 10, total_offset: 0 },
+  }));
+  await page.goto('/pages/thread/thread?id=1');
+  for (let i = 0; i < 2; i++) {
+    await page.locator('.post-op').getByText('回复', { exact: true }).click();
+    await expect(page.locator('.send-post .markdown-editor')).toBeVisible();
+    await expect(page.locator('.send-post .reply-info')).toContainText('回帖用户');
+    await page.getByRole('button', { name: '收起编辑器', exact: true }).click();
+    await expect(page.locator('.send-post .markdown-editor')).not.toBeVisible();
+  }
+});
+
 test('entity-encoded announcements retain Chinese, emoji and escaped code in H5', async ({ page }) => {
   const message = '<div><p>&#x4eb2;&#x7231;&#x7684; deepin &#x793e;&#x533a;&#x4f19;&#x4f34;&#x4eec;&#xff1a;</p>' +
     '<h2>&#x1f680; deepin 25.3.0 &#x6b63;&#x5f0f;&#x7248;</h2>' +
@@ -127,6 +171,10 @@ test('reply editor previews Markdown tables/code and preserves its draft when re
   await expect(editor.locator('pre code')).toHaveText('const value = 1;\n');
   await editor.getByRole('button', { name: '编辑', exact: true }).click();
   await expect(input).toHaveValue(draft);
+  await page.getByRole('button', { name: '收起编辑器', exact: true }).click();
+  await expect(editor).not.toBeVisible();
+  await openReplyEditor(page);
+  await expect(input).toHaveValue(draft);
 });
 
 test('format toolbar inserts a table and wraps the current selection', async ({ page }) => {
@@ -140,6 +188,40 @@ test('format toolbar inserts a table and wraps the current selection', async ({ 
   await expect(input).toHaveValue('hello **world**');
   await editor.getByRole('button', { name: '表格', exact: true }).click();
   await expect(input).toHaveValue(/\| 列一 \| 列二 \|/);
+});
+
+test('writing renders a live preview without leaving the input or losing the draft', async ({ page }) => {
+  await page.goto('/pages/thread/thread?id=1');
+  const editor = await openReplyEditor(page);
+  const input = editor.locator('textarea');
+  const live = editor.locator('.markdown-live-preview');
+  const draft = '## 边写边看\n\n**加粗文字**\n\n| 中文 | 效果 |\n| --- | --- |\n| 正文 | 完整 |\n\n```sh\nsudo apt update && sudo apt dist-upgrade\n```\n\n[示例链接](https://example.com)';
+  await input.fill(draft);
+  await expect(live.locator('h2')).toHaveText('边写边看');
+  await expect(live.locator('strong')).toHaveText('加粗文字');
+  await expect(live.locator('table td')).toHaveText(['正文', '完整']);
+  await expect(live.locator('pre code')).toHaveText('sudo apt update && sudo apt dist-upgrade\n');
+  await expect(input).toHaveValue(draft);
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const composerBounds = await page.locator('.send-post').boundingBox();
+    const editorBounds = await editor.boundingBox();
+    expect(editorBounds.x + editorBounds.width).toBeLessThanOrEqual(composerBounds.x + composerBounds.width + 1);
+    await expect(editor.getByRole('button', { name: '预览', exact: true })).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.send-post .send-btn')).toBeInViewport({ ratio: 1 });
+  }
+  await page.locator('.send-post').screenshot({ path: test.info().outputPath('live-preview.png') });
+  await live.locator('a').click();
+  await expect(page).toHaveURL(/\/pages\/thread\/thread\?id=1$/);
+  await live.getByRole('button', { name: '收起', exact: true }).click();
+  await expect(live.locator('.markdown-content')).toHaveCount(0);
+  await expect(input).toHaveValue(draft);
+  await live.getByRole('button', { name: '展开', exact: true }).click();
+  await input.fill('## 更新后的标题');
+  await expect(live.locator('h2')).toHaveText('更新后的标题');
+  await expect(live.locator('table')).toHaveCount(0);
+  await input.fill('');
+  await expect(live).toHaveCount(0);
 });
 
 test('thread composer provides the same Markdown preview', async ({ page }) => {

@@ -91,6 +91,7 @@ test('repeated send/captcha callbacks produce one request, then clear only the s
   await Promise.all([first, second]);
   assert.equal(scope.submitting.value, false);
   assert.equal(scope.msg.value, '');
+  assert.equal(scope.editorVisible.value, false);
   assert.equal(events.length, 1);
   assert.equal(guard.remainingSeconds(7), 10);
   scope.msg.value = '**hello**';

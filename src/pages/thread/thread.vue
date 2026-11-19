@@ -631,7 +631,7 @@ watchEffect((onCleanup) => {
     .pagination {
         display: flex;
         justify-content: center;
-        padding-bottom: 180px;
+        padding-bottom: 20Px;
     }
 
     .skeleton-container {
