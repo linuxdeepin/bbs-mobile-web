@@ -43,8 +43,8 @@
             </nut-col>
             <!-- 主题 -->
             <nut-col span="22" offset="1">
-                <view v-if="!banUser" class="thread-message html-message taro_html vditor-reset"
-                    @click="htmlClick($event)" v-html="threadInfo.post.message"></view>
+                <MarkdownContent v-if="!banUser" class="thread-message" :content="threadInfo.post.message"
+                    @preview="isChooseImage = true" />
                 <view v-else>用户被禁言，该内容已隐藏</view>
             </nut-col>
             <!-- 投票 -->
@@ -89,10 +89,8 @@
                             <nut-cell class="content" desc-text-align="left">
                                 <template #desc>
                                     <template v-if="post.user.state === 0 || post.user.state === 1">
-                                        <view v-if="post.deleted_at === null"
-                                            class="post-message html-message taro_html vditor-reset"
-                                            @click="htmlClick($event)" v-html="post.message">
-                                        </view>
+                                        <MarkdownContent v-if="post.deleted_at === null" class="post-message"
+                                            :content="post.message" @preview="isChooseImage = true" />
                                         <view v-else
                                             class="post-message html-message taro_html vditor-reset del-message">
                                             该评论已删除!
@@ -149,10 +147,8 @@
                                         <view class="son-post" v-if="post.son_post?.id">
                                             <span class="nickname"> {{ post.son_post.user.nickname }}：</span>
                                             <template v-if="post.son_post.user.state !== 2">
-                                                <view v-if="post.son_post.deleted_at === null"
-                                                    class="post-message html-message taro_html vditor-reset"
-                                                    @click="htmlClick($event)" v-html="post.son_post.message">
-                                                </view>
+                                                <MarkdownContent v-if="post.son_post.deleted_at === null" class="post-message"
+                                                    :content="post.son_post.message" @preview="isChooseImage = true" />
                                                 <view v-else
                                                     class="post-message html-message taro_html vditor-reset del-message">
                                                     该评论已删除!
@@ -165,10 +161,8 @@
                                             </view>
                                         </view>
                                         <template v-if="post.user.state === 0 || post.user.state === 1">
-                                            <view v-if="post.deleted_at === null"
-                                                class="post-message html-message taro_html vditor-reset"
-                                                @click="htmlClick($event)" v-html="post.message">
-                                            </view>
+                                            <MarkdownContent v-if="post.deleted_at === null" class="post-message"
+                                                :content="post.message" @preview="isChooseImage = true" />
                                             <view v-else
                                                 class="post-message html-message taro_html vditor-reset del-message">
                                                 该评论已删除!
@@ -244,14 +238,10 @@ import { watch, ref, watchEffect } from 'vue';
 import Taro, { useShareAppMessage, useShareTimeline, useUnload, useDidShow, useDidHide } from '@tarojs/taro'
 import TopIcon from '@/assets/top.svg'
 import { useConfigStore, useAccountStore, usePromptStore } from '@/stores'
-import { TaroEvent } from '@tarojs/components';
-import { TaroElement } from '@tarojs/runtime';
 import { formatTime } from '@/utils/format';
-import { Element } from '@tarojs/runtime/dist/dom-external/inner-html/parser';
 import SendPost from './send-post.vue'
 import Vote from './vote.vue'
 import {
-    apiServer,
     ThreadInfo,
     ThreadPostList,
     ThreadInfoData,
@@ -267,70 +257,15 @@ import Tags from '@/widgets/tags.vue';
 import ThreadOp from "./thread-op.vue"
 import PostOp from "./post-op.vue"
 import NavH5 from "@/widgets/navigation-h5.vue";
+import MarkdownContent from '@/widgets/markdown-content.vue';
 
-if (process.env.TARO_ENV === 'h5') {
-    // 加载vditor样式
-    require('vditor/dist/index.css')
-} else {
-    // 加载html5样式
-    require('@tarojs/taro/html.css')
-}
 const config = useConfigStore()
 const account = useAccountStore()
 const prompt = usePromptStore()
 
-const imageUrls = [] as string[]
-
-const option = (Taro as any).options
-
 // 提示需要进行登陆
 const showLoginDialog = ref(false)
 
-// 处理html渲染，仅在小程序中生效
-option.html.transformElement = (el: TaroElement, h5el: Element) => {
-    el.setAttribute('data-tag', h5el.tagName)
-    switch (el.nodeName) {
-        case "text":
-            if (h5el.tagName === "a") {
-                // attributes 格式有些奇怪，像这样["href=\"https://xxxx"\"]，所以要进行预处理 
-                h5el.attributes.forEach(attr => {
-                    const arr = attr.split("=")
-                    const key = arr[0]
-                    const value = arr.slice(1).join("=").slice(1, -1)
-                    el.setAttribute('data-' + key, value)
-                })
-            }
-        case "image":
-            // 图片高度自动缩放
-            el.setAttribute('mode', 'widthFix')
-
-            const src = el.getAttribute("src")
-            if (!src) {
-                break
-            }
-            // 表情图片拼接服务器地址
-            if (src.startsWith("assets")) {
-                el.setAttribute('src', apiServer + "/" + src)
-                break
-            }
-            // 小程序图片不会自动显示宽度，在图片加载后设置图片显示真实宽度，超出屏幕的图片有样式中的 max-width 限制
-            el.addEventListener("load", (event: TaroEvent<HTMLImageElement>) => {
-                el.style.setProperty('width', event.detail.width + "px")
-                imageUrls.push(src)
-            }, null)
-            // 图片点击预览
-            el.addEventListener("tap", () => {
-                console.log("preview image", imageUrls)
-                isChooseImage.value = true
-                Taro.previewImage({
-                    current: src,
-                    urls: imageUrls
-                })
-            }, null)
-            break
-    }
-    return el
-}
 // 页面是否隐藏
 const hidden = ref(false)
 // 选择图片后不刷新页面
@@ -519,27 +454,6 @@ watch(threadPosts, (_, oldVal) => {
     })
 })
 
-// 渲染内容点击，在小程序中处理超链接
-function htmlClick(event: MouseEvent) {
-    const target = event.target as HTMLElement
-    const dataset = target.dataset
-    console.log("html click", { event, dataset })
-    // 是html超链接被点击
-    if (dataset["tag"] === "a") {
-        const href = target.dataset["href"] || ''
-        // 如果是点击的帖子链接，在小程序跳转，否则就复制链接
-        if (href.includes("deepin.org")) {
-            const result = href.match(/\/post\/(\d+)$/)
-            if (result?.length == 2) {
-                Taro.navigateTo({
-                    url: `/pages/thread/thread?id=${result[1]}`,
-                })
-                return
-            }
-        }
-        Taro.setClipboardData({ data: href })
-    }
-}
 // 生成分享标题
 function genShareTitle(title: string) {
     if (!config.weixinShare.state) {
