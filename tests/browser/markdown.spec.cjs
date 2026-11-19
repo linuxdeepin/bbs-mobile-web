@@ -141,3 +141,14 @@ test('format toolbar inserts a table and wraps the current selection', async ({ 
   await editor.getByRole('button', { name: '表格', exact: true }).click();
   await expect(input).toHaveValue(/\| 列一 \| 列二 \|/);
 });
+
+test('thread composer provides the same Markdown preview', async ({ page }) => {
+  await page.goto('/pages/posting/posting');
+  const editor = page.locator('.posting-page .markdown-editor');
+  const input = editor.locator('textarea');
+  await expect(input).toBeEditable();
+  await input.fill('**发帖预览**\n\n| A | B |\n| --- | --- |\n| 1 | 2 |');
+  await editor.getByRole('button', { name: '预览', exact: true }).click();
+  await expect(editor.locator('strong')).toHaveText('发帖预览');
+  await expect(editor.locator('table td')).toHaveCount(2);
+});

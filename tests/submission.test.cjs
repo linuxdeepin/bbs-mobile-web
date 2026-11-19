@@ -205,3 +205,25 @@ test('image picker reserves remaining slots and validates every selected image',
   assert.deepEqual(images.value, ['a', 'b', 'c']);
   assert.match(prompt.messages.at(-1)[1], /每张图片不能超过/);
 });
+
+test('thread creation distinguishes business errors from navigation failures after success', async () => {
+  for (const [code, navigationFails] of [[1, false], [0, false], [0, true]]) {
+    const { guard } = setupGuard();
+    const postingTitle = ref('测试标题'), postingContent = ref('**正文**'), prompt = promptSpy();
+    const config = { indexNeedRefresh: false }, routes = [];
+    const { submitPosting } = bindings('src/pages/posting/posting.vue', ['submitPosting'], {
+      submitting: ref(false), account: { is_login: true, user_info: { id: 7 } }, selectedForum: ref({ id: 2 }),
+      selectedThemeType: ref({ id: 3 }), postingTitle, postingContent, imgFileList: ref([]),
+      submissionGuard: guard, submissionFingerprint, THREAD_MAX_LENGTH, requestErrorMessage, prompt, config,
+      postCaptcha: { tryVerify: callback => callback('test') }, createMessage: text => text,
+      PostingThread: async () => ({ data: { code, msg: '发布被拒绝', data: { id: 99 } } }),
+      Taro: { navigateTo: async options => { routes.push(options.url); if (navigationFails) throw new Error('navigation failed'); } },
+    });
+    await submitPosting();
+    assert.equal(routes.length, code === 0 ? 1 : 0);
+    assert.equal(postingContent.value, code === 0 ? '' : '**正文**');
+    assert.equal(config.indexNeedRefresh, code === 0);
+    assert.equal(guard.remainingSeconds(7), code === 0 ? 10 : 0);
+    assert.equal(prompt.messages.at(-1)[0], code === 0 ? (navigationFails ? 'text' : 'success') : 'fail');
+  }
+});
