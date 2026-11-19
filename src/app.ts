@@ -27,7 +27,7 @@ Taro.onThemeChange(res => {
   config.setTheme(res.theme as string);
 })
 
-subscribe.getSetting()
-subscribe.getSeverSubscribe()
+subscribe.getSetting().catch(console.warn)
+subscribe.getSeverSubscribe().catch(console.warn)
 
 export default App;

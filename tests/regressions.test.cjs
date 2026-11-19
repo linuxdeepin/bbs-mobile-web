@@ -89,6 +89,24 @@ test('late page response cannot replace the latest page or clear its loading sta
   scope.stop();
 });
 
+test('subscriptions post only accepted templates; rejection and API errors never report success', async () => {
+  for (const result of ['accept', 'reject', 'error']) {
+    const prompt = promptSpy(), subscriptions = [];
+    const { subscribeMessage } = bindings('src/stores/subscription.ts', ['subscribeMessage'], {
+      isH5: false, settings: ref({ subscriptionsSetting: { mainSwitch: true, itemSettings: {} } }), prompt,
+      templIds: ['template'], Taro: {
+        requestSubscribeMessage: async () => { if (result === 'error') throw new Error('error'); return { template: result }; },
+        setStorageSync() {},
+      },
+      getSetting: async () => {}, subscribeDialogVisible: ref(false),
+      MessageSubscription: async ids => subscriptions.push(ids), getSeverSubscribe: async () => {},
+    });
+    await subscribeMessage();
+    assert.equal(subscriptions.length, result === 'accept' ? 1 : 0);
+    assert.equal(prompt.messages.at(-1)[0] === 'success', result === 'accept');
+  }
+});
+
 test('registration network errors are handled even without an HTTP response object', async () => {
   for (const method of ['registerCode', 'register']) {
     const prompt = promptSpy();
@@ -99,5 +117,21 @@ test('registration network errors are handled even without an HTTP response obje
     });
     await assert.doesNotReject(methods[method]('test'));
     assert.equal(prompt.messages.at(-1)[0], 'fail');
+  }
+});
+
+test('unsubscribe handles request failures and keeps confirmed cancellation when refresh fails', async () => {
+  for (const result of ['success', 'cancel-error', 'refresh-error']) {
+    const prompt = promptSpy();
+    const serverSubscribed = { Status: 'accept', MessageSent: false };
+    const { cancelSubscribe } = bindings('src/stores/subscription.ts', ['cancelSubscribe'], {
+      templIds: ['template'], serverSubscribed, prompt, console: { warn() {} },
+      MessageUnSubscription: async () => { if (result === 'cancel-error') throw new Error('offline'); },
+      getSeverSubscribe: async () => { if (result === 'refresh-error') throw new Error('offline'); },
+    });
+    await cancelSubscribe();
+    await flush();
+    assert.equal(serverSubscribed.Status, result === 'cancel-error' ? 'accept' : 'reject');
+    assert.equal(prompt.messages.at(-1)[0], result === 'cancel-error' ? 'fail' : 'success');
   }
 });
