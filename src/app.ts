@@ -5,6 +5,10 @@ import { useConfigStore, useSubscriptionStore } from "./stores";
 
 import "./app.scss";
 
+if (process.env.TARO_ENV !== "h5") {
+  require("./utils/mini-html").installMiniHtmlEntityDecoding();
+}
+
 const App = createApp({});
 
 App.use(createPinia());
