@@ -79,3 +79,129 @@ function composer(options = {}) {
   const methods = bindings('src/pages/thread/send-post.vue', ['snapshot', 'fingerprint', 'validate', 'submitPost', 'requestPost'], scope);
   return { ...guard, scope, methods, requests, events, pending };
 }
+
+test('repeated send/captcha callbacks produce one request, then clear only the successful draft', async () => {
+  const { scope, methods, requests, pending, guard, events } = composer();
+  const draft = methods.snapshot();
+  const first = methods.submitPost('test', draft);
+  const second = methods.submitPost('test', draft);
+  assert.equal(requests.length, 1);
+  assert.equal(scope.submitting.value, true);
+  pending.resolve({ data: { code: 0 } });
+  await Promise.all([first, second]);
+  assert.equal(scope.submitting.value, false);
+  assert.equal(scope.msg.value, '');
+  assert.equal(events.length, 1);
+  assert.equal(guard.remainingSeconds(7), 10);
+  scope.msg.value = '**hello**';
+  await methods.requestPost();
+  assert.equal(requests.length, 1);
+  assert.match(scope.prompt.messages.at(-1)[1], /重复发送/);
+});
+
+test('failed reply preserves text/images, unlocks, and does not consume the cooldown', async () => {
+  const { scope, methods, pending, guard } = composer({ chooseImgList: ref(['a.png']) });
+  const sent = methods.submitPost('test', methods.snapshot());
+  pending.reject(new Error('发送失败'));
+  await sent;
+  assert.equal(scope.msg.value, '**hello**');
+  assert.deepEqual(scope.chooseImgList.value, ['a.png']);
+  assert.equal(scope.submitting.value, false);
+  assert.equal(guard.remainingSeconds(7), 0);
+  assert.doesNotThrow(() => guard.check(7, methods.fingerprint(methods.snapshot())));
+});
+
+test('closing the reply editor cancels a pending captcha callback without losing its draft', async () => {
+  const { scope, methods, requests } = composer();
+  const draft = methods.snapshot();
+  scope.editorVisible.value = false;
+  await methods.submitPost('late-captcha', draft);
+  assert.equal(requests.length, 0);
+  assert.equal(scope.msg.value, '**hello**');
+});
+
+test('reopening the editor cannot revive an earlier captcha callback or send its old draft', async t => {
+  const callbacks = [];
+  const { scope, methods, requests, pending } = composer({
+    postCaptcha: { captchaID: 'test', tryVerify: callback => { callbacks.push(callback); } },
+  });
+  const hook = find('src/pages/thread/send-post.vue', node => ts.isCallExpression(node) &&
+    node.expression.getText() === 'watch' && node.arguments[0]?.getText() === 'editorVisible');
+  t.after(evaluate(hook.getText(), { watch, editorVisible: scope.editorVisible, editorSession: scope.editorSession }));
+  await methods.requestPost();
+  scope.editorVisible.value = false;
+  scope.msg.value = '重新打开后的草稿';
+  scope.editorVisible.value = true;
+  await callbacks[0]('old-captcha');
+  assert.equal(requests.length, 0);
+  assert.equal(scope.msg.value, '重新打开后的草稿');
+  await methods.requestPost();
+  const sending = callbacks[1]('new-captcha');
+  assert.equal(requests.length, 1);
+  assert.match(requests[0].message, /重新打开后的草稿/);
+  pending.resolve({ data: { code: 0 } });
+  await sending;
+});
+
+test('empty, oversized and over-attachment replies are rejected before the captcha/API', async () => {
+  const { methods, scope, requests } = composer();
+  for (const [text, images, message] of [['  \n', [], /不能为空/], ['字'.repeat(1001), [], /不能超过/], ['', Array(6).fill('x'), /最多添加/]]) {
+    scope.msg.value = text;
+    scope.chooseImgList.value = images;
+    await methods.requestPost();
+    assert.match(scope.prompt.messages.at(-1)[1], message);
+  }
+  assert.equal(requests.length, 0);
+});
+
+test('HTTP throttling and expired sessions produce readable messages without losing the draft', async () => {
+  for (const [status, expected] of [[429, /发送过于频繁/], [401, /登录已失效/]]) {
+    const { scope, methods, pending } = composer();
+    const sent = methods.submitPost('test', methods.snapshot());
+    pending.reject({ isAxiosError: true, response: { status } });
+    await sent;
+    assert.match(scope.prompt.messages.at(-1)[1], expected);
+    assert.equal(scope.msg.value, '**hello**');
+    assert.equal(scope.submitting.value, false);
+  }
+});
+
+test('captcha draft snapshots preserve the original recipient and do not clear newer edits/attachments', async () => {
+  const { scope, methods, pending, requests, events } = composer({ chooseImgList: ref(['a.png']) });
+  scope.props.replyInfo = { isReply: true, replyId: 4, replyUserId: 9 };
+  const draft = methods.snapshot();
+  scope.msg.value = 'new draft';
+  scope.chooseImgList.value = ['a.png', 'b.png'];
+  scope.props.replyInfo = { isReply: true, replyId: 5, replyUserId: 10 };
+  const sent = methods.submitPost('test', draft);
+  pending.resolve({ data: { code: 0 } });
+  await sent;
+  assert.equal(requests[0].quote_post_id, 4);
+  assert.equal(requests[0].quote_user_id, 9);
+  assert.equal(scope.msg.value, 'new draft');
+  assert.deepEqual(scope.chooseImgList.value, ['b.png']);
+  assert.equal(events[0][1], 4);
+  let cancelled = false;
+  const { sendPost } = bindings('src/pages/thread/thread.vue', ['sendPost'], {
+    replyInfo: ref({ isReply: true, replyId: 5 }), threadPosts: ref(), cancelReply() { cancelled = true; },
+  });
+  sendPost(events[0][1]);
+  assert.equal(cancelled, false);
+});
+
+test('image picker reserves remaining slots and validates every selected image', async () => {
+  const images = ref(['a', 'b', 'c']);
+  const prompt = promptSpy();
+  let count;
+  const { chooseImage } = bindings('src/pages/thread/send-post.vue', ['chooseImage'], {
+    submitting: ref(false), chooseImgList: images, prompt, isChooseImage: ref(false), MAX_IMAGE_SIZE: 2 * 1024 * 1024,
+    Taro: { chooseImage: async options => {
+      count = options.count;
+      return { tempFilePaths: ['d', 'e'], tempFiles: [{ size: 1 }, { size: 3 * 1024 * 1024 }] };
+    } },
+  });
+  await chooseImage();
+  assert.equal(count, 2);
+  assert.deepEqual(images.value, ['a', 'b', 'c']);
+  assert.match(prompt.messages.at(-1)[1], /每张图片不能超过/);
+});

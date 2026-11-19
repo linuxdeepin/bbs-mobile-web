@@ -213,7 +213,7 @@
             </template>
             <!-- 自己回帖 -->
             <SendPost v-if="!threadClosed" v-model="isChooseImage" :info="threadInfo" :reply-info="replyInfo"
-                @login="showLoginDialog = true" @cancel-reply="cancelReply">
+                @login="showLoginDialog = true" @cancel-reply="cancelReply" @sent="sendPost">
             </SendPost>
         </nut-row>
         <view v-else>
@@ -484,9 +484,9 @@ useShareAppMessage(() => {
 })
 
 // 在发帖后翻到最后一页
-const sendPost = () => {
+const sendPost = (replyId: number) => {
     // 清空回复状态
-    cancelReply()
+    if ((replyInfo.value.isReply ? replyInfo.value.replyId : 0) === replyId) cancelReply()
     if (!threadPosts.value)
         return
     let last = Math.ceil(threadPosts.value.total_count / pagination.value.limit)
@@ -502,7 +502,6 @@ const sendPost = () => {
     }
 }
 
-Taro.eventCenter.on("sendPost", sendPost)
 
 // 定时刷新评论
 // 如果当前位于评论的最后一页,每三秒刷新一次

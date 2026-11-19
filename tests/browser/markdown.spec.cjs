@@ -90,3 +90,54 @@ test('entity-encoded announcements retain Chinese, emoji and escaped code in H5'
   await expect(content.locator('pre code')).toHaveText('sudo apt update && sudo apt dist-upgrade\n<script>alert(1)</script>');
   await expect(content.locator('script')).toHaveCount(0);
 });
+
+test('forum emoji load in existing posts and live previews at an inline size', async ({ page }) => {
+  // A local GIF fixture verifies image decoding without any production request.
+  await page.route('https://bbs.deepin.org.cn/assets/image/raccoon/**', route => route.fulfill({
+    contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64'),
+  }));
+  const message = '<div data-editer_version="v2"><p><img class="emoji" src alt="agree"></p></div>';
+  await page.route(/\/api\/v1\/thread\/info(?:\?|$)/, route => route.fulfill({
+    json: { code: 0, data: { ...thread, post: { ...thread.post, message } } },
+  }));
+  await page.goto('/pages/thread/thread?id=1');
+  const stored = page.locator('.thread-message img.emoji');
+  await expect(stored).toHaveAttribute('src', 'https://bbs.deepin.org.cn/assets/image/raccoon/%5Bagree%5D.gif');
+  await expect.poll(() => stored.evaluate(image => image.naturalWidth)).toBe(1);
+  expect((await stored.boundingBox()).width).toBe(24);
+  expect((await stored.boundingBox()).height).toBe(24);
+  const editor = await openReplyEditor(page);
+  await editor.locator('textarea').fill(':agree: :joy: `:agree:`');
+  const preview = editor.locator('.markdown-live-preview');
+  await expect(preview.locator('img.emoji')).toHaveCount(2);
+  await expect.poll(() => preview.locator('img.emoji').evaluateAll(images => images.every(image => image.naturalWidth === 1))).toBe(true);
+  await expect(preview.locator('code')).toHaveText(':agree:');
+});
+
+test('reply editor previews Markdown tables/code and preserves its draft when returning to edit', async ({ page }) => {
+  await page.goto('/pages/thread/thread?id=1');
+  const editor = await openReplyEditor(page);
+  const input = editor.locator('textarea');
+  await expect(input).toBeEditable();
+  const draft = '## 回复标题\n\n| A | B |\n| --- | --- |\n| 一 | 二 |\n\n```js\nconst value = 1;\n```';
+  await input.fill(draft);
+  await editor.getByRole('button', { name: '预览', exact: true }).click();
+  await expect(editor.locator('h2')).toHaveText('回复标题');
+  await expect(editor.locator('table')).toBeVisible();
+  await expect(editor.locator('pre code')).toHaveText('const value = 1;\n');
+  await editor.getByRole('button', { name: '编辑', exact: true }).click();
+  await expect(input).toHaveValue(draft);
+});
+
+test('format toolbar inserts a table and wraps the current selection', async ({ page }) => {
+  await page.goto('/pages/thread/thread?id=1');
+  const editor = await openReplyEditor(page);
+  const input = editor.locator('textarea');
+  await expect(input).toBeEditable();
+  await input.fill('hello world');
+  await input.evaluate(element => { element.focus(); element.setSelectionRange(6, 11); element.dispatchEvent(new Event('select', { bubbles: true })); });
+  await editor.getByRole('button', { name: '加粗', exact: true }).click();
+  await expect(input).toHaveValue('hello **world**');
+  await editor.getByRole('button', { name: '表格', exact: true }).click();
+  await expect(input).toHaveValue(/\| 列一 \| 列二 \|/);
+});
